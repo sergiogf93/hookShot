@@ -16,13 +16,17 @@ import com.htss.hookshot.math.MathVector;
  */
 public class MainCharacter extends GameCharacter {
 
-    public static final int BODY_RADIUS = 10*MyActivity.tileWidth/50, FIST_RADIUS = MyActivity.tileWidth/8, FOOT_RADIUS = 10*MyActivity.tileWidth/100, EYE_RADIUS = MyActivity.tileWidth/25;
+    public static final int BODY_RADIUS = 10*MyActivity.tileWidth/50, FIST_RADIUS = MyActivity.tileWidth/8,
+                            FOOT_RADIUS = 10*MyActivity.tileWidth/100, EYE_RADIUS = MyActivity.tileWidth/25,
+                            MIN_HOOSKSHOT_NODES = 3;
+
 
     private double hookVelocity = 300;
     private int maxHookNodes = 50, facing = 1;
     private Hook hook = null;
     private CircleShape rightHand, leftHand, rightFoot, leftFoot;
     private BiCircleShape leftEye, rightEye;
+    private MathVector hookVector;
 
     public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
         super(xPos, yPos, mass, collisionPriority, 20);
@@ -290,11 +294,14 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void shootHook(double xDown, double yDown) {
+        if (getHook() != null) {
+            removeHook();
+        }
         MathVector initP = new MathVector(getPositionInScreen(),new MathVector(xDown,yDown));
         int radius = 10;
         int separation = 40;
         int nNodes = Math.min((int) (initP.magnitude()/separation) + 2, maxHookNodes);
-        nNodes = Math.max(nNodes+1,4);
+        nNodes = Math.max(nNodes+1,MIN_HOOSKSHOT_NODES);
         initP.scale(0.5);
 //        initP.rescale(GameMath.linealValue(1,getHookVelocity()/1000,15,getHookVelocity(),nNodes));
         setHook(new Hook(getxPosInRoom(),getyPosInRoom(), 1, 0, nNodes, radius, Color.GRAY, separation,this,initP));
@@ -314,5 +321,13 @@ public class MainCharacter extends GameCharacter {
         MyActivity.reloadButton = null;
         MyActivity.extendButton = null;
         setState(STATE_MOVING);
+    }
+
+    public MathVector getHookVector() {
+        if (getHook() != null) {
+            return new MathVector(this,getHook().getLastNode());
+        } else {
+            return null;
+        }
     }
 }

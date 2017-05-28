@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.math.MathVector;
 
@@ -55,11 +56,10 @@ public class Joystick extends HUDElement implements Clickable {
 
     private void moveCharacter(int dx, int dy) {
         MathVector newP;
-        if (MyActivity.character.isHooked() && MyActivity.character.getHook().getNodes().size() < 5) {
+        if (MyActivity.character.isHooked() && MyActivity.character.getHook().getNodes().size() <= MainCharacter.MIN_HOOSKSHOT_NODES + 2) {
             newP = new MathVector(dx, dy);
         } else {
             newP = new MathVector(dx, 0);
-//            if (MyActivity.character.isOnFloor() && MyActivity.character.getyPosInRoom() > 2*MyActivity.tileWidth){
             if (MyActivity.character.isOnFloor()){
                 newP.y += dy;
             }
@@ -140,6 +140,8 @@ public class Joystick extends HUDElement implements Clickable {
     public void setyJ(int yJ) {
         this.yJ = yJ;
     }
+
+    public MathVector getJ() {return new MathVector(getxJ(),getyJ());}
 
     @Override
     public int getWidth(){

@@ -342,26 +342,23 @@ public class MyActivity extends Activity {
                 }
             }
             if (nothingPressed) {
-                if (character.getHook() == null) {
-//                    TEST
-                    boolean hookableFound = false;
-                    for (GameDynamicObject dynamicObject : dynamicObjects) {
-                        if (dynamicObject instanceof Hookable) {
-                            if (dynamicObject.pressed(xHook, yHook)) {
-                                character.shootHook(dynamicObject.getxPosInScreen(), dynamicObject.getyPosInScreen());
-                                hookableFound = true;
-                                break;
-                            }
+                boolean hookableFound = false;
+                for (GameDynamicObject dynamicObject : dynamicObjects) {
+                    if (dynamicObject instanceof Hookable) {
+                        if (dynamicObject.pressed(xHook, yHook)) {
+                            character.shootHook(dynamicObject.getxPosInScreen(), dynamicObject.getyPosInScreen());
+                            hookableFound = true;
+                            break;
                         }
                     }
-                    if (!hookableFound) {
-                        MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
-                        if (isInScreen(objective.x,objective.y)) {
-                            MathVector objectiveInRoom = objective.screenToRoom();
-                            int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
-                            if (Color.alpha(pixel) == 255) {
-                                character.shootHook(objective.x, objective.y);
-                            }
+                }
+                if (!hookableFound) {
+                    MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
+                    if (isInScreen(objective.x,objective.y)) {
+                        MathVector objectiveInRoom = objective.screenToRoom();
+                        int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
+                        if (Color.alpha(pixel) == 255) {
+                            character.shootHook(objective.x, objective.y);
                         }
                     }
                 }

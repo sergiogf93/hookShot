@@ -3,6 +3,7 @@ package com.htss.hookshot.math;
 import android.graphics.Point;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.GameObject;
 
 /**
  * Created by Sergio on 14/03/2016.
@@ -24,6 +25,11 @@ public class MathVector {
     public MathVector(MathVector p1, MathVector p2){
         this.x = p2.x - p1.x;
         this.y = p2.y - p1.y;
+    }
+
+    public MathVector(GameObject ob1, GameObject ob2){
+        this.x = ob2.getxPosInScreen() - ob1.getxPosInScreen();
+        this.y = ob2.getyPosInScreen() - ob1.getyPosInScreen();
     }
 
     public MathVector() {
@@ -140,6 +146,12 @@ public class MathVector {
         n.scale(Math.abs(2*this.dotProduct(n)));
         this.x += n.x;
         this.y += n.y;
+    }
+
+    public MathVector projected(MathVector base) {
+        double magnitude = this.magnitude();
+        double angle = this.angleDeg(base)*Math.PI/180;
+        return base.rescaled(magnitude*Math.cos(angle));
     }
 
     public Point toPoint(){
