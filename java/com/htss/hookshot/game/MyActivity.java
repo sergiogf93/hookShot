@@ -343,6 +343,7 @@ public class MyActivity extends Activity {
             }
             if (nothingPressed) {
                 if (character.getHook() == null) {
+//                    TEST
                     boolean hookableFound = false;
                     for (GameDynamicObject dynamicObject : dynamicObjects) {
                         if (dynamicObject instanceof Hookable) {
