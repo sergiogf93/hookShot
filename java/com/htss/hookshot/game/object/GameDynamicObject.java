@@ -570,6 +570,6 @@ public abstract class GameDynamicObject extends GameObject {
     }
 
     public int getMargin(){
-        return getWidth()/4;
+        return getWidth()/1;
     }
 }

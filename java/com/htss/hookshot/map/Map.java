@@ -80,7 +80,7 @@ public class Map {
 
 //        addBallObstacles(1);
 //        addCoins();
-//        addDoorObstacle(1);
+        addDoorObstacle(1);
 //        addEnemies(1);
 
 
