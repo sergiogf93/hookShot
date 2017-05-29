@@ -3,6 +3,9 @@ package com.htss.hookshot.game.object.shapes;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
+
+import com.htss.hookshot.math.MathVector;
 
 /**
  * Created by Sergio on 30/07/2016.
@@ -19,6 +22,11 @@ public class CircleShape extends GameShape {
     @Override
     public boolean intersect(GameShape shape) {
         return distanceTo(shape) <= getRadius() + shape.getIntersectMagnitude();
+    }
+
+    @Override
+    public boolean contains(MathVector p) {
+        return distanceTo(p) <= getRadius();
     }
 
     @Override

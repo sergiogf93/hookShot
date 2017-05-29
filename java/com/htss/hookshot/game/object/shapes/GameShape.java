@@ -1,5 +1,7 @@
 package com.htss.hookshot.game.object.shapes;
 
+import android.graphics.Point;
+
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.math.MathVector;
 
@@ -16,6 +18,8 @@ public abstract class GameShape extends GameObject {
     }
 
     public abstract boolean intersect(GameShape shape);
+
+    public abstract boolean contains(MathVector p);
 
     public abstract int getIntersectMagnitude();
 

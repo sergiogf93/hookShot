@@ -20,7 +20,7 @@ public class Door extends GameDynamicObject {
     private Vector<WallButton> buttons;
 
     public Door(double xPos, double yPos, int width, int height, Vector<WallButton> buttons) {
-        super(xPos, yPos, 0, 6, 0);
+        super(xPos, yPos, 0, 0, 0);
         this.width = width;
         this.height = height;
         this.buttons = buttons;
@@ -71,32 +71,4 @@ public class Door extends GameDynamicObject {
         return height;
     }
 
-    @Override
-    protected void manageCollisionWithOtherObjects() {
-        if (getCollisionPriority() != 0) {
-            for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects) {
-                if (dynamicObject != null && dynamicObject.getCollisionPriority() != 0 && !dynamicObject.equals(this) && this.inFutureContactWith(dynamicObject)) {
-                    if (dynamicObject.getCollisionPriority() < this.getCollisionPriority()) {
-                        MathVector futurePosition = dynamicObject.getFuturePositionInRoom();
-                        int sign = (int) Math.signum(futurePosition.y - this.getyPosInRoom());
-                        double calculatedX = dynamicObject.getxPosInRoom();
-                        if (GameMath.ins(getxPosInRoom()-getWidth()/2,dynamicObject.getxPosInRoom(),getxPosInRoom()+getWidth()/2)){
-                            if (Math.abs(futurePosition.y - this.getyPosInRoom()) > 0.8*(this.getHeight()/2 + dynamicObject.getHeight()/2)) {
-                                calculatedX = dynamicObject.getFuturePositionInRoom().x;
-                            }
-                        }
-                        MathVector calculatedPos = new MathVector(calculatedX,this.getPositionInRoom().y + sign*getHeight()/2 + sign*dynamicObject.getHeight()/2);
-                        MathVector newP = new MathVector(dynamicObject.getPositionInRoom(),calculatedPos);
-                        dynamicObject.setP(newP);
-                        dynamicObject.setOnFloor(true);
-                        if (dynamicObject instanceof MainCharacter){
-                            if (((MainCharacter) dynamicObject).isHooked()){
-                                ((MainCharacter) dynamicObject).removeHook();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

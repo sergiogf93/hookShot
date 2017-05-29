@@ -238,8 +238,6 @@ public class MainCharacter extends GameCharacter {
         return new CircleShape(getFuturePositionInRoom().x,getFuturePositionInRoom().y,getWidth()/2);
     }
 
-    
-
     public double getHookVelocity() {
         return hookVelocity;
     }

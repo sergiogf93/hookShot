@@ -30,6 +30,11 @@ public class BiCircleShape extends GameShape {
     }
 
     @Override
+    public boolean contains(MathVector p) {
+        return getCenter1().distanceTo(p) <= getRadius() || getCenter2().distanceTo(p) <= getRadius();
+    }
+
+    @Override
     public int getIntersectMagnitude() {
         return Math.max(getWidth(),getHeight());
     }

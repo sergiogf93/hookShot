@@ -3,9 +3,11 @@ package com.htss.hookshot.game.object.shapes;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.math.MathVector;
 
 /**
  * Created by Sergio on 03/08/2016.
@@ -66,5 +68,11 @@ public class RectShape extends GameShape{
             r2 = new Rect((int) shape.getxPosInRoom() - shape.getWidth() / 2, (int) shape.getyPosInRoom() - shape.getHeight() / 2, (int) shape.getxPosInRoom() + shape.getWidth() / 2, (int) shape.getyPosInRoom() + shape.getHeight() / 2);
         }
         return r1.intersect(r2);
+    }
+
+    @Override
+    public boolean contains(MathVector p) {
+        Rect r1 = new Rect((int)getxPosInRoom()-getWidth()/2,(int)getyPosInRoom()-getHeight()/2,(int)getxPosInRoom()+getWidth()/2,(int)getyPosInRoom()+getHeight()/2);
+        return r1.contains((int)p.x,(int)p.y);
     }
 }

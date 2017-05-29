@@ -49,7 +49,7 @@ public abstract class GameDynamicObject extends GameObject {
         manageConstraints();
         if (!isGhost()) {
             manageCollisions(getMargin());
-            manageCollisionWithOtherObjects();
+//            manageCollisionWithOtherObjects();
         }
         updatePosition();
         updateFrame();
@@ -61,27 +61,17 @@ public abstract class GameDynamicObject extends GameObject {
         }
     }
 
-    protected void manageCollisionWithOtherObjects() {
+    protected boolean checkCollisionWithOtherObjects(double x, double y) {
         if (getCollisionPriority() != 0) {
             for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects) {
-                if (dynamicObject.getCollisionPriority() != 0 && !dynamicObject.equals(this) && dynamicObject.inFutureContactWith(this)) {
-                    if (dynamicObject.getCollisionPriority() < this.getCollisionPriority()) {
-                        if (this.getP().magnitude() <= 1f) {
-                            MathVector vector = new MathVector(this.getPositionInRoom(),dynamicObject.getPositionInRoom());
-                            vector.rescale(getBounds().getIntersectMagnitude() + 2*dynamicObject.getBounds().getIntersectMagnitude());
-                            MathVector newP = new MathVector(dynamicObject.getPositionInRoom(),vector.applyTo(this.getPositionInRoom()));
-                            dynamicObject.setP(newP);
-                        } else {
-                            MathVector vector = new MathVector(this.getPositionInRoom(),dynamicObject.getPositionInRoom());
-                            vector.rescale(getBounds().getIntersectMagnitude() + dynamicObject.getBounds().getIntersectMagnitude());
-                            MathVector newP = new MathVector(dynamicObject.getPositionInRoom(),vector.applyTo(this.getPositionInRoom()));
-                            dynamicObject.setP(newP);
-                            dynamicObject.addP(getP());
-                        }
+                if (!dynamicObject.equals(this)) {
+                    if (dynamicObject.getBounds().contains(new MathVector(x,y))) {
+                        return true;
                     }
                 }
             }
         }
+        return false;
     }
 
     public void manageConstraints() {
@@ -125,9 +115,13 @@ public abstract class GameDynamicObject extends GameObject {
         for (double x = getxPosInRoom()-margin;x < getxPosInRoom() + margin;x++){
             for (double y = getyPosInRoom() - getHeight()/2 ; y > getyPosInRoom() - getHeight()/2 + p.y ; y--) {
                 if(MyActivity.isInRoom(x, y)) {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                    if (Color.alpha(pixel) == 255) {
-                        return y - (getyPosInRoom() - getHeight() / 2);
+                    if (checkCollisionWithOtherObjects(x,y)) {
+                        return 0f;
+                    } else {
+                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
+                        if (Color.alpha(pixel) == 255) {
+                            return y - (getyPosInRoom() - getHeight() / 2);
+                        }
                     }
                 } else {
                     return 0f;
@@ -165,9 +159,13 @@ public abstract class GameDynamicObject extends GameObject {
         for (double x = getxPosInRoom()-margin;x < getxPosInRoom() + margin;x++){
             for (double y = getyPosInRoom() + getHeight()/2 ; y < getyPosInRoom() + getHeight()/2 + p.y ; y++) {
                 if(MyActivity.isInRoom(x, y)) {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                    if (Color.alpha(pixel) == 255) {
-                        return y - getyPosInRoom() - getHeight() / 2;
+                    if (checkCollisionWithOtherObjects(x,y)){
+                        return 0f;
+                    } else {
+                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
+                        if (Color.alpha(pixel) == 255) {
+                            return y - getyPosInRoom() - getHeight() / 2;
+                        }
                     }
                 }
             }
@@ -340,9 +338,13 @@ public abstract class GameDynamicObject extends GameObject {
         for (double y = getyPosInRoom()-margin;y < getyPosInRoom() + margin;y++){
             for (double x = getxPosInRoom()+getWidth()/2 ; x < getxPosInRoom() + getWidth()/2 + p.x ; x++) {
                 if(MyActivity.isInRoom(x, y)) {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                    if (Color.alpha(pixel) == 255) {
-                        return x - getxPosInRoom() - getWidth() / 2;
+                    if (checkCollisionWithOtherObjects(x,y)){
+                        return 0f;
+                    } else {
+                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
+                        if (Color.alpha(pixel) == 255) {
+                            return x - getxPosInRoom() - getWidth() / 2;
+                        }
                     }
                 } else {
                     return 0;
@@ -367,9 +369,13 @@ public abstract class GameDynamicObject extends GameObject {
         for (double y = getyPosInRoom()-margin;y < getyPosInRoom() + margin;y++){
             for (double x = getxPosInRoom()-getWidth()/2 ; x > getxPosInRoom() - getWidth()/2 + p.x ; x--) {
                 if(MyActivity.isInRoom(x, y)) {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                    if (Color.alpha(pixel) == 255) {
-                        return x - getxPosInRoom() + getWidth() / 2 ;
+                    if (checkCollisionWithOtherObjects(x,y)){
+                        return 0f;
+                    } else {
+                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
+                        if (Color.alpha(pixel) == 255) {
+                            return x - getxPosInRoom() + getWidth() / 2;
+                        }
                     }
                 } else {
                     return 0;
