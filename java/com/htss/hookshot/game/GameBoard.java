@@ -113,7 +113,9 @@ public class GameBoard extends View{
         Paint whitePaint = new Paint();
         whitePaint.setColor(Color.WHITE);
         whitePaint.setTextSize(textSize);
-        canvas.drawText("dx = " + String.valueOf(dx) + " , dy = " + String.valueOf(dy),MyActivity.tileWidth,MyActivity.tileWidth/2,whitePaint);
+        if (MyActivity.character != null) {
+            canvas.drawText(String.valueOf(MyActivity.character.isOnFloor()), MyActivity.tileWidth, MyActivity.tileWidth / 2, whitePaint);
+        }
         int i=1;
         for (GameDynamicObject gameDynamicObject : MyActivity.dynamicObjects){
             String[] name = gameDynamicObject.getClass().getName().split("\\.");

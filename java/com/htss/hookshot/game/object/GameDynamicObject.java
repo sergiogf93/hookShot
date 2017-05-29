@@ -160,6 +160,7 @@ public abstract class GameDynamicObject extends GameObject {
             for (double y = getyPosInRoom() + getHeight()/2 ; y < getyPosInRoom() + getHeight()/2 + p.y ; y++) {
                 if(MyActivity.isInRoom(x, y)) {
                     if (checkCollisionWithOtherObjects(x,y)){
+                        setOnFloor(true);
                         return 0f;
                     } else {
                         int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
