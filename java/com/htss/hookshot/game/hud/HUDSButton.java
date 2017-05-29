@@ -15,7 +15,7 @@ public class HUDSButton extends HUDElementSprite implements Clickable {
     protected Bitmap spriteOff;
     protected Bitmap spriteOn;
     private boolean clickable, on = false;
-    private int touchId = -1, touchIndex = -1;
+    private int touchId = -1, touchIndex = -1, margin = 0;
 
     protected Execution execOn, execOff;
 
@@ -26,6 +26,9 @@ public class HUDSButton extends HUDElementSprite implements Clickable {
         this.clickable = clickable;
         this.execOn = execOn;
         this.execOff = null;
+        if (spriteOff.getWidth() < 100) {
+            this.margin = 50;
+        }
     }
 
     public HUDSButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn, Execution execOff) {
@@ -35,6 +38,9 @@ public class HUDSButton extends HUDElementSprite implements Clickable {
         this.clickable = clickable;
         this.execOn = execOn;
         this.execOff = execOff;
+        if (spriteOff.getWidth() < 100) {
+            this.margin = 50;
+        }
     }
 
     @Override
@@ -57,6 +63,16 @@ public class HUDSButton extends HUDElementSprite implements Clickable {
         if (getExecOff() != null){
             getExecOff().execute();
         }
+    }
+
+    @Override
+    public int getHeight() {
+        return super.getHeight() + margin;
+    }
+
+    @Override
+    public int getWidth() {
+        return super.getWidth() + margin;
     }
 
     @Override
