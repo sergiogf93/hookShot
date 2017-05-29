@@ -82,15 +82,15 @@ public class Door extends GameDynamicObject {
                         if (GameMath.ins(getxPosInRoom()-getWidth()/2,dynamicObject.getxPosInRoom(),getxPosInRoom()+getWidth()/2)){
                             calculatedX = dynamicObject.getFuturePositionInRoom().x;
                         }
-                        MathVector calculatedPos = new MathVector(calculatedX,this.getPositionInRoom().y + sign*4*getHeight()/5 + sign*dynamicObject.getHeight()/2);
+                        MathVector calculatedPos = new MathVector(calculatedX,this.getPositionInRoom().y + sign*getHeight()/2 + sign*dynamicObject.getHeight()/2);
                         MathVector newP = new MathVector(dynamicObject.getPositionInRoom(),calculatedPos);
                         dynamicObject.setP(newP);
                         dynamicObject.setOnFloor(true);
-                        if (dynamicObject instanceof MainCharacter){
-                            if (((MainCharacter) dynamicObject).isHooked()){
-                                ((MainCharacter) dynamicObject).removeHook();
-                            }
-                        }
+//                        if (dynamicObject instanceof MainCharacter){
+//                            if (((MainCharacter) dynamicObject).isHooked()){
+//                                ((MainCharacter) dynamicObject).removeHook();
+//                            }
+//                        }
                     }
                 }
             }
