@@ -170,7 +170,7 @@ public abstract class GameDynamicObject extends GameObject {
                 }
             }
         }
-        return 0f;
+        return -1;
     }
 
     private boolean manageDownCollision(int margin){
@@ -183,7 +183,7 @@ public abstract class GameDynamicObject extends GameObject {
             p.y += getMass();
             if (p.y >= 0) {
                 double checkDown = checkDownCollision(margin);
-                if (checkDown != 0f){
+                if (checkDown >= 0f){
                     p.y = checkDown;
                     return false;
                 }
