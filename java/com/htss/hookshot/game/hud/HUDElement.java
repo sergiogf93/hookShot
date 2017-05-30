@@ -26,7 +26,7 @@ public abstract class HUDElement {
     }
 
     public GameShape getBounds(){
-        return new RectShape(getxCenter(),getyCenter(),getWidth(),getHeight());
+        return new RectShape(getxCenter(),getyCenter(),getWidth(),getHeight(),false);
     }
 
     public int getxCenter() {

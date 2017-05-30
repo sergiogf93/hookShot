@@ -64,7 +64,7 @@ public abstract class GameObject {
     }
 
     public GameShape getBounds(){
-        return new RectShape(getxPosInRoom(),getyPosInRoom(),getWidth(),getHeight());
+        return new RectShape(getxPosInRoom(),getyPosInRoom(),getWidth(),getHeight(),false);
     }
 
     public double distanceTo (GameObject object){

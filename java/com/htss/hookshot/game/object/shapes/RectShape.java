@@ -15,23 +15,27 @@ import com.htss.hookshot.math.MathVector;
 public class RectShape extends GameShape{
 
     private int width, height;
+    private boolean fill;
 
-    public RectShape(double xPos, double yPos, int width, int height) {
+    public RectShape(double xPos, double yPos, int width, int height, boolean fill) {
         super(xPos, yPos, Color.YELLOW);
         this.width = width;
         this.height = height;
+        this.fill = fill;
     }
 
-    public RectShape(double xPos, double yPos, int width, int height, int color) {
+    public RectShape(double xPos, double yPos, int width, int height, boolean fill, int color) {
         super(xPos, yPos, color);
         this.width = width;
         this.height = height;
+        this.fill = fill;
     }
 
-    public RectShape (Rect r, int color){
+    public RectShape (Rect r, boolean fill, int color){
         super(r.centerX(),r.centerY(),color);
         this.width = r.width();
         this.height = r.height();
+        this.fill = fill;
     }
 
     @Override
@@ -43,7 +47,9 @@ public class RectShape extends GameShape{
     public void draw(Canvas canvas) {
         Paint paint = new Paint();
         paint.setColor(color);
-        paint.setStyle(Paint.Style.STROKE);
+        if (!fill) {
+            paint.setStyle(Paint.Style.STROKE);
+        }
         canvas.drawRect((float) getxPosInScreen() - getWidth() / 2, (float) getyPosInScreen() - getHeight() / 2, (float) getxPosInScreen() + getWidth() / 2, (float) getyPosInScreen() + getHeight() / 2, paint);
     }
 

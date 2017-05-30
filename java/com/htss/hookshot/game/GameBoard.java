@@ -91,17 +91,19 @@ public class GameBoard extends View{
                 }
                 debugObjects.clear();
 
-                for (int i = 0 ; i < MyActivity.gameEffects.size() ; i++){
-                    GameEffect effect = MyActivity.gameEffects.get(i);
-                    effect.drawEffectAndUpdate(canvas);
-                    if (effect.isFinished()){
-                        MyActivity.gameEffects.remove(effect);
-                    }
-                }
+
             }
 
             for (HUDElement hudElement : MyActivity.hudElements) {
                 hudElement.draw(canvas);
+            }
+
+            for (int i = 0 ; i < MyActivity.gameEffects.size() ; i++){
+                GameEffect effect = MyActivity.gameEffects.get(i);
+                effect.drawEffectAndUpdate(canvas);
+                if (effect.isFinished()){
+                    MyActivity.gameEffects.remove(effect);
+                }
             }
 
         } else {

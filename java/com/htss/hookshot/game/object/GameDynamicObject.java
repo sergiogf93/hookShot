@@ -406,7 +406,7 @@ public abstract class GameDynamicObject extends GameObject {
     }
 
     public GameShape getFutureBounds(){
-        return new RectShape(getFuturePositionInRoom().x,getFuturePositionInRoom().y,getWidth(),getHeight());
+        return new RectShape(getFuturePositionInRoom().x,getFuturePositionInRoom().y,getWidth(),getHeight(),false);
     }
 
     public boolean inContactWithMap(int margin){

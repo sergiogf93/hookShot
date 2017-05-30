@@ -16,6 +16,7 @@ import android.view.Window;
 import android.widget.LinearLayout;
 
 import com.htss.hookshot.R;
+import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapEffect;
 import com.htss.hookshot.executions.LaunchGame;
@@ -133,7 +134,14 @@ public class MyActivity extends Activity {
     private void initGfx() {
         handler.removeCallbacks(frameUpdate);
 
-        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", tileWidth*8/10, null, new LaunchGame());
+        final FadeEffect fadeEffect = new FadeEffect(new LaunchGame());
+
+        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", tileWidth*8/10, null, new Execution() {
+            @Override
+            public void execute() {
+                gameEffects.add(fadeEffect);
+            }
+        });
         hudElements.add(newGame);
 
         canvas.invalidate();
