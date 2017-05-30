@@ -78,6 +78,11 @@ public class Ball extends GameDynamicObject implements Hookable {
         return new CircleShape(getFuturePositionInRoom().x,getFuturePositionInRoom ().y, (int) getRadius());
     }
 
+    @Override
+    public int getMargin(){
+        return getWidth()/4;
+    }
+
     public float getRadius() {
         return radius;
     }
