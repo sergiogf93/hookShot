@@ -1,8 +1,11 @@
 package com.htss.hookshot.game.hud;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.htss.hookshot.game.object.shapes.GameShape;
+import com.htss.hookshot.game.object.shapes.RectShape;
 import com.htss.hookshot.math.MathVector;
 
 /**
@@ -20,6 +23,10 @@ public abstract class HUDElement {
     public boolean pressed(double x, double y) {
         return x < getxCenter()+getWidth()/2 && x > getxCenter()-getWidth()/2 &&
                 y < getyCenter()+getHeight()/2 && y > getyCenter()-getHeight()/2;
+    }
+
+    public GameShape getBounds(){
+        return new RectShape(getxCenter(),getyCenter(),getWidth(),getHeight());
     }
 
     public int getxCenter() {

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
@@ -17,8 +18,10 @@ import android.widget.LinearLayout;
 import com.htss.hookshot.R;
 import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapEffect;
+import com.htss.hookshot.executions.LaunchGame;
 import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.HUDSButton;
+import com.htss.hookshot.game.hud.HUDText;
 import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.Ball;
 import com.htss.hookshot.game.object.Circle;
@@ -70,29 +73,25 @@ public class MyActivity extends Activity {
         HORIZONTAL_MARGIN = screenWidth / 2 - tileWidth * 2;
         VERTICAL_MARGIN = screenHeight / 2;
 
-        canvas = (GameBoard) findViewById(R.id.the_canvas);
-
         Bitmap joystickBase = BitmapFactory.decodeResource(getResources(), R.drawable.joystick_base);
         Bitmap joystickTop = BitmapFactory.decodeResource(getResources(), R.drawable.joystick_top);
         joystick = new Joystick(tileWidth+joystickBase.getWidth()/2,
                 screenHeight-tileWidth/2-joystickBase.getHeight()/2,
                 joystickBase,joystickTop);
-        hudElements.add(joystick);
 
         Bitmap buttonSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_a);
         Bitmap buttonPSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_a_pressed);
         buttonA = new HUDSButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_A_RIGHT_PADDING,
-                                            screenHeight-buttonSprite.getHeight()/2-BUTTON_A_BOTTOM_PADDING,buttonSprite,buttonPSprite,true,new Execution() {
-                                            @Override
-                                            public void execute() {
+                screenHeight-buttonSprite.getHeight()/2-BUTTON_A_BOTTOM_PADDING,buttonSprite,buttonPSprite,true,new Execution() {
+            @Override
+            public void execute() {
 //                                                if (MyActivity.character.isOnFloor()) {
-                                                if (true) {
-                                                    MathVector jumpForce = new MathVector(0, -20 * MyActivity.character.getMass());
-                                                    MyActivity.character.addP(jumpForce);
-                                                }
-                                            }
-                                        });
-        hudElements.add(buttonA);
+                if (true) {
+                    MathVector jumpForce = new MathVector(0, -20 * MyActivity.character.getMass());
+                    MyActivity.character.addP(jumpForce);
+                }
+            }
+        });
 
         buttonSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_b);
         buttonPSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_b_pressed);
@@ -105,7 +104,11 @@ public class MyActivity extends Activity {
                 }
             }
         });
-        hudElements.add(buttonB);
+
+        canvas = (GameBoard) findViewById(R.id.the_canvas);
+        canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");
+        canvas.joystickMonospace = Typeface.createFromAsset(getAssets(),"fonts/joystix_monospace.ttf");
+        canvas.setFont(GameBoard.ARCADECLASSIC_FONT_KEY, GameBoard.DEFAULT_FONT_SIZE);
 
         LinearLayout myLayout = (LinearLayout) findViewById(R.id.layout);
         myLayout.setOnTouchListener(
@@ -130,40 +133,10 @@ public class MyActivity extends Activity {
     private void initGfx() {
         handler.removeCallbacks(frameUpdate);
 
+        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", tileWidth*8/10, null, new LaunchGame());
+        hudElements.add(newGame);
+
         canvas.invalidate();
-        canvas.gameObjects.clear();
-        dynamicObjects.clear();
-
-        MyActivity.currentMap = new Map(MyActivity.mapXTiles,MyActivity.mapYTiles,FILL_PERCENT,true, 0);
-        MathVector startPosition = MyActivity.currentMap.startPosition();
-
-        while (startPosition.magnitude() == 0){
-            resetObjectsLists();
-            MyActivity.currentMap = new Map(MyActivity.mapXTiles,MyActivity.mapYTiles,FILL_PERCENT,true,0);
-            startPosition = MyActivity.currentMap.startPosition();
-        }
-        canvas.generateMap();
-
-        canvas.dx = (float) -(startPosition.x - screenWidth/2);
-        canvas.dy = (float) -(startPosition.y - screenHeight/2);
-        canvas.assertMapMargins();
-
-        startPosition = startPosition.roomToScreen();
-
-        character = new MainCharacter(startPosition.x,startPosition.y,1,5);
-        canvas.gameObjects.add(character);
-        dynamicObjects.add(character);
-
-//        MathVector p = currentMap.getRandomEmptyPoint();
-//        GameEnemyStalker stalker = new GameEnemyStalker(p.x, p.y,0,5, tileWidth/2,tileWidth/10);
-//        canvas.gameObjects.add(stalker);
-//        dynamicObjects.add(stalker);
-
-//        GameDynamicChain chain = new GameDynamicChain(4*MyActivity.screenWidth / 10,MyActivity.screenHeight / 3, 100, 1, 10, 10, Color.BLUE, 40);
-//        canvas.gameObjects.add(chain);
-//        for (GameDynamicCircle node : chain.getNodes()){
-//            dynamicObjects.add(node);
-//        }
 
         handler.postDelayed(frameUpdate, FRAME_RATE);
     }
@@ -341,24 +314,26 @@ public class MyActivity extends Activity {
                     }
                 }
             }
-            if (nothingPressed) {
-                boolean hookableFound = false;
-                for (GameDynamicObject dynamicObject : dynamicObjects) {
-                    if (dynamicObject instanceof Hookable) {
-                        if (dynamicObject.pressed(xHook, yHook)) {
-                            character.shootHook(dynamicObject.getxPosInScreen(), dynamicObject.getyPosInScreen());
-                            hookableFound = true;
-                            break;
+            if (character != null) {
+                if (nothingPressed) {
+                    boolean hookableFound = false;
+                    for (GameDynamicObject dynamicObject : dynamicObjects) {
+                        if (dynamicObject instanceof Hookable) {
+                            if (dynamicObject.pressed(xHook, yHook)) {
+                                character.shootHook(dynamicObject.getxPosInScreen(), dynamicObject.getyPosInScreen());
+                                hookableFound = true;
+                                break;
+                            }
                         }
                     }
-                }
-                if (!hookableFound) {
-                    MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
-                    if (isInScreen(objective.x,objective.y)) {
-                        MathVector objectiveInRoom = objective.screenToRoom();
-                        int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
-                        if (Color.alpha(pixel) == 255) {
-                            character.shootHook(objective.x, objective.y);
+                    if (!hookableFound) {
+                        MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
+                        if (isInScreen(objective.x, objective.y)) {
+                            MathVector objectiveInRoom = objective.screenToRoom();
+                            int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
+                            if (Color.alpha(pixel) == 255) {
+                                character.shootHook(objective.x, objective.y);
+                            }
                         }
                     }
                 }

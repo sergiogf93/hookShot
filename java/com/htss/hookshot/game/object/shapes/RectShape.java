@@ -17,7 +17,7 @@ public class RectShape extends GameShape{
     private int width, height;
 
     public RectShape(double xPos, double yPos, int width, int height) {
-        super(xPos, yPos, Color.BLACK);
+        super(xPos, yPos, Color.YELLOW);
         this.width = width;
         this.height = height;
     }
@@ -43,7 +43,7 @@ public class RectShape extends GameShape{
     public void draw(Canvas canvas) {
         Paint paint = new Paint();
         paint.setColor(color);
-//        paint.setStyle(Paint.Style.STROKE);
+        paint.setStyle(Paint.Style.STROKE);
         canvas.drawRect((float) getxPosInScreen() - getWidth() / 2, (float) getyPosInScreen() - getHeight() / 2, (float) getxPosInScreen() + getWidth() / 2, (float) getyPosInScreen() + getHeight() / 2, paint);
     }
 

@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -22,6 +23,11 @@ import java.util.Vector;
  */
 public class GameBoard extends View{
 
+    public static final int ARCADECLASSIC_FONT_KEY = 1, ARIAL_FONT_KEY = 2, JOYSTIX_MONOSPACE_FONT_KEY = 3;
+    public static final int DEFAULT_FONT_SIZE = 48*MyActivity.tileWidth/100, SMALL_FONT_SIZE = 27*MyActivity.tileWidth/100;
+    public static int fontSize;
+    public Typeface arcadeClassicFont, joystickMonospace;
+
     public static float dx = 0, dy = 0;
 
     public static Paint paint = new Paint();
@@ -37,6 +43,21 @@ public class GameBoard extends View{
         super(context, attrs);
     }
 
+    public void setFont(int c, float size){
+        paint.setTextSize(size);
+        fontSize = (int) size;
+        switch (c){
+            case ARCADECLASSIC_FONT_KEY:{
+                paint.setTypeface(arcadeClassicFont);
+                break;
+            }
+            case JOYSTIX_MONOSPACE_FONT_KEY:{
+                paint.setTypeface(joystickMonospace);
+                break;
+            }
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -44,15 +65,6 @@ public class GameBoard extends View{
         Paint backgroundPaint = new Paint();
         backgroundPaint.setColor(background);
         canvas.drawRect(0, 0, MyActivity.screenWidth, MyActivity.screenHeight, backgroundPaint);
-
-//        Random random = new Random();
-//        paint.setColor(Color.WHITE);
-//        for (int i = 0 ; i < 20 ; i++){
-//            int x = random.nextInt(MyActivity.screenWidth);
-//            int y = random.nextInt(MyActivity.screenHeight);
-//            float r = random.nextInt(3);
-//            canvas.drawCircle(x,y,r,paint);
-//        }
 
         if (MyActivity.roomSwitchEffect == null) {
 
@@ -79,10 +91,6 @@ public class GameBoard extends View{
                 }
                 debugObjects.clear();
 
-                for (HUDElement hudElement : MyActivity.hudElements) {
-                    hudElement.draw(canvas);
-                }
-
                 for (int i = 0 ; i < MyActivity.gameEffects.size() ; i++){
                     GameEffect effect = MyActivity.gameEffects.get(i);
                     effect.drawEffectAndUpdate(canvas);
@@ -91,6 +99,11 @@ public class GameBoard extends View{
                     }
                 }
             }
+
+            for (HUDElement hudElement : MyActivity.hudElements) {
+                hudElement.draw(canvas);
+            }
+
         } else {
             MyActivity.roomSwitchEffect.drawEffectAndUpdate(canvas);
             if (MyActivity.roomSwitchEffect.isFinished()){
