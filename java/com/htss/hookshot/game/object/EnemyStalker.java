@@ -3,6 +3,7 @@ package com.htss.hookshot.game.object;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.widget.ResourceCursorAdapter;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.StalkerAnimation;
@@ -17,17 +18,15 @@ import java.util.Random;
 public class EnemyStalker extends GameEnemy {
 
     private static final double THRESHOLD_DISTANCE = MyActivity.tileWidth * 3, SEARCHING_DISTANCE = MyActivity.tileWidth * 20;
-    private static final int MAX_SEARCHING_TIME = (int) TimeUtil.convertSecondToGameSecond(10);
+    private static final int MAX_SEARCHING_TIME = (int) TimeUtil.convertSecondToGameSecond(10), MAX_HEALTH = 10, MAX_VELOCITY = 10, COLLISION_PRIORITY = 0, MASS = 0;
+    private static final float maxRadius = MyActivity.tileWidth / 2, minRadius = MyActivity.tileWidth / 10;
 
-    private float maxRadius, minRadius;
     private MathVector targetPositionInRoom, currentDirection;
     private int frameWhenLost = 0;
 
 
-    public EnemyStalker(double xPos, double yPos, int mass, int collisionPriority, float maxRadius, float minRadius) {
-        super(xPos, yPos, mass, collisionPriority, 13);
-        this.maxRadius = maxRadius;
-        this.minRadius = minRadius;
+    public EnemyStalker(double xPos, double yPos) {
+        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH);
         randomNewDirection();
     }
 
@@ -54,9 +53,6 @@ public class EnemyStalker extends GameEnemy {
         int detection = frontRadar(getCurrentDirection(),getMaxRadius()*1.5,180);
         rotate(-detection*3);
         setP(getCurrentDirection().rescaled(getMaxVelocity()*2/3));
-//        MathVector p = new MathVector(getPositionInRoom(), getTargetPositionInRoom());
-//        p.rescale(getMaxVelocity()*2/3);
-//        setP(p);
     }
 
     private void follow() {
@@ -138,16 +134,8 @@ public class EnemyStalker extends GameEnemy {
         return maxRadius;
     }
 
-    public void setMaxRadius(float maxRadius) {
-        this.maxRadius = maxRadius;
-    }
-
     public float getMinRadius() {
         return minRadius;
-    }
-
-    public void setMinRadius(float minRadius) {
-        this.minRadius = minRadius;
     }
 
     public MathVector getTargetPositionInRoom() {
@@ -188,6 +176,16 @@ public class EnemyStalker extends GameEnemy {
         Random random = new Random();
         MathVector v = new MathVector(1,0);
         setCurrentDirection(v.rotatedDeg(random.nextInt(360)));
+    }
+
+    @Override
+    public double getHurtDistance() {
+        return minRadius;
+    }
+
+    @Override
+    public int getDamageDone() {
+        return 1;
     }
 }
 

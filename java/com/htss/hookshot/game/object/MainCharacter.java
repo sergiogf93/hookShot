@@ -6,15 +6,19 @@ import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
+import com.htss.hookshot.game.hud.HUDBar;
 import com.htss.hookshot.game.object.shapes.BiCircleShape;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
+import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.math.MathVector;
 
 /**
  * Created by Sergio on 03/08/2016.
  */
 public class MainCharacter extends GameCharacter {
+
+    private static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
 
     public static final int BODY_RADIUS = 10*MyActivity.tileWidth/50, FIST_RADIUS = MyActivity.tileWidth/8,
                             FOOT_RADIUS = 10*MyActivity.tileWidth/100, EYE_RADIUS = MyActivity.tileWidth/25,
@@ -26,10 +30,10 @@ public class MainCharacter extends GameCharacter {
     private Hook hook = null;
     private CircleShape rightHand, leftHand, rightFoot, leftFoot;
     private BiCircleShape leftEye, rightEye;
-    private MathVector hookVector;
+    private HUDBar healthBar;
 
     public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
-        super(xPos, yPos, mass, collisionPriority, 20);
+        super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH);
         makeSureNotUnderground = true;
         rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE);
         leftHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE);
@@ -38,6 +42,13 @@ public class MainCharacter extends GameCharacter {
         leftEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         rightEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         friction = 1.;
+        this.healthBar = new HUDBar((int) getxPosInScreen(),(int) getyPosInScreen(), (int) (MyActivity.tileWidth*1.5),MyActivity.tileWidth/10,Color.GREEN,new Execution() {
+            @Override
+            public double execute() {
+                return getHealth()/getMaxHealth();
+            }
+        });
+        this.healthBar.setAlpha(0);
     }
 
     @Override
@@ -102,18 +113,9 @@ public class MainCharacter extends GameCharacter {
                 removeHook();
             }
         }
-//        else if (getyPosInScreen() - getHeight() < 0) {
-//            p.x = 0;
-//            if (getP().y < 0) {
-//                p.y = 1;
-//            }
-//        }
-//        } else if (getyPosInScreen() + 2*getHeight() < 0){
-//            MyActivity.switchMap(-1);
-//            if (isHooked()){
-//                removeHook();
-//            }
-//        }
+        this.healthBar.setxCenter((int) this.getxPosInScreen());
+        int yDirection = (getyPosInScreen() < MyActivity.VERTICAL_MARGIN) ? -1 : 1;
+        this.healthBar.setyCenter((int) (getyPosInScreen() + yDirection*getHeight()));
     }
 
     @Override
@@ -130,6 +132,15 @@ public class MainCharacter extends GameCharacter {
             setState(STATE_REST);
         }
         manageFacingDirection();
+        manageEnemyCollision();
+    }
+
+    private void manageEnemyCollision() {
+        for (GameEnemy enemy : MyActivity.enemies) {
+            if (this.distanceTo(enemy) < enemy.getHurtDistance()) {
+                this.getHurt(enemy.getDamageDone());
+            }
+        }
     }
 
     private void manageFacingDirection() {
@@ -326,6 +337,26 @@ public class MainCharacter extends GameCharacter {
             return new MathVector(this,getHook().getLastNode());
         } else {
             return null;
+        }
+    }
+
+    @Override
+    public void die() {
+        this.setHealth(this.getMaxHealth());
+    }
+
+    @Override
+    public void getHurt(int damage) {
+        super.getHurt(damage);
+        this.manageHealthBar();
+    }
+
+    private void manageHealthBar() {
+        if (this.healthBar.getAlpha() == 0) {
+            this.healthBar.setAlpha(1);
+        }
+        if (!MyActivity.hudElements.contains(this.healthBar)){
+            MyActivity.hudElements.add(this.healthBar);
         }
     }
 }

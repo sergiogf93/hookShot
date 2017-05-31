@@ -120,27 +120,31 @@ public class Hook extends Chain {
         MyActivity.reloadButton = new HUDSButton(9*MyActivity.screenWidth/10,MyActivity.screenHeight/2,
                 MyActivity.canvas.getBitmapById(R.drawable.button_r),MyActivity.canvas.getBitmapById(R.drawable.button_r_pressed),true,new Execution() {
             @Override
-            public void execute() {
+            public double execute() {
                 MyActivity.character.getHook().setReloading(true);
+                return 0;
             }
         }, new Execution() {
             @Override
-            public void execute() {
+            public double execute() {
                 MyActivity.character.getHook().setReloading(false);
+                return 0;
             }
         });
         MyActivity.extendButton = new HUDSButton((int)getPrevNodeOf(getLastNode()).getxPosInScreen(),(int)getPrevNodeOf(getLastNode()).getyPosInScreen(),
                 MyActivity.canvas.getBitmapById(R.drawable.button_e),MyActivity.canvas.getBitmapById(R.drawable.button_e_pressed),true,new Execution() {
             @Override
-            public void execute() {
+            public double execute() {
                 MyActivity.character.getHook().setExtending(true);
                 MyActivity.character.setMass(10);
+                return 0;
             }
         }, new Execution() {
             @Override
-            public void execute() {
+            public double execute() {
                 MyActivity.character.getHook().setExtending(false);
                 MyActivity.character.setMass(1);
+                return 0;
             }
         });
         MyActivity.hudElements.add(MyActivity.reloadButton);

@@ -11,9 +11,19 @@ public abstract class GameCharacter extends GameDynamicObject {
             STATE_SEARCHING = 3;
 
     private int state = STATE_REST;
+    private double health, maxHealth;
 
-    public GameCharacter(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity) {
+    public GameCharacter(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth) {
         super(xPos, yPos, mass, collisionPriority, maxVelocity);
+        this.health = maxHealth;
+        this.maxHealth = maxHealth;
+    }
+
+    public void getHurt(int damage) {
+        setHealth(getHealth() - damage);
+        if (getHealth() < 0) {
+            this.die();
+        }
     }
 
     public int getState() {
@@ -28,4 +38,21 @@ public abstract class GameCharacter extends GameDynamicObject {
         return getState() == state;
     }
 
+    public double getHealth() {
+        return health;
+    }
+
+    public void setHealth(double health) {
+        this.health = health;
+    }
+
+    public double getMaxHealth() {
+        return maxHealth;
+    }
+
+    public void setMaxHealth(double maxHealth) {
+        this.maxHealth = maxHealth;
+    }
+
+    public abstract void die();
 }

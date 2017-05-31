@@ -10,8 +10,8 @@ import com.htss.hookshot.math.MathVector;
  */
 public abstract class GameEnemy extends GameCharacter{
 
-    public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity) {
-        super(xPos, yPos, mass, collisionPriority, maxVelocity);
+    public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth) {
+        super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth);
     }
 
     protected MathVector firstInSight(GameObject object) {
@@ -50,5 +50,14 @@ public abstract class GameEnemy extends GameCharacter{
         }
         return 0;
     }
+
+    public void die() {
+        this.destroy();
+        MyActivity.dynamicObjects.remove(this);
+        MyActivity.enemies.remove(this);
+    }
+
+    public abstract double getHurtDistance();
+    public abstract int getDamageDone();
 
 }

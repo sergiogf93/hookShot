@@ -39,6 +39,8 @@ public class GameBoard extends View{
     public static Vector<GameObject> gameObjects = new Vector<GameObject>();
     public static Vector<GameObject> debugObjects = new Vector<GameObject>();
 
+    public static String debugText = "";
+
     public GameBoard(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
@@ -91,7 +93,6 @@ public class GameBoard extends View{
                 }
                 debugObjects.clear();
 
-
             }
 
             for (HUDElement hudElement : MyActivity.hudElements) {
@@ -137,7 +138,9 @@ public class GameBoard extends View{
             canvas.drawText(name[name.length-1] + ":  x = " + String.valueOf(gameDynamicObject.getxPosInRoom()) + " , y = " + String.valueOf(gameDynamicObject.getyPosInRoom()), MyActivity.tileWidth, MyActivity.tileWidth/2 + i*textSize, whitePaint);
             i++;
         }
-
+        if (debugText != ""){
+            canvas.drawText(debugText,MyActivity.screenWidth - MyActivity.tileWidth, MyActivity.tileWidth,whitePaint);
+        }
     }
 
     public void generateMap(){

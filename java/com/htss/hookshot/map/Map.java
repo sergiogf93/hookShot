@@ -80,8 +80,8 @@ public class Map {
 
         addBallObstacles(1);
 //        addCoins();
-        addDoorObstacle(1);
-//        addEnemies(1);
+//        addDoorObstacle(1);
+        addEnemies(1);
 
 
 
@@ -979,9 +979,10 @@ public class Map {
         enemyRandom.setSeed(this.seed + MyActivity.level + N);
         for (int i = 0;i < N;i++) {
             MathVector p = getRandomEmptyPoint(0, enemyRandom);
-            EnemyStalker stalker = new EnemyStalker(p.x, p.y, 0, 5, MyActivity.tileWidth / 2, MyActivity.tileWidth / 10);
+            EnemyStalker stalker = new EnemyStalker(p.x, p.y);
             MyActivity.canvas.gameObjects.add(stalker);
             MyActivity.dynamicObjects.add(stalker);
+            MyActivity.enemies.add(stalker);
         }
     }
 

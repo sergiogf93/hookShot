@@ -27,6 +27,7 @@ import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.Ball;
 import com.htss.hookshot.game.object.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
+import com.htss.hookshot.game.object.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
@@ -58,6 +59,7 @@ public class MyActivity extends Activity {
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
     public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
     public static Vector<GameEffect> gameEffects = new Vector<GameEffect>();
+    public static Vector<GameEnemy> enemies = new Vector<GameEnemy>();
 
     public static Map currentMap;
 
@@ -85,12 +87,14 @@ public class MyActivity extends Activity {
         buttonA = new HUDSButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_A_RIGHT_PADDING,
                 screenHeight-buttonSprite.getHeight()/2-BUTTON_A_BOTTOM_PADDING,buttonSprite,buttonPSprite,true,new Execution() {
             @Override
-            public void execute() {
+            public double execute() {
 //                                                if (MyActivity.character.isOnFloor()) {
                 if (true) {
                     MathVector jumpForce = new MathVector(0, -20 * MyActivity.character.getMass());
                     MyActivity.character.addP(jumpForce);
                 }
+
+                return 0;
             }
         });
 
@@ -99,10 +103,13 @@ public class MyActivity extends Activity {
         buttonB = new HUDSButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_B_RIGHT_PADDING,
                 screenHeight-buttonSprite.getHeight()/2-BUTTON_B_BOTTOM_PADDING,buttonSprite,buttonPSprite,true,new Execution() {
             @Override
-            public void execute() {
+            public double execute() {
                 if (MyActivity.character.getHook() != null){
                     MyActivity.character.removeHook();
+                } else {
+                    MyActivity.character.getHurt(1);
                 }
+                return 0;
             }
         });
 
@@ -138,8 +145,9 @@ public class MyActivity extends Activity {
 
         HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", tileWidth*8/10, null, new Execution() {
             @Override
-            public void execute() {
+            public double execute() {
                 gameEffects.add(fadeEffect);
+                return 0;
             }
         });
         hudElements.add(newGame);

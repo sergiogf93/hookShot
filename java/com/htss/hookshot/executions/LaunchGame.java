@@ -17,7 +17,7 @@ import com.htss.hookshot.math.MathVector;
  */
 public class LaunchGame implements Execution {
     @Override
-    public void execute() {
+    public double execute() {
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
 
@@ -46,5 +46,7 @@ public class LaunchGame implements Execution {
         MyActivity.hudElements.add(MyActivity.joystick);
         MyActivity.hudElements.add(MyActivity.buttonA);
         MyActivity.hudElements.add(MyActivity.buttonB);
+
+        return 0;
     }
 }
