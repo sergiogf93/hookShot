@@ -64,7 +64,7 @@ public abstract class GameDynamicObject extends GameObject {
     protected boolean checkCollisionWithOtherObjects(double x, double y) {
         if (getCollisionPriority() != 0) {
             for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects) {
-                if (!dynamicObject.equals(this)) {
+                if (!dynamicObject.equals(this) && !dynamicObject.isGhost()) {
                     if (dynamicObject.getBounds().contains(new MathVector(x,y))) {
                         return true;
                     }
@@ -102,7 +102,7 @@ public abstract class GameDynamicObject extends GameObject {
         if (up && down){
             getOutUpDown();
         } else if (up && !down){
-            p.y += MyActivity.tileWidth / 100;
+            p.y += MyActivity.TILE_WIDTH / 100;
         } else if (!up && down){
             if (makeSureNotUnderground){
                 raiseAboveGround(margin);

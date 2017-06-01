@@ -157,4 +157,9 @@ public class MathVector {
     public Point toPoint(){
         return new Point((int)x,(int)y);
     }
+
+    @Override
+    public String toString() {
+        return "(" + this.x + ", " + this.y + ")";
+    }
 }

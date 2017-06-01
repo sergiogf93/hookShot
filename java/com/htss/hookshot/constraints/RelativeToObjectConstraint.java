@@ -3,9 +3,9 @@ package com.htss.hookshot.constraints;
 import android.graphics.Color;
 
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.object.Circle;
+import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
-import com.htss.hookshot.game.object.Line;
+import com.htss.hookshot.game.object.debug.Line;
 import com.htss.hookshot.math.MathVector;
 
 /**

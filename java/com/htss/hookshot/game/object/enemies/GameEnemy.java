@@ -1,14 +1,16 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.enemies;
 
 import android.graphics.Color;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.GameCharacter;
+import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.math.MathVector;
 
 /**
  * Created by Sergio on 31/08/2016.
  */
-public abstract class GameEnemy extends GameCharacter{
+public abstract class GameEnemy extends GameCharacter {
 
     public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth) {
         super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth);

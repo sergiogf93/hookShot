@@ -12,12 +12,11 @@ import android.graphics.Point;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.object.Ball;
-import com.htss.hookshot.game.object.Coin;
-import com.htss.hookshot.game.object.CoinBag;
-import com.htss.hookshot.game.object.Door;
-import com.htss.hookshot.game.object.EnemyStalker;
-import com.htss.hookshot.game.object.WallButton;
+import com.htss.hookshot.game.object.obstacles.Ball;
+import com.htss.hookshot.game.object.collectables.CoinBag;
+import com.htss.hookshot.game.object.obstacles.Door;
+import com.htss.hookshot.game.object.enemies.EnemyStalker;
+import com.htss.hookshot.game.object.obstacles.WallButton;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.DrawUtil;
 
@@ -1239,7 +1238,7 @@ public class Map {
             DrawUtil.drawPolygon(points, canvas, Color.argb(255, 120, 0, 0));
         }
         for (Point[] crack : cracks){
-            DrawUtil.drawVoidPolygon(crack,canvas,Color.BLACK,MyActivity.tileWidth/50);
+            DrawUtil.drawVoidPolygon(crack,canvas,Color.BLACK,MyActivity.TILE_WIDTH /50);
         }
     }
 

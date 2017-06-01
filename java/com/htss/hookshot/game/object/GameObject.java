@@ -67,6 +67,10 @@ public abstract class GameObject {
         return new RectShape(getxPosInRoom(),getyPosInRoom(),getWidth(),getHeight(),false);
     }
 
+    public GameShape getBoundsInScreen(){
+        return new RectShape(getxPosInScreen(),getyPosInScreen(),getWidth(),getHeight(),false);
+    }
+
     public double distanceTo (GameObject object){
         MathVector v = new MathVector(getPositionInRoom(),object.getPositionInRoom());
         return v.magnitude();
@@ -78,7 +82,8 @@ public abstract class GameObject {
     }
 
     public boolean pressed (double xScreen, double yScreen){
-        return xScreen >= getxPosInScreen() - getWidth()/2 && xScreen <= getxPosInScreen() + getWidth()/2 && yScreen >= getyPosInScreen() - getHeight()/2 && yScreen <= getyPosInScreen() + getHeight()/2;
+        return xScreen >= getxPosInScreen() - getWidth()/2 && xScreen <= getxPosInScreen() + getWidth()/2 &&
+                yScreen >= getyPosInScreen() - getHeight()/2 && yScreen <= getyPosInScreen() + getHeight()/2;
     }
 
     public boolean containsPoint (double xRoom, double yRoom){

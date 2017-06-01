@@ -1,10 +1,11 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.collectables;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Interactable;
 import com.htss.hookshot.math.MathVector;
 
@@ -13,11 +14,11 @@ import com.htss.hookshot.math.MathVector;
  */
 public class CoinPowder extends GameDynamicObject implements Interactable {
 
-    private final static float RADIUS = MyActivity.tileWidth/20;
+    private final static float RADIUS = MyActivity.TILE_WIDTH /20;
     private int dir;
 
     public CoinPowder(double xPos, double yPos, MathVector initP) {
-        super(xPos, yPos, 0, 0, MyActivity.tileWidth/20);
+        super(xPos, yPos, 0, 0, MyActivity.TILE_WIDTH /20);
         this.setGhost(true);
         this.p = initP;
         MathVector toChar = new MathVector(getPositionInRoom(),MyActivity.character.getPositionInRoom());

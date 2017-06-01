@@ -1,9 +1,10 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.debug;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.math.MathVector;
 
 /**

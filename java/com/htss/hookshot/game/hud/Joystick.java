@@ -2,10 +2,13 @@ package com.htss.hookshot.game.hud;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.shapes.CircleShape;
+import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.math.MathVector;
 
@@ -13,6 +16,8 @@ import com.htss.hookshot.math.MathVector;
  * Created by Sergio on 03/08/2016.
  */
 public class Joystick extends HUDElement implements Clickable {
+
+    private static final double MARGIN = MyActivity.TILE_WIDTH*0.8;
 
     private Bitmap base, handle;
     private int xJ, yJ, touchId, touchIndex;
@@ -35,6 +40,10 @@ public class Joystick extends HUDElement implements Clickable {
     public void draw(Canvas canvas){
         canvas.drawBitmap(getBase(), getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, null);
         canvas.drawBitmap(getHandle(), getxCenter() - getHandleWidth() / 2 + getxJ(), getyCenter() - getHandleHeight() / 2 + getyJ(), null);
+        Paint p = new Paint();
+        p.setColor(Color.YELLOW);
+        p.setStyle(Paint.Style.STROKE);
+        canvas.drawCircle(getxCenter(), getyCenter(), (float) (getWidth() / 2 + MARGIN), p);
     }
 
     public void moveJoystick(double x, double y){
@@ -197,6 +206,11 @@ public class Joystick extends HUDElement implements Clickable {
 
     public void setTouchIndex(int touchIndex) {
         this.touchIndex = touchIndex;
+    }
+
+    @Override
+    public boolean pressed(double x, double y) {
+        return getCenter().distanceTo(new MathVector(x, y)) <= MARGIN + getWidth() / 2;
     }
 
 }

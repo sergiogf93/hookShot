@@ -20,14 +20,13 @@ import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapEffect;
 import com.htss.hookshot.executions.LaunchGame;
+import com.htss.hookshot.game.hud.HUDButton;
 import com.htss.hookshot.game.hud.HUDElement;
-import com.htss.hookshot.game.hud.HUDSButton;
 import com.htss.hookshot.game.hud.HUDText;
 import com.htss.hookshot.game.hud.Joystick;
-import com.htss.hookshot.game.object.Ball;
-import com.htss.hookshot.game.object.Circle;
+import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
-import com.htss.hookshot.game.object.GameEnemy;
+import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
@@ -40,7 +39,7 @@ import java.util.Vector;
 
 public class MyActivity extends Activity {
 
-    public static final int FRAME_RATE = 20, tileWidth = 100, FILL_PERCENT = 52;
+    public static final int FRAME_RATE = 20, TILE_WIDTH = 100, FILL_PERCENT = 52; //52
     public static int HORIZONTAL_MARGIN, VERTICAL_MARGIN;
     private static final int BUTTON_A_BOTTOM_PADDING = 70,
             BUTTON_A_RIGHT_PADDING = 50,
@@ -50,11 +49,11 @@ public class MyActivity extends Activity {
     public static GameBoard canvas;
     public static GameEffect roomSwitchEffect;
     private Handler handler = new Handler();
-    public static int screenHeight, screenWidth, mapXTiles = 110, mapYTiles = 80, level = 0;
+    public static int screenHeight, screenWidth, mapXTiles = 110, mapYTiles = 80, level = 0; //Default 110 80, for screen size 30 20
     public static int frame = 0;
     public static MainCharacter character;
     public static Joystick joystick;
-    public static HUDSButton reloadButton, extendButton, buttonA, buttonB;
+    public static HUDButton reloadButton, extendButton, buttonA, buttonB;
 
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
     public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
@@ -73,18 +72,18 @@ public class MyActivity extends Activity {
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
         screenHeight = displaymetrics.heightPixels;
         screenWidth = displaymetrics.widthPixels;
-        HORIZONTAL_MARGIN = screenWidth / 2 - tileWidth * 2;
+        HORIZONTAL_MARGIN = screenWidth / 2 - TILE_WIDTH * 2;
         VERTICAL_MARGIN = screenHeight / 2;
 
         Bitmap joystickBase = BitmapFactory.decodeResource(getResources(), R.drawable.joystick_base);
         Bitmap joystickTop = BitmapFactory.decodeResource(getResources(), R.drawable.joystick_top);
-        joystick = new Joystick(tileWidth+joystickBase.getWidth()/2,
-                screenHeight-tileWidth/2-joystickBase.getHeight()/2,
+        joystick = new Joystick(TILE_WIDTH +joystickBase.getWidth()/2,
+                screenHeight- TILE_WIDTH /2-joystickBase.getHeight()/2,
                 joystickBase,joystickTop);
 
         Bitmap buttonSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_a);
         Bitmap buttonPSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_a_pressed);
-        buttonA = new HUDSButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_A_RIGHT_PADDING,
+        buttonA = new HUDButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_A_RIGHT_PADDING,
                 screenHeight-buttonSprite.getHeight()/2-BUTTON_A_BOTTOM_PADDING,buttonSprite,buttonPSprite,true,new Execution() {
             @Override
             public double execute() {
@@ -100,7 +99,7 @@ public class MyActivity extends Activity {
 
         buttonSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_b);
         buttonPSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_b_pressed);
-        buttonB = new HUDSButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_B_RIGHT_PADDING,
+        buttonB = new HUDButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_B_RIGHT_PADDING,
                 screenHeight-buttonSprite.getHeight()/2-BUTTON_B_BOTTOM_PADDING,buttonSprite,buttonPSprite,true,new Execution() {
             @Override
             public double execute() {
@@ -143,7 +142,7 @@ public class MyActivity extends Activity {
 
         final FadeEffect fadeEffect = new FadeEffect(new LaunchGame());
 
-        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", tileWidth*8/10, null, new Execution() {
+        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", TILE_WIDTH *8/10, null, new Execution() {
             @Override
             public double execute() {
                 gameEffects.add(fadeEffect);
@@ -242,42 +241,16 @@ public class MyActivity extends Activity {
                 switch (action) {
                     case MotionEvent.ACTION_UP: {
                         nothingPressed = false;
-                        for (int k = 0; k < hudElements.size(); k++) {
-                            HUDElement element = hudElements.get(k);
-                            if (element instanceof Clickable) {
-                                if (((Clickable) element).isOn() && ((Clickable) element).getTouchId() == id) {
-                                    ((Clickable) element).reset();
-                                }
-                            }
-                        }
+                        manageUpTouch(false,id,actionIndex);
                         break;
                     }
                     case MotionEvent.ACTION_POINTER_UP: {
                         nothingPressed = false;
-                        for (int k = 0; k < hudElements.size(); k++) {
-                            HUDElement element = hudElements.get(k);
-                            if (element instanceof Clickable) {
-                                if (((Clickable) element).isOn() && ((Clickable) element).getTouchId() == id && ((Clickable) element).getTouchIndex() == actionIndex) {
-                                    ((Clickable) element).reset();
-                                }
-                            }
-                        }
+                        manageUpTouch(true,id,actionIndex);
                         break;
                     }
                     case MotionEvent.ACTION_DOWN: {
-                        for (int k = 0; k < hudElements.size(); k++) {
-                            HUDElement element = hudElements.get(k);
-                            if (element instanceof Clickable) {
-                                if (((Clickable) element).isClickable()) {
-                                    if (!((Clickable) element).isOn()) {
-                                        if (element.pressed(xDown, yDown)) {
-                                            ((Clickable) element).press(xDown, yDown, id, ev.findPointerIndex(id));
-                                            nothingPressed = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        nothingPressed = manageDownTouch(xDown,yDown,id, ev.findPointerIndex(id));
                         if (nothingPressed) {
                             xHook = xDown;
                             yHook = yDown;
@@ -285,19 +258,7 @@ public class MyActivity extends Activity {
                         break;
                     }
                     case MotionEvent.ACTION_POINTER_DOWN: {
-                        for (int k = 0; k < hudElements.size(); k++) {
-                            HUDElement element = hudElements.get(k);
-                            if (element instanceof Clickable) {
-                                if (((Clickable) element).isClickable()) {
-                                    if (!((Clickable) element).isOn()) {
-                                        if (element.pressed(xDown, yDown)) {
-                                            ((Clickable) element).press(xDown, yDown, id, ev.findPointerIndex(id));
-                                            nothingPressed = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        nothingPressed = manageDownTouch(xDown,yDown,id, ev.findPointerIndex(id));
                         if (nothingPressed) {
                             xHook = xDown;
                             yHook = yDown;
@@ -355,6 +316,49 @@ public class MyActivity extends Activity {
                 }
             }
         }
+    }
+
+    private void manageUpTouch(boolean isPointer, int id, int actionIndex) {
+        Vector joined = new Vector();
+        joined.addAll(hudElements);
+        joined.addAll(enemies);
+        for (int k = 0; k < joined.size(); k++) {
+            Object element = joined.get(k);
+            if (element instanceof Clickable) {
+                Clickable clickable = (Clickable) element;
+                if (isPointer) {
+                    if (clickable.isOn() && clickable.getTouchId() == id && clickable.getTouchIndex() == actionIndex) {
+                        ((Clickable) element).reset();
+                    }
+                } else {
+                    if (clickable.isOn() && clickable.getTouchId() == id) {
+                        clickable.reset();
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean manageDownTouch(double xDown, double yDown, int id, int pointerIndex) {
+        boolean nothingPressed = true;
+        Vector joined = new Vector();
+        joined.addAll(hudElements);
+        joined.addAll(enemies);
+        for (int k = 0; k < joined.size(); k++) {
+            Object element = joined.get(k);
+            if (element instanceof Clickable) {
+                Clickable clickable = (Clickable) element;
+                if (clickable.isClickable()) {
+                    if (!clickable.isOn()) {
+                        if (clickable.pressed(xDown,yDown)) {
+                            clickable.press(xDown, yDown, id, pointerIndex);
+                            nothingPressed = false;
+                        }
+                    }
+                }
+            }
+        }
+        return nothingPressed;
     }
 
     private MathVector checkIfSomethingInTheWay(double xDown, double yDown) {

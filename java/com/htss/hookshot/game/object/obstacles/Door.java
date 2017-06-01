@@ -1,4 +1,4 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.obstacles;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -6,8 +6,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.math.GameMath;
-import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.game.object.GameDynamicObject;
 
 import java.util.Vector;
 

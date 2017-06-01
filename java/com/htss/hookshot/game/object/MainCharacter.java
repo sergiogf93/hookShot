@@ -7,6 +7,8 @@ import android.graphics.Paint;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
 import com.htss.hookshot.game.hud.HUDBar;
+import com.htss.hookshot.game.object.enemies.GameEnemy;
+import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.shapes.BiCircleShape;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
@@ -20,8 +22,8 @@ public class MainCharacter extends GameCharacter {
 
     private static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
 
-    public static final int BODY_RADIUS = 10*MyActivity.tileWidth/50, FIST_RADIUS = MyActivity.tileWidth/8,
-                            FOOT_RADIUS = 10*MyActivity.tileWidth/100, EYE_RADIUS = MyActivity.tileWidth/25,
+    public static final int BODY_RADIUS = 10*MyActivity.TILE_WIDTH /50, FIST_RADIUS = MyActivity.TILE_WIDTH /8,
+                            FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
                             MIN_HOOSKSHOT_NODES = 3;
 
 
@@ -42,7 +44,7 @@ public class MainCharacter extends GameCharacter {
         leftEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         rightEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         friction = 1.;
-        this.healthBar = new HUDBar((int) getxPosInScreen(),(int) getyPosInScreen(), (int) (MyActivity.tileWidth*1.5),MyActivity.tileWidth/10,Color.GREEN,new Execution() {
+        this.healthBar = new HUDBar((int) getxPosInScreen(),(int) getyPosInScreen(), (int) (MyActivity.TILE_WIDTH *1.5),MyActivity.TILE_WIDTH /10,Color.GREEN,new Execution() {
             @Override
             public double execute() {
                 return getHealth()/getMaxHealth();
@@ -306,11 +308,12 @@ public class MainCharacter extends GameCharacter {
         if (getHook() != null) {
             removeHook();
         }
-        MathVector initP = new MathVector(getPositionInScreen(),new MathVector(xDown,yDown));
+        MathVector downPoint = new MathVector(xDown,yDown);
+        MathVector initP = new MathVector(getPositionInScreen(),downPoint);
         int radius = 10;
         int separation = 40;
         int nNodes = Math.min((int) (initP.magnitude()/separation) + 2, maxHookNodes);
-        nNodes = Math.max(nNodes+1,MIN_HOOSKSHOT_NODES);
+        nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
         initP.scale(0.5);
 //        initP.rescale(GameMath.linealValue(1,getHookVelocity()/1000,15,getHookVelocity(),nNodes));
         setHook(new Hook(getxPosInRoom(),getyPosInRoom(), 1, 0, nNodes, radius, Color.GRAY, separation,this,initP));
@@ -352,6 +355,13 @@ public class MainCharacter extends GameCharacter {
     }
 
     private void manageHealthBar() {
+        if (getHealth() < getMaxHealth()/5) {
+            this.healthBar.setColor(Color.RED);
+        } else if (getHealth() < getMaxHealth() / 2) {
+            this.healthBar.setColor(Color.YELLOW);
+        } else {
+            this.healthBar.setColor(Color.GREEN);
+        }
         if (this.healthBar.getAlpha() == 0) {
             this.healthBar.setAlpha(1);
         }

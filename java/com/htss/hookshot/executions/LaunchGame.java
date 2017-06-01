@@ -1,12 +1,6 @@
 package com.htss.hookshot.executions;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-
-import com.htss.hookshot.R;
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.hud.HUDSButton;
-import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.map.Map;

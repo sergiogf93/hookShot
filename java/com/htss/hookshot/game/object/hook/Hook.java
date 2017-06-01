@@ -1,9 +1,11 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.hook;
 
 import com.htss.hookshot.R;
 import com.htss.hookshot.constraints.ChildOfConstraint;
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.hud.HUDSButton;
+import com.htss.hookshot.game.hud.HUDButton;
+import com.htss.hookshot.game.object.debug.Circle;
+import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.math.GameMath;
@@ -117,7 +119,7 @@ public class Hook extends Chain {
     }
 
     private void addHookButtons(){
-        MyActivity.reloadButton = new HUDSButton(9*MyActivity.screenWidth/10,MyActivity.screenHeight/2,
+        MyActivity.reloadButton = new HUDButton(9*MyActivity.screenWidth/10,MyActivity.screenHeight/2,
                 MyActivity.canvas.getBitmapById(R.drawable.button_r),MyActivity.canvas.getBitmapById(R.drawable.button_r_pressed),true,new Execution() {
             @Override
             public double execute() {
@@ -131,7 +133,7 @@ public class Hook extends Chain {
                 return 0;
             }
         });
-        MyActivity.extendButton = new HUDSButton((int)getPrevNodeOf(getLastNode()).getxPosInScreen(),(int)getPrevNodeOf(getLastNode()).getyPosInScreen(),
+        MyActivity.extendButton = new HUDButton((int)getPrevNodeOf(getLastNode()).getxPosInScreen(),(int)getPrevNodeOf(getLastNode()).getyPosInScreen(),
                 MyActivity.canvas.getBitmapById(R.drawable.button_e),MyActivity.canvas.getBitmapById(R.drawable.button_e_pressed),true,new Execution() {
             @Override
             public double execute() {

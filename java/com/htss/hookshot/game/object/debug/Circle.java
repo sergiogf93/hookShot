@@ -1,8 +1,9 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.debug;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
+import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
 

@@ -21,7 +21,7 @@ public abstract class GameCharacter extends GameDynamicObject {
 
     public void getHurt(int damage) {
         setHealth(getHealth() - damage);
-        if (getHealth() < 0) {
+        if (getHealth() <= 0) {
             this.die();
         }
     }

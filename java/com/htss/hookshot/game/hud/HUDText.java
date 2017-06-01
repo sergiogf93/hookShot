@@ -3,7 +3,6 @@ package com.htss.hookshot.game.hud;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 
 import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
@@ -22,7 +21,7 @@ public class HUDText extends HUDElement implements Clickable {
     protected Execution execOn, execOff;
     private int touchId = -1, touchIndex = -1;
 
-    private static final int DEPTH = MyActivity.tileWidth/20;
+    private static final int DEPTH = MyActivity.TILE_WIDTH /20;
 
     public HUDText(int xPos, int yPos, boolean clickable, String text, int size) {
         super(xPos, yPos);

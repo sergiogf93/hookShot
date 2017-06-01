@@ -1,10 +1,12 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.hook;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.constraints.RelativeToPointConstraint;
+import com.htss.hookshot.game.object.debug.Circle;
+import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
 
@@ -13,7 +15,7 @@ import java.util.Vector;
 /**
  * Created by Sergio on 02/08/2016.
  */
-public class Chain extends GameDynamicObject{
+public class Chain extends GameDynamicObject {
 
     private int separation, direction = 1;
     private Vector<Circle> nodes;

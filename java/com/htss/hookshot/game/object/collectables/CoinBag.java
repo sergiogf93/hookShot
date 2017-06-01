@@ -1,10 +1,11 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.collectables;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Interactable;
 import com.htss.hookshot.math.MathVector;
 
@@ -15,7 +16,7 @@ import java.util.Random;
  */
 public class CoinBag extends GameDynamicObject implements Interactable {
 
-    private final static float RADIUS = MyActivity.tileWidth/4;
+    private final static float RADIUS = MyActivity.TILE_WIDTH /4;
     private final static int COINS = 10;
 
     public CoinBag(double xPos, double yPos) {
@@ -58,7 +59,7 @@ public class CoinBag extends GameDynamicObject implements Interactable {
         for (int i = 0 ; i < COINS ; i++){
             Random random = new Random();
             MathVector initP = new MathVector(random.nextFloat()*2 - 1,random.nextFloat()*2 - 1);
-            CoinPowder coinPowder = new CoinPowder(getxPosInRoom(),getyPosInRoom(),initP.scaled(MyActivity.tileWidth/2));
+            CoinPowder coinPowder = new CoinPowder(getxPosInRoom(),getyPosInRoom(),initP.scaled(MyActivity.TILE_WIDTH /2));
             MyActivity.canvas.gameObjects.add(coinPowder);
         }
     }

@@ -30,7 +30,6 @@ public class HUDBar extends HUDElement {
     @Override
     public void draw(Canvas canvas) {
         if (getAlpha() > 0) {
-            MyActivity.canvas.debugText = String.valueOf(alpha);
             if (getAlpha() >= 255) {
                 alphaDirection = -10;
                 setAlpha(255);
@@ -75,5 +74,13 @@ public class HUDBar extends HUDElement {
 
     public void setAlpha(int alpha) {
         this.alpha = alpha;
+    }
+
+    public int getColor() {
+        return color;
+    }
+
+    public void setColor(int color) {
+        this.color = color;
     }
 }

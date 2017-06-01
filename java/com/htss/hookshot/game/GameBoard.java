@@ -15,6 +15,7 @@ import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.interfaces.Interactable;
+import com.htss.hookshot.util.StringUtil;
 
 import java.util.Vector;
 
@@ -24,7 +25,7 @@ import java.util.Vector;
 public class GameBoard extends View{
 
     public static final int ARCADECLASSIC_FONT_KEY = 1, ARIAL_FONT_KEY = 2, JOYSTIX_MONOSPACE_FONT_KEY = 3;
-    public static final int DEFAULT_FONT_SIZE = 48*MyActivity.tileWidth/100, SMALL_FONT_SIZE = 27*MyActivity.tileWidth/100;
+    public static final int DEFAULT_FONT_SIZE = 48*MyActivity.TILE_WIDTH /100, SMALL_FONT_SIZE = 27*MyActivity.TILE_WIDTH /100;
     public static int fontSize;
     public Typeface arcadeClassicFont, joystickMonospace;
 
@@ -125,21 +126,21 @@ public class GameBoard extends View{
     }
 
     private void drawInfo(Canvas canvas) {
-        int textSize = MyActivity.tileWidth/4;
+        int textSize = MyActivity.TILE_WIDTH /4;
         Paint whitePaint = new Paint();
         whitePaint.setColor(Color.WHITE);
         whitePaint.setTextSize(textSize);
         if (MyActivity.character != null) {
-            canvas.drawText(String.valueOf(MyActivity.character.isOnFloor()), MyActivity.tileWidth, MyActivity.tileWidth / 2, whitePaint);
+            canvas.drawText(String.valueOf(MyActivity.character.isOnFloor()), MyActivity.TILE_WIDTH, MyActivity.TILE_WIDTH / 2, whitePaint);
         }
         int i=1;
         for (GameDynamicObject gameDynamicObject : MyActivity.dynamicObjects){
             String[] name = gameDynamicObject.getClass().getName().split("\\.");
-            canvas.drawText(name[name.length-1] + ":  x = " + String.valueOf(gameDynamicObject.getxPosInRoom()) + " , y = " + String.valueOf(gameDynamicObject.getyPosInRoom()), MyActivity.tileWidth, MyActivity.tileWidth/2 + i*textSize, whitePaint);
+            canvas.drawText(name[name.length-1] + ":  x = " + String.valueOf(gameDynamicObject.getxPosInRoom()) + " , y = " + String.valueOf(gameDynamicObject.getyPosInRoom()), MyActivity.TILE_WIDTH, MyActivity.TILE_WIDTH /2 + i*textSize, whitePaint);
             i++;
         }
         if (debugText != ""){
-            canvas.drawText(debugText,MyActivity.screenWidth - MyActivity.tileWidth, MyActivity.tileWidth,whitePaint);
+            canvas.drawText(debugText,MyActivity.screenWidth - MyActivity.TILE_WIDTH - StringUtil.sizeOfString(debugText, (int) whitePaint.getTextSize()), MyActivity.TILE_WIDTH,whitePaint);
         }
     }
 

@@ -1,10 +1,11 @@
-package com.htss.hookshot.game.object;
+package com.htss.hookshot.game.object.obstacles;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Interactable;
 
 /**

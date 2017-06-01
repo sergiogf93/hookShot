@@ -10,16 +10,17 @@ import com.htss.hookshot.interfaces.Execution;
 /**
  * Created by Sergio on 03/08/2016.
  */
-public class HUDSButton extends HUDElementSprite implements Clickable {
+public class HUDButton extends HUDElementSprite implements Clickable {
 
     protected Bitmap spriteOff;
     protected Bitmap spriteOn;
     private boolean clickable, on = false;
-    private int touchId = -1, touchIndex = -1, margin = 0;
+    private int touchId = -1, touchIndex = -1;
+    private int margin = 0;
 
     protected Execution execOn, execOff;
 
-    public HUDSButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn) {
+    public HUDButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn) {
         super(xCenter,yCenter,spriteOff);
         this.spriteOff = spriteOff;
         this.spriteOn = spriteOn;
@@ -31,7 +32,7 @@ public class HUDSButton extends HUDElementSprite implements Clickable {
         }
     }
 
-    public HUDSButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn, Execution execOff) {
+    public HUDButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn, Execution execOff) {
         super(xCenter,yCenter,spriteOff);
         this.spriteOff = spriteOff;
         this.spriteOn = spriteOn;
@@ -39,7 +40,7 @@ public class HUDSButton extends HUDElementSprite implements Clickable {
         this.execOn = execOn;
         this.execOff = execOff;
         if (spriteOff.getWidth() < 100) {
-            this.margin = 50;
+            this.margin = 80;
         }
     }
 
