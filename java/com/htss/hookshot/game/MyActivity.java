@@ -49,7 +49,7 @@ public class MyActivity extends Activity {
     public static GameBoard canvas;
     public static GameEffect roomSwitchEffect;
     private Handler handler = new Handler();
-    public static int screenHeight, screenWidth, mapXTiles = 110, mapYTiles = 80, level = 0; //Default 110 80, for screen size 30 20
+    public static int screenHeight, screenWidth, mapXTiles = 100, mapYTiles = 70, level = 0; //Default 110 80, for screen size 30 20
     public static int frame = 0;
     public static MainCharacter character;
     public static Joystick joystick;
@@ -237,7 +237,6 @@ public class MyActivity extends Activity {
                 double yDown = ev.getY(i);
                 int action = ev.getActionMasked();
                 int actionIndex = ev.getActionIndex();
-
                 switch (action) {
                     case MotionEvent.ACTION_UP: {
                         nothingPressed = false;
@@ -271,8 +270,8 @@ public class MyActivity extends Activity {
                             HUDElement element = hudElements.get(k);
                             if (element instanceof Clickable) {
                                 if (element instanceof Joystick) {
-                                    if (((Joystick) element).isOn() && ((Joystick) element).getTouchId() == id) {
-                                        ((Joystick) element).moveJoystick(xDown, yDown);
+                                    if (joystick.isOn() && joystick.getTouchId() == id && joystick.getTouchIndex() == ev.findPointerIndex(id)) {
+                                        joystick.moveJoystick(xDown, yDown);
                                     }
                                 } else {
                                     if (!((Clickable) element).isOn()) {
