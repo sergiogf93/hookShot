@@ -79,8 +79,8 @@ public class Map {
 
         addBallObstacles(1);
 //        addCoins();
-//        addDoorObstacle(1);
-        addEnemies(1);
+        addDoorObstacle(1);
+//        addEnemies(1);
 
 
 
@@ -670,11 +670,13 @@ public class Map {
 
     private void manageRoomDownAndUp(){
         drawCircle(new Coord(downCenter,yTiles-1), (int) (PASSAGE_RADIUS*1.5));
+        for (int x = 0 ; x < xTiles ; x++){
+            for (int i = 0 ; i < 5 ; i++) {
+                map[x][yTiles-1-i] = map[x][yTiles-1];
+            }
+        }
         if (MyActivity.level > 0){
             drawCircle(new Coord(upCenter,0), (int) (PASSAGE_RADIUS*1.5));
-            for (int x = 0 ; x < xTiles ; x++){
-                map[x][1] = map[x][0];
-            }
         }
     }
 
@@ -886,7 +888,7 @@ public class Map {
         yPos = (yTiles-2)*SQUARE_SIZE;
         double xPos = (rightX - leftX)*SQUARE_SIZE/2 + leftX*SQUARE_SIZE;
 
-        addDoor(xPos, yPos, (int) ((rightX - leftX + 1) * SQUARE_SIZE), (int) (2*SQUARE_SIZE), 4, false, direction < 0);
+        addDoor(xPos, yPos, (int) ((rightX - leftX + 1) * SQUARE_SIZE), (int) (1.5*SQUARE_SIZE), 4, false, direction < 0);
 
         if (passageToBlock != null){
             addDoor(passageToBlock.getCenterInRoom().x, passageToBlock.getCenterInRoom().y, (int) ((PASSAGE_RADIUS + 2) * SQUARE_SIZE * 2), (int) (2*SQUARE_SIZE), 2, true, direction < 0);
