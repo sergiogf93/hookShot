@@ -309,7 +309,11 @@ public class MyActivity extends Activity {
                             MathVector objectiveInRoom = objective.screenToRoom();
                             int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
                             if (Color.alpha(pixel) == 255) {
-                                character.shootHook(objective.x, objective.y);
+                                if (character.isHooked() && character.getHook().getHookedPoint().distanceTo(objectiveInRoom) < TILE_WIDTH) {
+                                    character.getHook().setFastReloading(true);
+                                } else {
+                                    character.shootHook(objective.x, objective.y);
+                                }
                             }
                         }
                     }
@@ -383,6 +387,7 @@ public class MyActivity extends Activity {
     }
 
     public static void setHUDUnclickable(){
+        joystick.reset();
         joystick.setClickable(false);
         buttonA.setClickable(false);
         buttonB.setClickable(false);

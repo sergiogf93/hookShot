@@ -1,11 +1,10 @@
 package com.htss.hookshot.game.hud;
 
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 
-import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
+import com.htss.hookshot.util.TimeUtil;
 
 /**
  * Created by Sergio on 03/08/2016.
@@ -16,9 +15,10 @@ public class HUDButton extends HUDElementSprite implements Clickable {
     protected Bitmap spriteOn;
     private boolean clickable, on = false;
     private int touchId = -1, touchIndex = -1;
+    private long timeWhenOn = 0;
     private int margin = 0;
 
-    protected Execution execOn, execOff;
+    protected Execution execOn, execOff, execDoubleOn;
 
     public HUDButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn) {
         super(xCenter,yCenter,spriteOff);
@@ -27,6 +27,7 @@ public class HUDButton extends HUDElementSprite implements Clickable {
         this.clickable = clickable;
         this.execOn = execOn;
         this.execOff = null;
+        this.execDoubleOn = null;
         if (spriteOff.getWidth() < 100) {
             this.margin = 50;
         }
@@ -39,6 +40,20 @@ public class HUDButton extends HUDElementSprite implements Clickable {
         this.clickable = clickable;
         this.execOn = execOn;
         this.execOff = execOff;
+        this.execDoubleOn = null;
+        if (spriteOff.getWidth() < 100) {
+            this.margin = 80;
+        }
+    }
+
+    public HUDButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn, Execution execOff, Execution execDoubleOn) {
+        super(xCenter,yCenter,spriteOff);
+        this.spriteOff = spriteOff;
+        this.spriteOn = spriteOn;
+        this.clickable = clickable;
+        this.execOn = execOn;
+        this.execOff = execOff;
+        this.execDoubleOn = execDoubleOn;
         if (spriteOff.getWidth() < 100) {
             this.margin = 80;
         }
@@ -50,8 +65,21 @@ public class HUDButton extends HUDElementSprite implements Clickable {
         setTouchId(id);
         setSprite(getSpriteOn());
         setOn(true);
-        if (getExecOn() != null){
-            getExecOn().execute();
+        if (getExecDoubleOn() != null) {
+            if(System.currentTimeMillis() - getTimeWhenOn() < 500) {
+                setTimeWhenOn(0);
+                getExecDoubleOn().execute();
+            } else {
+                if (getExecOn() != null){
+                    setTimeWhenOn(System.currentTimeMillis());
+                    getExecOn().execute();
+                }
+            }
+        } else {
+            setTimeWhenOn(System.currentTimeMillis());
+            if (getExecOn() != null) {
+                getExecOn().execute();
+            }
         }
     }
 
@@ -143,5 +171,21 @@ public class HUDButton extends HUDElementSprite implements Clickable {
 
     public void setExecOff(Execution execOff) {
         this.execOff = execOff;
+    }
+
+    public long getTimeWhenOn() {
+        return timeWhenOn;
+    }
+
+    public void setTimeWhenOn(long timeWhenOn) {
+        this.timeWhenOn = timeWhenOn;
+    }
+
+    public Execution getExecDoubleOn() {
+        return execDoubleOn;
+    }
+
+    public void setExecDoubleOn(Execution execDoubleOn) {
+        this.execDoubleOn = execDoubleOn;
     }
 }

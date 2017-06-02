@@ -152,6 +152,11 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void manageHookUpdate () {
+        if (getHook().isFastReloading()) {
+            setMaxVelocity(MAX_VELOCITY*5);
+        } else {
+            setMaxVelocity(MAX_VELOCITY);
+        }
         if (getHook().isReloading()){
             MathVector vectorToLastNode = new MathVector(getPositionInRoom(),getHook().getLastNode().getPositionInRoom());
             setP(vectorToLastNode);
@@ -160,7 +165,9 @@ public class MainCharacter extends GameCharacter {
             if (distanceTo(getHook().getLastNode()) > maxSeparation) {
                 MathVector v = new MathVector(getHook().getLastNode().getPositionInRoom(), getFuturePositionInRoom());
                 v.rescale(maxSeparation);
-                getHook().getLastNode().addP(getP());
+                if (getHook().getNodesNumber() > 1) {
+                    getHook().getLastNode().addP(getP());
+                }
                 MathVector newP = new MathVector(getPositionInRoom(), v.applyTo(getHook().getLastNode().getPositionInRoom()));
                 setP(newP);
             }
@@ -332,6 +339,7 @@ public class MainCharacter extends GameCharacter {
         MyActivity.hudElements.remove(MyActivity.extendButton);
         MyActivity.reloadButton = null;
         MyActivity.extendButton = null;
+        setMaxVelocity(MAX_VELOCITY);
         setState(STATE_MOVING);
     }
 

@@ -36,7 +36,7 @@ public class FadeInEffect extends GameEffect {
         }
         paint.setAlpha(alpha);
         canvas.drawRect(rectangle,paint);
-        frame += getDirection()*MyActivity.FRAME_RATE;
+        frame += 2*getDirection()*MyActivity.FRAME_RATE;
     }
 
     @Override

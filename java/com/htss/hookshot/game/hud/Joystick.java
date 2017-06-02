@@ -40,10 +40,6 @@ public class Joystick extends HUDElement implements Clickable {
     public void draw(Canvas canvas){
         canvas.drawBitmap(getBase(), getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, null);
         canvas.drawBitmap(getHandle(), getxCenter() - getHandleWidth() / 2 + getxJ(), getyCenter() - getHandleHeight() / 2 + getyJ(), null);
-        Paint p = new Paint();
-        p.setColor(Color.YELLOW);
-        p.setStyle(Paint.Style.STROKE);
-        canvas.drawCircle(getxCenter(), getyCenter(), (float) (getWidth() / 2 + MARGIN), p);
     }
 
     public void moveJoystick(double x, double y){
