@@ -671,7 +671,7 @@ public class Map {
     private void manageRoomDownAndUp(){
         drawCircle(new Coord(downCenter,yTiles-1), (int) (PASSAGE_RADIUS*1.5));
         for (int x = 0 ; x < xTiles ; x++){
-            for (int i = 0 ; i < 5 ; i++) {
+            for (int i = 0 ; i < 3 ; i++) {
                 map[x][yTiles-1-i] = map[x][yTiles-1];
             }
         }
