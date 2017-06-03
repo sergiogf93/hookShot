@@ -15,13 +15,11 @@ import com.htss.hookshot.interfaces.Execution;
 public class HUDBar extends HUDElement {
 
     private int color, alpha = 255;
-    private int width, height, alphaDirection = 10;
+    private int alphaDirection = 10;
     private Execution getFillPercent;
 
     public HUDBar(int xCenter, int yCenter, int width, int height, int color, Execution getFillPercent) {
-        super(xCenter, yCenter);
-        this.width = width;
-        this.height = height;
+        super(xCenter, yCenter, width, height);
         this.color = color;
         this.getFillPercent = getFillPercent;
     }
@@ -47,16 +45,6 @@ public class HUDBar extends HUDElement {
             alphaDirection = 10;
             setAlpha(0);
         }
-    }
-
-    @Override
-    public int getWidth() {
-        return width;
-    }
-
-    @Override
-    public int getHeight() {
-        return height;
     }
 
     public int getAlpha() {

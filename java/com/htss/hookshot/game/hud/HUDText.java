@@ -24,14 +24,14 @@ public class HUDText extends HUDElement implements Clickable {
     private static final int DEPTH = MyActivity.TILE_WIDTH /20;
 
     public HUDText(int xPos, int yPos, boolean clickable, String text, int size) {
-        super(xPos, yPos);
+        super(xPos, yPos, StringUtil.sizeOfString(text, size), size);
         this.text = text;
         this.size = size;
         this.clickable = clickable;
     }
 
     public HUDText(int xPos, int yPos, boolean clickable, String text, int size, Execution execOn) {
-        super(xPos, yPos);
+        super(xPos, yPos, StringUtil.sizeOfString(text, size), size);
         this.text = text;
         this.execOn = execOn;
         this.size = size;
@@ -40,7 +40,7 @@ public class HUDText extends HUDElement implements Clickable {
     }
 
     public HUDText(int xPos, int yPos, boolean clickable, String text, int size, Execution execOn, Execution execOff) {
-        super(xPos, yPos);
+        super(xPos, yPos, StringUtil.sizeOfString(text, size), size);
         this.text = text;
         this.execOn = execOn;
         this.execOff = execOff;

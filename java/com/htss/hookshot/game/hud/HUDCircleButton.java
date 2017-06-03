@@ -27,7 +27,7 @@ public class HUDCircleButton extends HUDElement implements Clickable {
     protected Execution execOn, execOff, execDoubleOn;
 
     public HUDCircleButton(int xCenter, int yCenter, float radius, String text, boolean clickable, Execution execOn) {
-        super(xCenter,yCenter);
+        super(xCenter, yCenter, (int) radius * 2, (int) radius * 2);
         this.clickable = clickable;
         this.radius = radius;
         this.text = text;
@@ -37,7 +37,7 @@ public class HUDCircleButton extends HUDElement implements Clickable {
     }
 
     public HUDCircleButton(int xCenter, int yCenter, float radius, String text, boolean clickable, Execution execOn, Execution execOff) {
-        super(xCenter,yCenter);
+        super(xCenter, yCenter, (int) radius * 2, (int) radius * 2);
         this.clickable = clickable;
         this.radius = radius;
         this.text = text;
@@ -47,7 +47,7 @@ public class HUDCircleButton extends HUDElement implements Clickable {
     }
 
     public HUDCircleButton(int xCenter, int yCenter, float radius, String text, boolean clickable, Execution execOn, Execution execOff, Execution execDoubleOn) {
-        super(xCenter,yCenter);
+        super(xCenter, yCenter, (int) radius * 2, (int) radius * 2);
         this.clickable = clickable;
         this.radius = radius;
         this.text = text;

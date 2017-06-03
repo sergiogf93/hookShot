@@ -13,12 +13,14 @@ import com.htss.hookshot.math.MathVector;
  */
 public abstract class HUDElement {
 
-    private int xCenter, yCenter;
+    private int xCenter, yCenter, width, height;
     private Paint paint = new Paint();
 
-    public HUDElement(int xCenter, int yCenter) {
+    public HUDElement(int xCenter, int yCenter, int width, int height) {
         this.xCenter = xCenter;
         this.yCenter = yCenter;
+        this.width = width;
+        this.height = height;
     }
 
     public boolean pressed(double x, double y) {
@@ -69,7 +71,21 @@ public abstract class HUDElement {
         this.paint = paint;
     }
 
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
     public abstract void draw(Canvas canvas);
-    public abstract int getWidth();
-    public abstract int getHeight();
 }

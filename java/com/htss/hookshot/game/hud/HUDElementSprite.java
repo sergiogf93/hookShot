@@ -13,7 +13,7 @@ public abstract class HUDElementSprite extends HUDElement {
     protected Bitmap sprite;
 
     public HUDElementSprite(int xPos, int yPos, Bitmap sprite) {
-        super(xPos, yPos);
+        super(xPos, yPos, sprite.getWidth(), sprite.getHeight());
         this.sprite = sprite;
     }
 
@@ -23,7 +23,7 @@ public abstract class HUDElementSprite extends HUDElement {
         Paint p = new Paint();
         p.setColor(Color.YELLOW);
         p.setStyle(Paint.Style.STROKE);
-        canvas.drawCircle(getxCenter(),getyCenter(),getWidth()/2,p);
+        canvas.drawCircle(getxCenter(), getyCenter(), getWidth() / 2, p);
     }
 
     @Override
