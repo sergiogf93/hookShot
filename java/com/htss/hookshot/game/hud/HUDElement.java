@@ -14,6 +14,7 @@ import com.htss.hookshot.math.MathVector;
 public abstract class HUDElement {
 
     private int xCenter, yCenter;
+    private Paint paint = new Paint();
 
     public HUDElement(int xCenter, int yCenter) {
         this.xCenter = xCenter;
@@ -27,6 +28,12 @@ public abstract class HUDElement {
 
     public GameShape getBounds(){
         return new RectShape(getxCenter(),getyCenter(),getWidth(),getHeight(),false);
+    }
+
+    public void drawCircle(Canvas canvas, float cx, float cy, int color, int alpha, float radius) {
+        paint.setColor(color);
+        paint.setAlpha(alpha);
+        canvas.drawCircle(cx, cy, radius, paint);
     }
 
     public int getxCenter() {
@@ -52,6 +59,14 @@ public abstract class HUDElement {
 
     public MathVector getCenter (){
         return new MathVector(getxCenter(),getyCenter());
+    }
+
+    public Paint getPaint() {
+        return paint;
+    }
+
+    public void setPaint(Paint paint) {
+        this.paint = paint;
     }
 
     public abstract void draw(Canvas canvas);

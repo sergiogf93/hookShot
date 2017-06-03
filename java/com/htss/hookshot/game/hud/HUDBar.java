@@ -16,7 +16,6 @@ public class HUDBar extends HUDElement {
 
     private int color, alpha = 255;
     private int width, height, alphaDirection = 10;
-    private Paint paint = new Paint();
     private Execution getFillPercent;
 
     public HUDBar(int xCenter, int yCenter, int width, int height, int color, Execution getFillPercent) {
@@ -35,15 +34,15 @@ public class HUDBar extends HUDElement {
                 setAlpha(255);
             }
             this.alpha += alphaDirection;
-            paint.setColor(Color.BLACK);
+            getPaint().setColor(Color.BLACK);
             this.setAlpha(getAlpha());
             Rect backRect = new Rect(getxCenter() - getWidth()/2, getyCenter() - getHeight()/2, getxCenter() + getWidth()/2, getyCenter() + getHeight()/2);
-            canvas.drawRect(backRect, paint);
+            canvas.drawRect(backRect, getPaint());
             double fillPercent = this.getFillPercent.execute();
             Rect fillRect = new Rect(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, (int) (getxCenter() - getWidth() / 2 + getWidth() * fillPercent), getyCenter() + getHeight() / 2);
-            paint.setColor(this.color);
+            getPaint().setColor(this.color);
             this.setAlpha(getAlpha());
-            canvas.drawRect(fillRect, paint);
+            canvas.drawRect(fillRect, getPaint());
         } else {
             alphaDirection = 10;
             setAlpha(0);
@@ -58,14 +57,6 @@ public class HUDBar extends HUDElement {
     @Override
     public int getHeight() {
         return height;
-    }
-
-    public Paint getPaint() {
-        return paint;
-    }
-
-    public void setPaint(Paint paint) {
-        this.paint = paint;
     }
 
     public int getAlpha() {

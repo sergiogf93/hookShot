@@ -17,19 +17,18 @@ import com.htss.hookshot.math.MathVector;
  */
 public class Joystick extends HUDElement implements Clickable {
 
-    private static final double MARGIN = MyActivity.TILE_WIDTH*0.8;
+    private static final double MARGIN = MyActivity.TILE_WIDTH;
 
-    private Bitmap base, handle;
-    private int xJ, yJ, touchId, touchIndex;
+    private int xJ, yJ, touchId, touchIndex, width, height, alpha = 99;
     private double xDown, yDown;
     private boolean on, showing, clickable;
 
-    public Joystick(int xCenter, int yCenter, Bitmap base, Bitmap handle){
-        super(xCenter,yCenter);
+    public Joystick(int xCenter, int yCenter, int width, int height) {
+        super(xCenter, yCenter);
         this.xJ = 0;
         this.yJ = 0;
-        this.base = base;
-        this.handle = handle;
+        this.width = width;
+        this.height = height;
         this.on = false;
         this.touchId = -1;
         this.showing = true;
@@ -38,8 +37,22 @@ public class Joystick extends HUDElement implements Clickable {
 
     @Override
     public void draw(Canvas canvas){
-        canvas.drawBitmap(getBase(), getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, null);
-        canvas.drawBitmap(getHandle(), getxCenter() - getHandleWidth() / 2 + getxJ(), getyCenter() - getHandleHeight() / 2 + getyJ(), null);
+        drawBase(canvas);
+        drawHandle(canvas);
+    }
+
+    private void drawBase(Canvas canvas) {
+        drawCircle(canvas, getxCenter(), getyCenter(), Color.rgb(30, 30, 30), alpha, getRadius());
+        drawCircle(canvas, getxCenter(), getyCenter(), Color.WHITE, alpha, (float) (0.95 * getRadius()));
+        Paint p = new Paint();
+        p.setColor(Color.YELLOW);
+        p.setStyle(Paint.Style.STROKE);
+        canvas.drawCircle(getxCenter(),getyCenter(),getWidth()/2,p);
+    }
+
+    private void drawHandle(Canvas canvas) {
+        drawCircle(canvas, getxCenter() + getxJ(), getyCenter() + getyJ(), Color.rgb(30, 30, 30), alpha, getHandleRadius());
+        drawCircle(canvas, getxCenter() + getxJ(), getyCenter() + getyJ(), Color.rgb(200, 200, 200), alpha, (float) (0.95*getHandleRadius()));
     }
 
     public void moveJoystick(double x, double y){
@@ -86,9 +99,7 @@ public class Joystick extends HUDElement implements Clickable {
         setyJ(0);
         setTouchId(-1);
         setTouchIndex(-1);
-//        if (MyActivity.character.onFloor(MyActivity.character.getWidth()/3)) {
         MyActivity.character.setP(new MathVector(0, MyActivity.character.getP().y));
-//        }
     }
 
     @Override
@@ -104,22 +115,6 @@ public class Joystick extends HUDElement implements Clickable {
     @Override
     public void setClickable(boolean bool) {
         this.clickable = bool;
-    }
-
-    public Bitmap getBase() {
-        return base;
-    }
-
-    public void setBase(Bitmap base) {
-        this.base = base;
-    }
-
-    public Bitmap getHandle() {
-        return handle;
-    }
-
-    public void setHandle(Bitmap handle) {
-        this.handle = handle;
     }
 
     public boolean isShowing() {
@@ -150,20 +145,12 @@ public class Joystick extends HUDElement implements Clickable {
 
     @Override
     public int getWidth(){
-        return getBase().getWidth();
+        return (int) (width + MARGIN);
     }
 
     @Override
     public int getHeight(){
-        return getBase().getHeight();
-    }
-
-    public int getHandleWidth(){
-        return getHandle().getWidth();
-    }
-
-    public int getHandleHeight(){
-        return getHandle().getHeight();
+        return (int) (height + MARGIN);
     }
 
     public void setOn(boolean on){
@@ -207,6 +194,14 @@ public class Joystick extends HUDElement implements Clickable {
     @Override
     public boolean pressed(double x, double y) {
         return getCenter().distanceTo(new MathVector(x, y)) <= MARGIN + getWidth() / 2;
+    }
+
+    public float getRadius() {
+        return width/2;
+    }
+
+    public float getHandleRadius() {
+        return (float) (width*0.3);
     }
 
 }

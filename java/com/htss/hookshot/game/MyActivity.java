@@ -21,6 +21,7 @@ import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapEffect;
 import com.htss.hookshot.executions.LaunchGame;
 import com.htss.hookshot.game.hud.HUDButton;
+import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.HUDText;
 import com.htss.hookshot.game.hud.Joystick;
@@ -53,7 +54,7 @@ public class MyActivity extends Activity {
     public static int frame = 0;
     public static MainCharacter character;
     public static Joystick joystick;
-    public static HUDButton reloadButton, extendButton, buttonA, buttonB;
+    public static HUDCircleButton reloadButton, extendButton, buttonB, buttonA;
 
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
     public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
@@ -75,16 +76,11 @@ public class MyActivity extends Activity {
         HORIZONTAL_MARGIN = screenWidth / 2 - TILE_WIDTH * 2;
         VERTICAL_MARGIN = screenHeight / 2;
 
-        Bitmap joystickBase = BitmapFactory.decodeResource(getResources(), R.drawable.joystick_base);
-        Bitmap joystickTop = BitmapFactory.decodeResource(getResources(), R.drawable.joystick_top);
-        joystick = new Joystick(TILE_WIDTH +joystickBase.getWidth()/2,
-                screenHeight- TILE_WIDTH /2-joystickBase.getHeight()/2,
-                joystickBase,joystickTop);
+        joystick = new Joystick(2 * TILE_WIDTH, screenHeight - TILE_WIDTH / 2 - TILE_WIDTH, TILE_WIDTH * 2, TILE_WIDTH * 2);
 
-        Bitmap buttonSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_a);
-        Bitmap buttonPSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_a_pressed);
-        buttonA = new HUDButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_A_RIGHT_PADDING,
-                screenHeight-buttonSprite.getHeight()/2-BUTTON_A_BOTTOM_PADDING,buttonSprite,buttonPSprite,true,new Execution() {
+        int buttonRadius = (int) (TILE_WIDTH*0.75);
+        buttonA = new HUDCircleButton(screenWidth - buttonRadius - BUTTON_A_RIGHT_PADDING,
+                screenHeight - buttonRadius - BUTTON_A_BOTTOM_PADDING, buttonRadius, "A", true, new Execution() {
             @Override
             public double execute() {
 //                                                if (MyActivity.character.isOnFloor()) {
@@ -95,22 +91,22 @@ public class MyActivity extends Activity {
 
                 return 0;
             }
-        });
+        }
+        );
 
-        buttonSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_b);
-        buttonPSprite = BitmapFactory.decodeResource(getResources(), R.drawable.button_b_pressed);
-        buttonB = new HUDButton(screenWidth-buttonSprite.getWidth()/2-BUTTON_B_RIGHT_PADDING,
-                screenHeight-buttonSprite.getHeight()/2-BUTTON_B_BOTTOM_PADDING,buttonSprite,buttonPSprite,true,new Execution() {
+        buttonB = new HUDCircleButton(screenWidth - buttonRadius - BUTTON_B_RIGHT_PADDING,
+                screenHeight - buttonRadius - BUTTON_B_BOTTOM_PADDING, buttonRadius, "B", true, new Execution() {
             @Override
             public double execute() {
-                if (MyActivity.character.getHook() != null){
+                if (MyActivity.character.getHook() != null) {
                     MyActivity.character.removeHook();
                 } else {
                     MyActivity.character.getHurt(1);
                 }
                 return 0;
             }
-        });
+        }
+        );
 
         canvas = (GameBoard) findViewById(R.id.the_canvas);
         canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");
