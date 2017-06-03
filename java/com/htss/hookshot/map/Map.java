@@ -863,7 +863,7 @@ public class Map {
 
     private void addDoorObstacle(int direction){
         int leftX = 0, rightX = 0;
-        double yPos = 0;
+        double yPos = (yTiles-2)*SQUARE_SIZE;
         boolean  foundLeft = false;
         for (int x = 1 ; x < xTiles ; x++){
             if (!foundLeft) {
@@ -878,13 +878,6 @@ public class Map {
                 }
             }
         }
-//        for (int y = yTiles - 1 ; y > yTiles - 10 ; y--){
-//            if (map[leftX+1][y] == 1 || map[rightX-1][y] == 1){
-//                yPos = y*SQUARE_SIZE;
-//                break;
-//            }
-//        }
-        yPos = (yTiles-2)*SQUARE_SIZE;
         double xPos = (rightX - leftX)*SQUARE_SIZE/2 + leftX*SQUARE_SIZE;
 
         addDoor(xPos, yPos, (int) ((rightX - leftX + 1) * SQUARE_SIZE), (int) (1.5*SQUARE_SIZE), 4, false, direction < 0);
@@ -1009,18 +1002,6 @@ public class Map {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     private boolean isInMapRange (int x, int y){
         return x >= 0 && x < xTiles && y >= 0 && y < yTiles;
     }
@@ -1044,14 +1025,6 @@ public class Map {
     public int getHeight() {
         return (int) ((yTiles)*SQUARE_SIZE - SQUARE_SIZE);
     }
-
-//    public Random getPseudoRandom() {
-//        return pseudoRandom;
-//    }
-//
-//    public void setPseudoRandom(Random pseudoRandom) {
-//        this.pseudoRandom = pseudoRandom;
-//    }
 
     public class Line {
         public MathVector vector;
