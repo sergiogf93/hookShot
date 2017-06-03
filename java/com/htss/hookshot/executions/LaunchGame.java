@@ -15,7 +15,7 @@ public class LaunchGame implements Execution {
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
 
-        MyActivity.currentMap = new Map(MyActivity.mapXTiles,MyActivity.mapYTiles,MyActivity.FILL_PERCENT,true, 0);
+        MyActivity.currentMap = new Map(MyActivity.mapXTiles, MyActivity.mapYTiles, MyActivity.FILL_PERCENT, false, 1496513144237L);
         MathVector startPosition = MyActivity.currentMap.startPosition();
 
         while (startPosition.magnitude() == 0){
@@ -40,6 +40,7 @@ public class LaunchGame implements Execution {
         MyActivity.hudElements.add(MyActivity.joystick);
         MyActivity.hudElements.add(MyActivity.buttonA);
         MyActivity.hudElements.add(MyActivity.buttonB);
+        MyActivity.hudElements.add(MyActivity.pauseButton);
 
         return 0;
     }

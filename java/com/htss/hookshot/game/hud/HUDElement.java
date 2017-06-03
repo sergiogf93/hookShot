@@ -3,6 +3,7 @@ package com.htss.hookshot.game.hud;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.game.object.shapes.RectShape;
@@ -28,8 +29,11 @@ public abstract class HUDElement {
                 y < getyCenter()+getHeight()/2 && y > getyCenter()-getHeight()/2;
     }
 
-    public GameShape getBounds(){
-        return new RectShape(getxCenter(),getyCenter(),getWidth(),getHeight(),false);
+    public void drawBounds(Canvas canvas) {
+        setColor(Color.YELLOW);
+        setStyle(Paint.Style.STROKE);
+        Rect r = new Rect(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
+        canvas.drawRect(r,getPaint());
     }
 
     public void drawCircle(Canvas canvas, float cx, float cy, int color, int alpha, float radius) {
@@ -69,6 +73,18 @@ public abstract class HUDElement {
 
     public void setPaint(Paint paint) {
         this.paint = paint;
+    }
+
+    public void setColor(int color) {
+        this.paint.setColor(color);
+    }
+
+    public void setAlpha(int alpha) {
+        this.paint.setAlpha(alpha);
+    }
+
+    public void setStyle(Paint.Style style) {
+        this.paint.setStyle(style);
     }
 
     public int getHeight() {

@@ -81,11 +81,13 @@ public class GameBoard extends View{
 
                 for (int i = 0 ; i < gameObjects.size() ; i++) {
                     GameObject gameObject = gameObjects.get(i);
-                    if (gameObject instanceof GameDynamicObject) {
-                        ((GameDynamicObject) gameObject).update();
-                    }
-                    if (gameObject instanceof Interactable){
-                        ((Interactable) gameObject).detect();
+                    if (!MyActivity.paused) {
+                        if (gameObject instanceof GameDynamicObject) {
+                            ((GameDynamicObject) gameObject).update();
+                        }
+                        if (gameObject instanceof Interactable) {
+                            ((Interactable) gameObject).detect();
+                        }
                     }
                     gameObject.draw(canvas);
                 }

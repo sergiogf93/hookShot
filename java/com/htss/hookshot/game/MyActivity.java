@@ -2,7 +2,6 @@ package com.htss.hookshot.game;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -20,9 +19,10 @@ import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapEffect;
 import com.htss.hookshot.executions.LaunchGame;
-import com.htss.hookshot.game.hud.HUDButton;
 import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.hud.HUDElement;
+import com.htss.hookshot.game.hud.HUDMenu;
+import com.htss.hookshot.game.hud.HUDPauseButton;
 import com.htss.hookshot.game.hud.HUDText;
 import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.debug.Circle;
@@ -55,6 +55,9 @@ public class MyActivity extends Activity {
     public static MainCharacter character;
     public static Joystick joystick;
     public static HUDCircleButton reloadButton, extendButton, buttonB, buttonA;
+    public static HUDPauseButton pauseButton;
+    public static HUDMenu menu;
+    public static boolean paused = false;
 
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
     public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
@@ -107,6 +110,12 @@ public class MyActivity extends Activity {
             }
         }
         );
+
+        pauseButton = new HUDPauseButton(screenWidth / 2, screenHeight - TILE_WIDTH / 2, TILE_WIDTH, (int) (TILE_WIDTH * 0.5));
+
+        int menuWidth = 5*TILE_WIDTH;
+        int menuHeight = screenHeight-3*TILE_WIDTH/2;
+        menu = new HUDMenu(screenWidth / 2, TILE_WIDTH / 2 + menuHeight / 2, menuWidth, menuHeight);
 
         canvas = (GameBoard) findViewById(R.id.the_canvas);
         canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");
@@ -270,13 +279,16 @@ public class MyActivity extends Activity {
                                         joystick.moveJoystick(xDown, yDown);
                                     }
                                 } else {
-                                    if (!((Clickable) element).isOn()) {
-                                        if (element.pressed(xDown, yDown)) {
-                                            ((Clickable) element).press(xDown, yDown, id, ev.findPointerIndex(id));
-                                        }
-                                    } else if (((Clickable) element).getTouchId() == id) {
-                                        if (!element.pressed(xDown, yDown)) {
-                                            ((Clickable) element).reset();
+                                    Clickable clickable = (Clickable) element;
+                                    if (clickable.isClickable()) {
+                                        if (!clickable.isOn()) {
+                                            if (clickable.pressed(xDown, yDown)) {
+                                                clickable.press(xDown, yDown, id, ev.findPointerIndex(id));
+                                            }
+                                        } else if (clickable.getTouchId() == id) {
+                                            if (!clickable.pressed(xDown, yDown)) {
+                                                clickable.reset();
+                                            }
                                         }
                                     }
                                 }
@@ -286,31 +298,37 @@ public class MyActivity extends Activity {
                     }
                 }
             }
-            if (character != null) {
-                if (nothingPressed) {
-                    boolean hookableFound = false;
-                    for (GameDynamicObject dynamicObject : dynamicObjects) {
-                        if (dynamicObject instanceof Hookable) {
-                            if (dynamicObject.pressed(xHook, yHook)) {
-                                character.shootHook(dynamicObject.getxPosInScreen(), dynamicObject.getyPosInScreen());
-                                hookableFound = true;
-                                break;
-                            }
-                        }
+            if (!paused) {
+                if (character != null) {
+                    if (nothingPressed) {
+                        manageHooking(xHook, yHook);
                     }
-                    if (!hookableFound) {
-                        MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
-                        if (isInScreen(objective.x, objective.y)) {
-                            MathVector objectiveInRoom = objective.screenToRoom();
-                            int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
-                            if (Color.alpha(pixel) == 255) {
-                                if (character.isHooked() && character.getHook().getHookedPoint().distanceTo(objectiveInRoom) < TILE_WIDTH) {
-                                    character.getHook().setFastReloading(true);
-                                } else {
-                                    character.shootHook(objective.x, objective.y);
-                                }
-                            }
-                        }
+                }
+            }
+        }
+    }
+
+    private void manageHooking(double xHook, double yHook) {
+        boolean hookableFound = false;
+        for (GameDynamicObject dynamicObject : dynamicObjects) {
+            if (dynamicObject instanceof Hookable) {
+                if (dynamicObject.pressed(xHook, yHook)) {
+                    character.shootHook(dynamicObject.getxPosInScreen(), dynamicObject.getyPosInScreen());
+                    hookableFound = true;
+                    break;
+                }
+            }
+        }
+        if (!hookableFound) {
+            MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
+            if (isInScreen(objective.x, objective.y)) {
+                MathVector objectiveInRoom = objective.screenToRoom();
+                int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
+                if (Color.alpha(pixel) == 255) {
+                    if (character.isHooked() && character.getHook().getHookedPoint().distanceTo(objectiveInRoom) < TILE_WIDTH) {
+                        character.getHook().setFastReloading(true);
+                    } else {
+                        character.shootHook(objective.x, objective.y);
                     }
                 }
             }
@@ -320,7 +338,9 @@ public class MyActivity extends Activity {
     private void manageUpTouch(boolean isPointer, int id, int actionIndex) {
         Vector joined = new Vector();
         joined.addAll(hudElements);
-        joined.addAll(enemies);
+        if (!paused) {
+            joined.addAll(enemies);
+        }
         for (int k = 0; k < joined.size(); k++) {
             Object element = joined.get(k);
             if (element instanceof Clickable) {
@@ -342,7 +362,9 @@ public class MyActivity extends Activity {
         boolean nothingPressed = true;
         Vector joined = new Vector();
         joined.addAll(hudElements);
-        joined.addAll(enemies);
+        if (!paused) {
+            joined.addAll(enemies);
+        }
         for (int k = 0; k < joined.size(); k++) {
             Object element = joined.get(k);
             if (element instanceof Clickable) {
@@ -426,5 +448,19 @@ public class MyActivity extends Activity {
             Bitmap nextMapInScreen = canvas.getMapInScreen();
             roomSwitchEffect = new SwitchMapEffect(currentMapInScreen, nextMapInScreen, direction);
         }
+    }
+
+    public static void pause() {
+        MyActivity.paused = true;
+        setHUDUnclickable();
+        hudElements.add(menu);
+        menu.addMenuButtons();
+    }
+
+    public static void unpause() {
+        MyActivity.paused = false;
+        setHUDClickable();
+        menu.removeButtons();
+        hudElements.remove(menu);
     }
 }
