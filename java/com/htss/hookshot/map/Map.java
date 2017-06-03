@@ -77,7 +77,7 @@ public class Map {
 
         manageRoomRemovingAndConnection();
 
-        addBallObstacles(1);
+//        addBallObstacles(1);
 //        addCoins();
         addDoorObstacle(1);
 //        addEnemies(1);
