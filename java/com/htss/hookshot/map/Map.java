@@ -17,6 +17,7 @@ import com.htss.hookshot.game.object.enemies.EnemyStalker;
 import com.htss.hookshot.game.object.obstacles.Ball;
 import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.game.object.obstacles.WallButton;
+import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.DrawUtil;
 
@@ -80,8 +81,6 @@ public class Map {
 //        addDownDoor(4);
         addPassageDoor(2);
 //        addEnemies(1);
-
-
 
         generateMesh();
 
@@ -725,7 +724,7 @@ public class Map {
     }
 
     private boolean isUpOrDown(Coord coord) {
-        return coord.tileY >= yTiles - 3 || coord.tileY <= 3;
+        return coord.tileY >= yTiles - 5 || coord.tileY <= 5;
     }
 
     public MathVector getRandomEmptyPoint(int wallCount, Random r){
@@ -888,7 +887,7 @@ public class Map {
         MathVector start = startPosition();
         Coord startCoord = new Coord((int)(start.x/SQUARE_SIZE),(int)(start.y/SQUARE_SIZE));
         Room startRoom = startCoord.getRoom(roomRegions);
-        if (startRoom == null) {
+        if (startRoom == null || passages.size() == 0) {
             return;
         }
         Passage passage = passages.get(obstacleRandom.nextInt(passages.size()));
@@ -917,8 +916,10 @@ public class Map {
         queue.add(room);
         while (queue.size() > 0) {
             Room currentRoom = queue.pop();
-            rooms.add(currentRoom);
-            for (Room connectedRoom : room.connectedRooms) {
+            if (!rooms.contains(currentRoom)) {
+                rooms.add(currentRoom);
+            }
+            for (Room connectedRoom : currentRoom.connectedRooms) {
                 if (connectedRoom != exceptionRoom && !rooms.contains(connectedRoom)) {
                     queue.add(connectedRoom);
                 }
@@ -1162,8 +1163,26 @@ public class Map {
             }
         }
 
+        public Coord getCenterTileInRoom(){
+            int xAverage = 0, yAverage = 0;
+            for (Coord tile : tiles) {
+                xAverage += tile.tileX;
+                yAverage += tile.tileY;
+            }
+            return new Coord(xAverage / roomSize, yAverage / roomSize);
+        }
+
         public boolean isUpOrDown() {
-            return tiles.get(0).tileY < 3 || tiles.get(0).tileY > yTiles - 3;
+            Coord center = getCenterTileInRoom();
+            return center.tileY < 5 || center.tileY > yTiles - 5;
+        }
+
+        public void fill(int color) {
+            for (Coord tile : tiles) {
+                Point position = tile.toRoomPoint();
+                CircleShape c = new CircleShape(position.x, position.y, (int) SQUARE_SIZE /3, color);
+                MyActivity.canvas.gameObjects.add(c);
+            }
         }
 
         @Override

@@ -19,6 +19,11 @@ public class CircleShape extends GameShape {
         this.radius = radius;
     }
 
+    public CircleShape(double xPos, double yPos, int radius, int color) {
+        super(xPos,yPos,color);
+        this.radius = radius;
+    }
+
     @Override
     public boolean intersect(GameShape shape) {
         return distanceTo(shape) <= getRadius() + shape.getIntersectMagnitude();
@@ -32,11 +37,6 @@ public class CircleShape extends GameShape {
     @Override
     public int getIntersectMagnitude() {
         return getRadius();
-    }
-
-    public CircleShape(double xPos, double yPos, int radius, int color) {
-        super(xPos,yPos,color);
-        this.radius = radius;
     }
 
     @Override
