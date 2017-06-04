@@ -7,6 +7,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
 
 /**
@@ -15,6 +16,7 @@ import com.htss.hookshot.math.MathVector;
 public class RectShape extends GameShape{
 
     private int width, height;
+    private MathVector vector;
     private boolean fill;
 
     public RectShape(double xPos, double yPos, int width, int height, boolean fill) {
@@ -22,12 +24,14 @@ public class RectShape extends GameShape{
         this.width = width;
         this.height = height;
         this.fill = fill;
+        this.vector = new MathVector(1, 0);
     }
 
     public RectShape(double xPos, double yPos, int width, int height, boolean fill, int color) {
         super(xPos, yPos, color);
         this.width = width;
         this.height = height;
+        this.vector = new MathVector(1, 0);
         this.fill = fill;
     }
 
@@ -35,12 +39,21 @@ public class RectShape extends GameShape{
         super(r.centerX(),r.centerY(),color);
         this.width = r.width();
         this.height = r.height();
+        this.vector = new MathVector(1, 0);
+        this.fill = fill;
+    }
+
+    public RectShape(double xPos, double yPos, int width, int height, MathVector vector, boolean fill) {
+        super(xPos, yPos, Color.YELLOW);
+        this.width = width;
+        this.height = height;
+        this.vector = vector;
         this.fill = fill;
     }
 
     @Override
     public int getIntersectMagnitude() {
-        return Math.min(getWidth(), getHeight())/2;
+        return Math.max(getWidth(), getHeight())/2;
     }
 
     @Override
@@ -78,7 +91,36 @@ public class RectShape extends GameShape{
 
     @Override
     public boolean contains(MathVector p) {
-        Rect r1 = new Rect((int)getxPosInRoom()-getWidth()/2,(int)getyPosInRoom()-getHeight()/2,(int)getxPosInRoom()+getWidth()/2,(int)getyPosInRoom()+getHeight()/2);
-        return r1.contains((int)p.x,(int)p.y);
+        boolean contained;
+        if (getVector().x == 1.0 && getVector().y == 0.0) {
+            Rect r1 = new Rect((int) getxPosInRoom() - getWidth() / 2, (int) getyPosInRoom() - getHeight() / 2, (int) getxPosInRoom() + getWidth() / 2, (int) getyPosInRoom() + getHeight() / 2);
+            contained = r1.contains((int) p.x, (int) p.y);
+        } else {
+            Point[] points = getCorners();
+            double areaRectangle = GameMath.areaRectangle(points);
+            double addedAreas = 0;
+            for (int i = 0; i < 4; i++) {
+                addedAreas += GameMath.areaTriangle(points[i],points[(i+1)%4],p.toPoint());
+            }
+            contained = Math.abs(addedAreas - areaRectangle) < 4;
+        }
+        return contained;
+    }
+
+    private Point[] getCorners() {
+        Point[] points = new Point[4];
+        points[0] = getVector().getNormal().scaled(getHeight() / 2).applyTo(getVector().scaled(-1 * getWidth() / 2).applyTo(getPositionInRoom())).toPoint();
+        points[1] = getVector().getNormal().scaled(-1 * getHeight() / 2).applyTo(getVector().scaled(-1 * getWidth() / 2).applyTo(getPositionInRoom())).toPoint();
+        points[2] = getVector().getNormal().scaled(-1 * getHeight() / 2).applyTo(getVector().scaled(getWidth() / 2).applyTo(getPositionInRoom())).toPoint();
+        points[3] = getVector().getNormal().scaled(getHeight() / 2).applyTo(getVector().scaled(getWidth() / 2).applyTo(getPositionInRoom())).toPoint();
+        return points;
+    }
+
+    public MathVector getVector() {
+        return vector;
+    }
+
+    public void setVector(MathVector vector) {
+        this.vector = vector;
     }
 }

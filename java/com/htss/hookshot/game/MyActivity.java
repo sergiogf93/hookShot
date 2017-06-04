@@ -40,7 +40,7 @@ import java.util.Vector;
 
 public class MyActivity extends Activity {
 
-    public static final int FRAME_RATE = 20, TILE_WIDTH = 100, FILL_PERCENT = 52; //52
+    public static final int FRAME_RATE = 20, TILE_WIDTH = 100, FILL_PERCENT = 52; //Default 52 for screen size 30
     public static int HORIZONTAL_MARGIN, VERTICAL_MARGIN;
     private static final int BUTTON_A_BOTTOM_PADDING = 70,
             BUTTON_A_RIGHT_PADDING = 50,
@@ -50,7 +50,7 @@ public class MyActivity extends Activity {
     public static GameBoard canvas;
     public static GameEffect roomSwitchEffect;
     private Handler handler = new Handler();
-    public static int screenHeight, screenWidth, mapXTiles = 100, mapYTiles = 70, level = 0; //Default 110 80, for screen size 30 20
+    public static int screenHeight, screenWidth, mapXTiles = 110, mapYTiles = 80, level = 0; //Default 110 80, for screen size 30 20
     public static int frame = 0;
     public static MainCharacter character;
     public static Joystick joystick;

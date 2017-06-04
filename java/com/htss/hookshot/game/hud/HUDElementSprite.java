@@ -20,10 +20,6 @@ public abstract class HUDElementSprite extends HUDElement {
     @Override
     public void draw(Canvas canvas){
         canvas.drawBitmap(getSprite(),getxCenter()-getWidth()/2,getyCenter()-getHeight()/2, null);
-        Paint p = new Paint();
-        p.setColor(Color.YELLOW);
-        p.setStyle(Paint.Style.STROKE);
-        canvas.drawCircle(getxCenter(), getyCenter(), getWidth() / 2, p);
     }
 
     @Override

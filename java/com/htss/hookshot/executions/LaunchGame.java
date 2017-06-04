@@ -15,7 +15,7 @@ public class LaunchGame implements Execution {
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
 
-        MyActivity.currentMap = new Map(MyActivity.mapXTiles, MyActivity.mapYTiles, MyActivity.FILL_PERCENT, false, 1496513144237L);
+        MyActivity.currentMap = new Map(MyActivity.mapXTiles, MyActivity.mapYTiles, MyActivity.FILL_PERCENT, true, 0);
         MathVector startPosition = MyActivity.currentMap.startPosition();
 
         while (startPosition.magnitude() == 0){
