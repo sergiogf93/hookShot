@@ -12,10 +12,10 @@ import android.graphics.Point;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.object.obstacles.Ball;
 import com.htss.hookshot.game.object.collectables.CoinBag;
-import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
+import com.htss.hookshot.game.object.obstacles.Ball;
+import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.game.object.obstacles.WallButton;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.DrawUtil;
@@ -50,11 +50,9 @@ public class Map {
     private HashSet<Integer> checkedVertices = new HashSet<Integer>();
     private Vector<Point[]> cracks = new Vector<Point[]>();
     private Vector<Room> roomRegions = new Vector<Room>();
-    private boolean blockPassage = true;
-    private Vector<Room> roomAs = new Vector<Room>(), roomBs = new Vector<Room>(), susceptibleRooms = new Vector<Room>();
-    private Line passageToBlock;
+    private Vector<Room> susceptibleRooms = new Vector<Room>();
 
-    private Vector<Line> passages = new Vector<Line>();
+    private Vector<Passage> passages = new Vector<Passage>();
 
     public Map (int xTiles, int yTiles, int fillPercent, boolean useRandomSeed, long seed){
         this.map = new int[xTiles][yTiles];
@@ -79,7 +77,8 @@ public class Map {
 
 //        addBallObstacles(1);
 //        addCoins();
-        addDoorObstacle(1);
+//        addDownDoor(4);
+        addPassageDoor(2);
 //        addEnemies(1);
 
 
@@ -435,9 +434,6 @@ public class Map {
     public void manageRoomRemovingAndConnection() {
         passages.clear();
         roomRegions.clear();
-        passageToBlock = null;
-        roomAs.clear();
-        roomBs.clear();
         susceptibleRooms.clear();
 
         Vector<Vector<Coord>> wallRegions = getRegions(1);
@@ -540,49 +536,17 @@ public class Map {
         }
     }
 
-    private void createPassage (Room roomA, Room roomB, Coord tileA, Coord tileB){
-        Line line = getLine(tileA, tileB);
-        if (blockPassage){
-            double angle = line.vector.angleDeg(new MathVector(1,0));
-            if ( angle > 80 && angle < 100) {
-                if (true) {
-                    roomAs.add(roomA);
-                    roomAs.addAll(roomA.connectedRooms);
-                    roomBs.add(roomB);
-                    roomBs.addAll(roomB.connectedRooms);
-                    passageToBlock = line;
-                    blockPassage = false;
-                    if (roomA.roomSize < MAX_SIZE_FOR_SUSCEPTIBLE && !roomA.isUpOrDown()){
-                        susceptibleRooms.add(roomA);
-                    }
-                    if (roomB.roomSize < MAX_SIZE_FOR_SUSCEPTIBLE && !roomB.isUpOrDown()){
-                        susceptibleRooms.add(roomB);
-                    }
-                }
-            }
-        } else {
-            if (roomAs != null && roomAs.size() > 0){
-                if (roomAs.contains(roomA)){
-                    roomAs.add(roomB);
-                } else if (roomAs.contains(roomB)){
-                    roomAs.add(roomA);
-                }
-                if (roomBs.contains(roomA)){
-                    roomBs.add(roomB);
-                } else if (roomBs.contains(roomB)){
-                    roomBs.add(roomA);
-                }
-            }
-        }
+    private void createPassage (Room roomA, Room roomB, Coord tileA, Coord tileB) {
+        Passage passage = getPassage(tileA, tileB, roomA, roomB);
 
         connectRooms(roomA, roomB);
-        for (Coord c : line.line) {
+        for (Coord c : passage.line) {
             drawCircle(c, PASSAGE_RADIUS);
         }
-        this.passages.add(line);
+        this.passages.add(passage);
     }
 
-    private Line getLine (Coord from, Coord to){
+    private Passage getPassage(Coord from, Coord to, Room roomA, Room roomB){
         Vector<Coord> line = new Vector<Coord>();
         MathVector vector = new MathVector(to.toRoomPoint().x - from.toRoomPoint().x,to.toRoomPoint().y - from.toRoomPoint().y);
 
@@ -628,7 +592,7 @@ public class Map {
             }
         }
 
-        return new Line(vector,line);
+        return new Passage(vector, line, roomA, roomB);
     }
 
     private void drawCircle (Coord c, int r){
@@ -739,6 +703,31 @@ public class Map {
         return path;
     }
 
+    public MathVector getRandomPointInRooms(Vector<Room> rooms, int maxWallCount, Random r) {
+        Coord coord;
+        int n = 0;
+        do {
+            Room room = rooms.get(r.nextInt(rooms.size()));
+            coord = room.tiles.get(r.nextInt(room.roomSize));
+            n++;
+        } while ((map[coord.tileX][coord.tileY] == 1 || getSurroundingCount(coord.tileX,coord.tileY) > maxWallCount || isUpOrDown(coord)) && n < 1000);
+        return new MathVector(coord.tileX * SQUARE_SIZE, coord.tileY * SQUARE_SIZE);
+    }
+
+    public MathVector getRandomPointInRoom(Room room, int maxWallCount, Random r) {
+        Coord coord;
+        int n = 0;
+        do {
+            coord = room.tiles.get(r.nextInt(room.roomSize));
+            n++;
+        } while ((map[coord.tileX][coord.tileY] == 1 || getSurroundingCount(coord.tileX,coord.tileY) > maxWallCount || isUpOrDown(coord)) && n < 1000);
+        return new MathVector(coord.tileX * SQUARE_SIZE, coord.tileY * SQUARE_SIZE);
+    }
+
+    private boolean isUpOrDown(Coord coord) {
+        return coord.tileY >= yTiles - 3 || coord.tileY <= 3;
+    }
+
     public MathVector getRandomEmptyPoint(int wallCount, Random r){
         int x,y;
         int n = 0;
@@ -751,8 +740,6 @@ public class Map {
     }
 
     public void extend(int direction){
-        blockPassage = true;
-
         int[] lineToCopy = new int[xTiles];
         int factor = (direction > 0) ? 0 : 1;
         for (int x = 0 ; x < xTiles ; x++){
@@ -779,8 +766,9 @@ public class Map {
         manageRoomRemovingAndConnection();
 
 //        addBallObstacles(1);
-        addDoorObstacle(direction);
-        addEnemies(1);
+        addDownDoor(4);
+        addPassageDoor(2);
+//        addEnemies(1);
 
         generateMesh();
     }
@@ -861,7 +849,10 @@ public class Map {
         }
     }
 
-    private void addDoorObstacle(int direction){
+    private void addDownDoor(int nButtons) {
+        Random obstacleRandom = new Random();
+        obstacleRandom.setSeed(seed + nButtons + MyActivity.level);
+//        Calculate the position for the door
         int leftX = 0, rightX = 0;
         double yPos = (yTiles-2)*SQUARE_SIZE;
         boolean  foundLeft = false;
@@ -880,91 +871,77 @@ public class Map {
         }
         double xPos = (rightX - leftX)*SQUARE_SIZE/2 + leftX*SQUARE_SIZE;
 
-        addDoor(xPos, yPos, (int) ((rightX - leftX + 1) * SQUARE_SIZE), (int) (1.5*SQUARE_SIZE), 4, false, direction < 0);
-
-        if (passageToBlock != null){
-            addDoor(passageToBlock.getCenterInRoom().x, passageToBlock.getCenterInRoom().y, (int) ((PASSAGE_RADIUS + 2) * SQUARE_SIZE * 2), (int) (2*SQUARE_SIZE), 2, true, direction < 0);
-        }
-
+//      Set the WallButtons
+        Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, obstacleRandom);
+        addDoor(xPos, yPos, (int) ((rightX - leftX + 1) * SQUARE_SIZE), (int) (1.5*SQUARE_SIZE), new MathVector(1, 0), buttons);
     }
 
-    public void addDoor(double xPos, double yPos, int width, int height, int nButtons, boolean forceConnection, boolean buttonsOn){
+    public void addDoor(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons) {
+        Door door = new Door(xPos, yPos, width, height, vector, buttons);
+        MyActivity.canvas.gameObjects.add(0, door);
+        MyActivity.dynamicObjects.add(0, door);
+    }
+
+    public void addPassageDoor(int nButtons) {
         Random obstacleRandom = new Random();
         obstacleRandom.setSeed(seed + nButtons + MyActivity.level);
-        Vector<WallButton> buttons = new Vector<WallButton>();
         MathVector start = startPosition();
         Coord startCoord = new Coord((int)(start.x/SQUARE_SIZE),(int)(start.y/SQUARE_SIZE));
         Room startRoom = startCoord.getRoom(roomRegions);
-
-        if (forceConnection && startRoom == null){
+        if (startRoom == null) {
             return;
         }
+        Passage passage = passages.get(obstacleRandom.nextInt(passages.size()));
+//      Separate rooms by accessibility
+        Vector<Room> roomsA = getRoomsConnectedWithException(passage.roomA, passage.roomB);
+        Vector<Room> roomsB = new Vector<Room>(roomRegions);
+        roomsB.removeAll(roomsA);
+        Vector<Room> accessibleRegions = new Vector<Room>();
+        for (Room room : roomsA) {
+            if (room == startRoom) {
+                accessibleRegions = roomsA;
+            }
+        }
+        if (accessibleRegions.size() == 0) {
+            accessibleRegions = roomsB;
+        }
+//      Set the WallButtons
+        Vector<WallButton> buttons = createWallButtons(accessibleRegions, nButtons, obstacleRandom);
+        MathVector position = passage.getCenterInRoom();
+        addDoor(position.x, position.y, (int) ((PASSAGE_RADIUS + 2) * SQUARE_SIZE * 2), (int) (1.5*SQUARE_SIZE), passage.vector.getNormal(), buttons);
+    }
 
-        for (int i = 0 ; i < nButtons ; i++){
-            MathVector pos = getRandomEmptyPoint(0,obstacleRandom);
-            Coord buttonCoord = new Coord((int)(pos.x/SQUARE_SIZE), (int) (pos.y/SQUARE_SIZE));
+    public Vector<Room> getRoomsConnectedWithException(Room room, Room exceptionRoom) {
+        Vector<Room> rooms = new Vector<Room>();
+        LinkedList<Room> queue = new LinkedList<Room>();
+        queue.add(room);
+        while (queue.size() > 0) {
+            Room currentRoom = queue.pop();
+            rooms.add(currentRoom);
+            for (Room connectedRoom : room.connectedRooms) {
+                if (connectedRoom != exceptionRoom && !rooms.contains(connectedRoom)) {
+                    queue.add(connectedRoom);
+                }
+            }
+        }
+        return rooms;
+    }
+
+    public Vector<WallButton> createWallButtons(Vector<Room> rooms, int nButtons, Random random) {
+        Vector<WallButton> buttons = new Vector<WallButton>();
+        for (int i = 0; i < nButtons; i++) {
+            MathVector position;
             if (susceptibleRooms.size() > 0) {
-                Room roomToPutButton = susceptibleRooms.lastElement();
-                int tileIndex = obstacleRandom.nextInt(roomToPutButton.tiles.size());
-                buttonCoord = roomToPutButton.tiles.get(tileIndex);
-                int k = 0;
-                while (getSurroundingCount(buttonCoord.tileX,buttonCoord.tileY) > 0 && k < 100) {
-                    tileIndex = obstacleRandom.nextInt(roomToPutButton.tiles.size());
-                    buttonCoord = roomToPutButton.tiles.get(tileIndex);
-                    k++;
-                }
-                susceptibleRooms.remove(roomToPutButton);
+                position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, random);
+                susceptibleRooms.remove(susceptibleRooms.lastElement());
+            } else {
+                position = getRandomPointInRooms(rooms, 0, random);
             }
-            if (forceConnection){
-                Room buttonRoom = buttonCoord.getRoom(roomRegions);
-                Vector<Room> roomsContainingStartRoom = new Vector<Room>();
-                if (roomAs.contains(startRoom)){
-                    roomsContainingStartRoom = roomAs;
-                } else if (roomBs.contains(startRoom)){
-                    roomsContainingStartRoom = roomBs;
-                } else {
-                    for (Room room : roomAs){
-                        if (room.connectedRooms.contains(startRoom)){
-                            roomsContainingStartRoom = roomAs;
-                            break;
-                        }
-                    }
-                }
-                if (roomsContainingStartRoom.size() == 0){
-                    for (Room room : roomBs){
-                        if (room.connectedRooms.contains(startRoom)){
-                            roomsContainingStartRoom = roomBs;
-                            break;
-                        }
-                    }
-                }
-                if (roomsContainingStartRoom.size() == 0){
-                    return;
-                }
-                if (!roomsContainingStartRoom.contains(buttonRoom)){
-                    int roomIndex = obstacleRandom.nextInt(roomsContainingStartRoom.size());
-                    int tileIndex = obstacleRandom.nextInt(roomsContainingStartRoom.get(roomIndex).tiles.size());
-                    buttonCoord = roomsContainingStartRoom.get(roomIndex).tiles.get(tileIndex);
-                    int j = 0;
-                    while (getSurroundingCount(buttonCoord.tileX,buttonCoord.tileY) > 0 && j < 100) {
-                        roomIndex = obstacleRandom.nextInt(roomsContainingStartRoom.size());
-                        tileIndex = obstacleRandom.nextInt(roomsContainingStartRoom.get(roomIndex).tiles.size());
-                        buttonCoord = roomsContainingStartRoom.get(roomIndex).tiles.get(tileIndex);
-                        j++;
-                    }
-                    pos = new MathVector(buttonCoord.tileX*SQUARE_SIZE,buttonCoord.tileY*SQUARE_SIZE);
-                }
-            }
-            WallButton button = new WallButton(pos.x,pos.y, (float) (SQUARE_SIZE*0.8),buttonsOn);
+            WallButton button = new WallButton(position.x, position.y, (float) (SQUARE_SIZE * 0.8), false);
             buttons.add(button);
             MyActivity.canvas.gameObjects.add(0,button);
         }
-
-        if (!buttonsOn) {
-            Door door = new Door(xPos, yPos, width, height, buttons);
-            MyActivity.canvas.gameObjects.add(0,door);
-            MyActivity.dynamicObjects.add(0,door);
-        }
+        return buttons;
     }
 
     public void addEnemies (int N){
@@ -1026,13 +1003,16 @@ public class Map {
         return (int) ((yTiles)*SQUARE_SIZE - SQUARE_SIZE);
     }
 
-    public class Line {
+    public class Passage {
         public MathVector vector;
         public Vector<Coord> line;
+        public Room roomA, roomB;
 
-        public Line(MathVector vector, Vector<Coord> line) {
+        public Passage(MathVector vector, Vector<Coord> line, Room roomA, Room roomB) {
             this.vector = vector.normalized();
             this.line = line;
+            this.roomA = roomA;
+            this.roomB = roomB;
         }
 
         public MathVector getCenterInRoom (){

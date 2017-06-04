@@ -64,8 +64,10 @@ public abstract class GameDynamicObject extends GameObject {
     protected boolean checkCollisionWithOtherObjects(double x, double y) {
         if (getCollisionPriority() != 0) {
             for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects) {
-                if (!dynamicObject.equals(this) && !dynamicObject.isGhost()) {
-                    if (dynamicObject.getBounds().contains(new MathVector(x,y))) {
+                GameShape bounds = dynamicObject.getBounds();
+                MathVector point = new MathVector(x,y);
+                if (!dynamicObject.equals(this) && dynamicObject.distanceTo(point) < bounds.getIntersectMagnitude() && !dynamicObject.isGhost()) {
+                    if (bounds.contains(point)) {
                         return true;
                     }
                 }
@@ -543,16 +545,6 @@ public abstract class GameDynamicObject extends GameObject {
     protected void updateFrame() {this.frame += MyActivity.FRAME_RATE;}
 
     public boolean isOnFloor() {
-        if (!isGhost()){
-            for (int i = 0; i < MyActivity.dynamicObjects.size() ; i++){
-                GameDynamicObject gameDynamicObject = MyActivity.dynamicObjects.get(i);
-                if (!this.equals(gameDynamicObject)) {
-                    if (this.inContactWith(gameDynamicObject)) {
-                        return true;
-                    }
-                }
-            }
-        }
         return onFloor;
     }
 

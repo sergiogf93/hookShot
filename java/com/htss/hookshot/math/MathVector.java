@@ -27,6 +27,11 @@ public class MathVector {
         this.y = p2.y - p1.y;
     }
 
+    public MathVector(Point p1, Point p2){
+        this.x = p2.x - p1.x;
+        this.y = p2.y - p1.y;
+    }
+
     public MathVector(GameObject ob1, GameObject ob2){
         this.x = ob2.getxPosInScreen() - ob1.getxPosInScreen();
         this.y = ob2.getyPosInScreen() - ob1.getyPosInScreen();

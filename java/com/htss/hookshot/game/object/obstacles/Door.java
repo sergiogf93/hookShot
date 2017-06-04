@@ -3,10 +3,15 @@ package com.htss.hookshot.game.object.obstacles;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
+import com.htss.hookshot.game.object.shapes.GameShape;
+import com.htss.hookshot.game.object.shapes.RectShape;
+import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.DrawUtil;
 
 import java.util.Vector;
 
@@ -17,11 +22,14 @@ public class Door extends GameDynamicObject {
 
     private int width, height;
     private Vector<WallButton> buttons;
+    private MathVector vector;
+    private Paint paint = new Paint();
 
-    public Door(double xPos, double yPos, int width, int height, Vector<WallButton> buttons) {
+    public Door(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons) {
         super(xPos, yPos, 0, 0, 0);
         this.width = width;
         this.height = height;
+        this.vector = vector;
         this.buttons = buttons;
     }
 
@@ -40,10 +48,20 @@ public class Door extends GameDynamicObject {
 
     @Override
     public void draw(Canvas canvas) {
-        Rect rect = new Rect((int)getxPosInScreen()-getWidth()/2,(int)getyPosInScreen()-getHeight()/2,(int)getxPosInScreen()+getWidth()/2,(int)getyPosInScreen()+getHeight()/2);
-        Paint paint = new Paint();
-        paint.setColor(Color.GRAY);
-        canvas.drawRect(rect,paint);
+        DrawUtil.drawPolygon(getCorners(), canvas, Color.GRAY);
+        drawButtons(canvas, getVector().scaled(-1 * (getWidth() / 2 - buttons.get(0).getRadius())).applyTo(getPositionInScreen()));
+    }
+
+    private Point[] getCorners() {
+        Point[] points = new Point[4];
+        points[0] = getVector().getNormal().scaled(getHeight() / 2).applyTo(getVector().scaled(-1 * getWidth() / 2).applyTo(getPositionInScreen())).toPoint();
+        points[1] = getVector().getNormal().scaled(-1 * getHeight() / 2).applyTo(getVector().scaled(-1 * getWidth() / 2).applyTo(getPositionInScreen())).toPoint();
+        points[2] = getVector().getNormal().scaled(-1 * getHeight() / 2).applyTo(getVector().scaled(getWidth() / 2).applyTo(getPositionInScreen())).toPoint();
+        points[3] = getVector().getNormal().scaled(getHeight() / 2).applyTo(getVector().scaled(getWidth() / 2).applyTo(getPositionInScreen())).toPoint();
+        return points;
+    }
+
+    public void drawButtons(Canvas canvas, MathVector startPoint) {
         for (int i = 0 ; i < buttons.size() ; i++){
             paint.setStyle(Paint.Style.FILL);
             WallButton button = buttons.get(i);
@@ -52,12 +70,18 @@ public class Door extends GameDynamicObject {
             } else {
                 paint.setColor(Color.RED);
             }
-            canvas.drawCircle((float)getxPosInScreen() - getWidth()/2 + button.getRadius() + i*4*button.getRadius()/3 , (float) getyPosInScreen(),button.getRadius()/3,paint);
+            MathVector position = getVector().scaled(i*4*button.getRadius()/3).applyTo(startPoint);
+            canvas.drawCircle((float) position.x, (float) position.y, button.getRadius() / 3, paint);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(button.getRadius() / 50);
             paint.setColor(Color.argb(255, 20, 20, 20));
-            canvas.drawCircle((float)getxPosInScreen() - getWidth()/2 + button.getRadius() + i*4*button.getRadius()/3 , (float) getyPosInScreen(),button.getRadius()/3,paint);
+            canvas.drawCircle((float) position.x, (float) position.y, button.getRadius() / 3, paint);
         }
+    }
+
+    @Override
+    public GameShape getBounds() {
+        return new RectShape(getxPosInRoom(), getyPosInRoom(), getWidth(), getHeight(), getVector(), false);
     }
 
     @Override
@@ -70,4 +94,11 @@ public class Door extends GameDynamicObject {
         return height;
     }
 
+    public MathVector getVector() {
+        return vector;
+    }
+
+    public void setVector(MathVector vector) {
+        this.vector = vector;
+    }
 }
