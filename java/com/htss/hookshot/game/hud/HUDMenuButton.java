@@ -7,6 +7,7 @@ import android.graphics.RectF;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
+import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.util.StringUtil;
 
 /**
@@ -21,11 +22,13 @@ public class HUDMenuButton extends HUDElement implements Clickable {
     private boolean clickable = true, on = false;
     private int touchId = -1, touchIndex = -1;
     private int alpha = 150;
+    private Execution execOff;
 
-    public HUDMenuButton(int xCenter, int yCenter, int width, int height, String text) {
+    public HUDMenuButton(int xCenter, int yCenter, int width, int height, String text, Execution execOff) {
         super(xCenter, yCenter, width, height);
         this.text = text;
         this.background = new RectF(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
+        this.execOff = execOff;
     }
 
     @Override
@@ -83,6 +86,9 @@ public class HUDMenuButton extends HUDElement implements Clickable {
         setTouchIndex(-1);
         setTouchId(-1);
         setOn(false);
+        if (this.execOff != null) {
+            this.execOff.execute();
+        }
     }
 
     public boolean isOn() {

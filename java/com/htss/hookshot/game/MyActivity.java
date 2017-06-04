@@ -113,9 +113,12 @@ public class MyActivity extends Activity {
 
         pauseButton = new HUDPauseButton(screenWidth / 2, screenHeight - TILE_WIDTH / 2, TILE_WIDTH, (int) (TILE_WIDTH * 0.5));
 
+        int nMenuButton = 2;
+        int menuButtonHeight = TILE_WIDTH;
+        int menuButtonSeparation = TILE_WIDTH / 5;
         int menuWidth = 5*TILE_WIDTH;
-        int menuHeight = screenHeight-3*TILE_WIDTH/2;
-        menu = new HUDMenu(screenWidth / 2, TILE_WIDTH / 2 + menuHeight / 2, menuWidth, menuHeight);
+        int menuHeight = menuButtonHeight*nMenuButton + (nMenuButton+1)*menuButtonSeparation;
+        menu = new HUDMenu(screenWidth / 2, screenHeight / 2, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
 
         canvas = (GameBoard) findViewById(R.id.the_canvas);
         canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");

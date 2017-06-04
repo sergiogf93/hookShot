@@ -5,7 +5,9 @@ import android.graphics.Color;
 import android.graphics.RectF;
 import android.graphics.drawable.shapes.RoundRectShape;
 
+import com.htss.hookshot.executions.LaunchGame;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.interfaces.Execution;
 
 import java.util.Vector;
 
@@ -17,9 +19,12 @@ public class HUDMenu extends HUDElement {
     private RectF background;
     private int alpha = 150;
     private Vector<HUDMenuButton> buttons = new Vector<HUDMenuButton>();
+    private int buttonHeight, buttonSeparation;
 
-    public HUDMenu(int xCenter, int yCenter, int width, int height) {
+    public HUDMenu(int xCenter, int yCenter, int width, int height, int buttonHeight, int buttonSeparation) {
         super(xCenter, yCenter, width, height);
+        this.buttonHeight = buttonHeight;
+        this.buttonSeparation = buttonSeparation;
         this.background = new RectF(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
     }
 
@@ -31,7 +36,13 @@ public class HUDMenu extends HUDElement {
     }
 
     public void addMenuButtons() {
-        buttons.add(new HUDMenuButton(getxCenter(), getyCenter(), (int) (getWidth() * 0.9), (int) (getHeight() * 0.15), "DEBUG"));
+        buttons.add(new HUDMenuButton(getxCenter(), getyCenter() - getHeight() / 2 + buttonSeparation + buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "RESET", new LaunchGame()));
+        buttons.add(new HUDMenuButton(getxCenter(), getyCenter() - getHeight() / 2 + 2*buttonSeparation + 3* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "DEBUG", new Execution() {
+            @Override
+            public double execute() {
+                return 0;
+            }
+        }));
         MyActivity.hudElements.addAll(buttons);
     }
 

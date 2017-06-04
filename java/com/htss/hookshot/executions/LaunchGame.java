@@ -42,6 +42,10 @@ public class LaunchGame implements Execution {
         MyActivity.hudElements.add(MyActivity.buttonB);
         MyActivity.hudElements.add(MyActivity.pauseButton);
 
+        if (MyActivity.paused) {
+            MyActivity.unpause();
+        }
+
         return 0;
     }
 }
