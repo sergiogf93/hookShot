@@ -872,7 +872,7 @@ public class Map {
         double xPos = (rightX - leftX)*SQUARE_SIZE/2 + leftX*SQUARE_SIZE;
 
 //      Set the WallButtons
-        Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, obstacleRandom);
+        Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, obstacleRandom, true);
         addDoor(xPos, yPos, (int) ((rightX - leftX + 1) * SQUARE_SIZE), (int) (1.5*SQUARE_SIZE), new MathVector(1, 0), buttons);
     }
 
@@ -906,7 +906,7 @@ public class Map {
             accessibleRegions = roomsB;
         }
 //      Set the WallButtons
-        Vector<WallButton> buttons = createWallButtons(accessibleRegions, nButtons, obstacleRandom);
+        Vector<WallButton> buttons = createWallButtons(accessibleRegions, nButtons, obstacleRandom, false);
         MathVector position = passage.getCenterInRoom();
         addDoor(position.x, position.y, (int) ((PASSAGE_RADIUS + 2) * SQUARE_SIZE * 2), (int) (1.5*SQUARE_SIZE), passage.vector.getNormal(), buttons);
     }
@@ -927,11 +927,11 @@ public class Map {
         return rooms;
     }
 
-    public Vector<WallButton> createWallButtons(Vector<Room> rooms, int nButtons, Random random) {
+    public Vector<WallButton> createWallButtons(Vector<Room> rooms, int nButtons, Random random, boolean useSusceptibleRooms) {
         Vector<WallButton> buttons = new Vector<WallButton>();
         for (int i = 0; i < nButtons; i++) {
             MathVector position;
-            if (susceptibleRooms.size() > 0) {
+            if (useSusceptibleRooms && susceptibleRooms.size() > 0) {
                 position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, random);
                 susceptibleRooms.remove(susceptibleRooms.lastElement());
             } else {
