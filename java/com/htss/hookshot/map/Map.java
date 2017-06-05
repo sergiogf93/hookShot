@@ -12,8 +12,9 @@ import android.graphics.Point;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.object.collectables.CoinBag;
+import com.htss.hookshot.game.object.interactables.CoinBag;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
+import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
 import com.htss.hookshot.game.object.obstacles.Ball;
 import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.game.object.obstacles.WallButton;
@@ -79,7 +80,8 @@ public class Map {
 //        addBallObstacles(1);
 //        addCoins();
 //        addDownDoor(4);
-        addPassageDoor(2);
+//        addPassageDoor(2);
+        addPowerUps(1);
 //        addEnemies(1);
 
         generateMesh();
@@ -235,42 +237,6 @@ public class Map {
                 checkedVertices.add(square.bottomRight.vertexIndex);
                 checkedVertices.add(square.topRight.vertexIndex);
                 checkedVertices.add(square.bottomLeft.vertexIndex);
-                break;
-            }
-        }
-    }
-
-    private void createCrack(Node center, int type) {
-        switch (type) {
-            case 15: {
-                Point[] crack = new Point[6];
-                Point[] crack2 = new Point[3];
-                if (random.nextBoolean()) {
-                    crack[0] = new Point((int) (center.position.x), (int) (center.position.y - SQUARE_SIZE / 2));
-                    crack[1] = new Point((int) (center.position.x - SQUARE_SIZE / 3), (int) (center.position.y - SQUARE_SIZE / 3));
-                    crack[2] = new Point((int) (center.position.x - SQUARE_SIZE / 5), (int) (center.position.y - SQUARE_SIZE / 5));
-                    crack[3] = new Point((int) (center.position.x + SQUARE_SIZE / 5), (int) (center.position.y + SQUARE_SIZE / 5));
-                    crack[4] = new Point((int) (center.position.x + SQUARE_SIZE / 3), (int) (center.position.y + SQUARE_SIZE / 3));
-                    crack[5] = new Point((int) (center.position.x), (int) (center.position.y + SQUARE_SIZE / 2));
-
-                    crack2[0] = new Point((int) (center.position.x - SQUARE_SIZE / 2), (int) (center.position.y));
-                    crack2[1] = new Point((int) (center.position.x + SQUARE_SIZE / 4), (int) (center.position.y - SQUARE_SIZE / 3));
-                    crack2[2] = new Point((int) (center.position.x + SQUARE_SIZE / 2), (int) (center.position.y));
-                } else {
-                    crack[0] = new Point((int) (center.position.x - SQUARE_SIZE / 2), (int) (center.position.y));
-                    crack[1] = new Point((int) (center.position.x - SQUARE_SIZE / 3), (int) (center.position.y + SQUARE_SIZE / 3));
-                    crack[2] = new Point((int) (center.position.x - SQUARE_SIZE / 5), (int) (center.position.y + SQUARE_SIZE / 5));
-                    crack[3] = new Point((int) (center.position.x + SQUARE_SIZE / 5), (int) (center.position.y - SQUARE_SIZE / 5));
-                    crack[4] = new Point((int) (center.position.x + SQUARE_SIZE / 3), (int) (center.position.y - SQUARE_SIZE / 3));
-                    crack[5] = new Point((int) (center.position.x + SQUARE_SIZE / 2), (int) (center.position.y));
-
-                    crack2[0] = new Point((int) (center.position.x), (int) (center.position.y - SQUARE_SIZE / 2));
-                    crack2[1] = new Point((int) (center.position.x - SQUARE_SIZE / 4), (int) (center.position.y + SQUARE_SIZE / 3));
-                    crack2[2] = new Point((int) (center.position.x), (int) (center.position.y + SQUARE_SIZE / 2));
-                }
-
-                this.cracks.add(crack);
-                this.cracks.add(crack2);
                 break;
             }
         }
@@ -643,65 +609,6 @@ public class Map {
         }
     }
 
-    public Vector<Coord> findPath(Coord start, Coord goal){
-        Vector<Coord> path = new Vector<Coord>();
-
-        int counter = 0;
-        boolean reachedStart = false;
-
-        LinkedList<Coord> queue = new LinkedList<Coord>();
-        HashMap<Coord,Integer> counterMap = new HashMap<Coord, Integer>();
-        queue.add(goal);
-        counterMap.put(goal,counter);
-
-        while (!reachedStart) {
-            counter++;
-            Vector<Coord> currentAdjacent = new Vector<Coord>();
-            while (queue.size() > 0) {
-                Coord current = queue.pop();
-                for (int x = current.tileX - 1; x <= current.tileX + 1; x++) {
-                    for (int y = current.tileY - 1; y <= current.tileY + 1; y++) {
-                        if(x != current.tileX && y != current.tileY) {
-                            Coord adjacent = new Coord(x, y);
-                            if (x == start.tileX && y == start.tileY){
-                                reachedStart = true;
-                            }
-                            if (map[x][y] == 0) {
-                                if (counterMap.containsKey(adjacent)) {
-                                    if (counterMap.get(adjacent) > counter) {
-                                        counterMap.put(adjacent, counter);
-                                    }
-                                } else {
-                                    counterMap.put(adjacent, counter);
-                                    currentAdjacent.add(adjacent);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            queue.addAll(currentAdjacent);
-        }
-
-        path.add(start);
-        while (!path.contains(goal)) {
-            Coord current = path.lastElement();
-            int bestCounter = counterMap.get(current);
-            Coord bestCoord = new Coord();
-            for (Coord coord : counterMap.keySet()) {
-                if (coord.isAdjacent(current)) {
-                    if (counterMap.get(coord) < bestCounter) {
-                        bestCounter = counterMap.get(coord);
-                        bestCoord = coord;
-                    }
-                }
-            }
-            path.add(bestCoord);
-        }
-
-        return path;
-    }
-
     public MathVector getRandomPointInRooms(Vector<Room> rooms, int maxWallCount, Random r) {
         Coord coord;
         int n = 0;
@@ -945,6 +852,20 @@ public class Map {
         return buttons;
     }
 
+    public void addPowerUps(int N) {
+        Random powerUpRandom = new Random();
+        powerUpRandom.setSeed(seed + N + MyActivity.level);
+        MathVector position;
+        if (susceptibleRooms.size() > 0) {
+            position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, powerUpRandom);
+            susceptibleRooms.remove(susceptibleRooms.lastElement());
+        } else {
+            position = getRandomPointInRooms(roomRegions, 0, powerUpRandom);
+        }
+        PortalPowerUp powerUp = new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2, (int) SQUARE_SIZE);
+        MyActivity.canvas.gameObjects.add(powerUp);
+    }
+
     public void addEnemies (int N){
         Random enemyRandom = new Random();
         enemyRandom.setSeed(this.seed + MyActivity.level + N);
@@ -954,29 +875,6 @@ public class Map {
             MyActivity.canvas.gameObjects.add(stalker);
             MyActivity.dynamicObjects.add(stalker);
             MyActivity.enemies.add(stalker);
-        }
-    }
-
-    public void addCoins(){
-        Random coinRandom = new Random();
-        coinRandom.setSeed(seed + MyActivity.level);
-        if (susceptibleRooms.size() > 0) {
-            Room room = susceptibleRooms.lastElement();
-            susceptibleRooms.remove(room);
-            int tileIndex = coinRandom.nextInt(room.tiles.size());
-            Coord tile = room.tiles.get(tileIndex);
-            int j = 0;
-            while (getSurroundingCount(tile.tileX,tile.tileY) > 0 && j < 100){
-                tileIndex = coinRandom.nextInt(room.tiles.size());
-                tile = room.tiles.get(tileIndex);
-                j++;
-            }
-            CoinBag coinBag = new CoinBag(tile.tileX*SQUARE_SIZE, tile.tileY*SQUARE_SIZE);
-            MyActivity.canvas.gameObjects.add(coinBag);
-        } else {
-            MathVector pos = getRandomEmptyPoint(0, coinRandom);
-            CoinBag coinBag = new CoinBag(pos.x, pos.y);
-            MyActivity.canvas.gameObjects.add(coinBag);
         }
     }
 

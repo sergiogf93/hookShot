@@ -33,6 +33,7 @@ public class MainCharacter extends GameCharacter {
     private CircleShape rightHand, leftHand, rightFoot, leftFoot;
     private BiCircleShape leftEye, rightEye;
     private HUDBar healthBar;
+    private int[] powerUps = new int[4];
 
     public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
         super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH);
@@ -376,5 +377,9 @@ public class MainCharacter extends GameCharacter {
         if (!MyActivity.hudElements.contains(this.healthBar)){
             MyActivity.hudElements.add(this.healthBar);
         }
+    }
+
+    public void addPowerUp(int type) {
+        this.powerUps[type] += 1;
     }
 }

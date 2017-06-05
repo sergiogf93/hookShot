@@ -1,4 +1,4 @@
-package com.htss.hookshot.game.object.collectables;
+package com.htss.hookshot.game.object.interactables;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
