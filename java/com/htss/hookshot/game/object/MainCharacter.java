@@ -9,6 +9,7 @@ import com.htss.hookshot.game.animation.MainCharacterAnimation;
 import com.htss.hookshot.game.hud.HUDBar;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.hook.Hook;
+import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.shapes.BiCircleShape;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
@@ -36,6 +37,7 @@ public class MainCharacter extends GameCharacter {
     private BiCircleShape leftEye, rightEye;
     private HUDBar healthBar;
     private HashMap<Integer, Integer> powerUps = new HashMap<Integer, Integer>();
+    private int currentPowerUp = -1;
 
     public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
         super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH);
@@ -221,7 +223,7 @@ public class MainCharacter extends GameCharacter {
         rightFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
         rightFoot.draw(canvas);
         Paint paint = new Paint();
-        paint.setColor(Color.BLACK);
+        paint.setColor(getBodyColor());
         canvas.drawCircle((int) getxPosInScreen(), (int) getyPosInScreen(), BODY_RADIUS, paint);
         paint.setColor(Color.YELLOW);
         vectorForEyes.rotateDeg(-1 * getFacing() * 90);
@@ -240,10 +242,18 @@ public class MainCharacter extends GameCharacter {
         leftFoot.draw(canvas);
     }
 
+    private int getBodyColor() {
+        switch (getCurrentPowerUp()) {
+            case GamePowerUp.PORTAL:
+                return Color.MAGENTA;
+            default:
+                return Color.BLACK;
+        }
+    }
+
     @Override
     public int getWidth() {
         return BODY_RADIUS*2;
-//        return (int) Math.abs(rightHand.getPositionInRoom().x - leftHand.getPositionInRoom().x) + rightHand.getRadius() + leftHand.getRadius();
     }
 
     @Override
@@ -389,7 +399,20 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
+    public void usePowerUp(int type) {
+        powerUps.put(type, powerUps.get(type) - 1);
+        setCurrentPowerUp(type);
+    }
+
     public HashMap<Integer, Integer> getPowerUps() {
         return powerUps;
+    }
+
+    public int getCurrentPowerUp() {
+        return currentPowerUp;
+    }
+
+    public void setCurrentPowerUp(int currentPowerUp) {
+        this.currentPowerUp = currentPowerUp;
     }
 }

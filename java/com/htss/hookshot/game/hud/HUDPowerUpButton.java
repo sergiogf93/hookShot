@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.GameBoard;
+import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.interfaces.Clickable;
 
@@ -25,6 +26,25 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
         getPaint().setStrokeWidth(getWidth()/10);
         getPaint().setTypeface(GameBoard.paint.getTypeface());
         getPaint().setTextSize(width / 5);
+    }
+
+    private void manageExecution() {
+        if (MyActivity.character.getCurrentPowerUp() != powerUp.getType()){
+            usePowerUp();
+        } else {
+            unequipPowerUp();
+        }
+    }
+
+    private void usePowerUp() {
+        MyActivity.character.usePowerUp(powerUp.getType());
+        MyActivity.unpause();
+    }
+
+    private void unequipPowerUp() {
+        MyActivity.character.setCurrentPowerUp(-1);
+        MyActivity.character.addPowerUp(powerUp.getType());
+        this.quantity += 1;
     }
 
     @Override
@@ -50,13 +70,13 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
 
     private void drawPowerUp(Canvas canvas) {
         powerUp.draw(canvas);
-        if (!isOn()) {
+        if (!isOn() && MyActivity.character.getCurrentPowerUp() != powerUp.getType()) {
             powerUp.updateFrame();
         }
     }
 
     private int getMainColor() {
-        if (isOn()) {
+        if (isOn() || MyActivity.character.getCurrentPowerUp() == powerUp.getType()) {
             return Color.rgb(45, 85, 110);
         } else {
             return Color.CYAN;
@@ -83,6 +103,7 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
         setTouchIndex(-1);
         setTouchId(-1);
         setOn(false);
+        manageExecution();
     }
 
     public boolean isOn() {

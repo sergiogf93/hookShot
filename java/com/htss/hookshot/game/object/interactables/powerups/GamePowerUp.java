@@ -53,4 +53,12 @@ public abstract class GamePowerUp extends GameDynamicObject implements Interacta
     public void setPaint(Paint paint) {
         this.paint = paint;
     }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
 }
