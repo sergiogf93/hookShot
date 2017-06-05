@@ -542,7 +542,7 @@ public abstract class GameDynamicObject extends GameObject {
         this.frame = frame;
     }
 
-    protected void updateFrame() {this.frame += MyActivity.FRAME_RATE;}
+    public void updateFrame() {this.frame += MyActivity.FRAME_RATE;}
 
     public boolean isOnFloor() {
         return onFloor;

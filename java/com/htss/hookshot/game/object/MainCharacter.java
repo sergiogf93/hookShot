@@ -15,6 +15,8 @@ import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.math.MathVector;
 
+import java.util.HashMap;
+
 /**
  * Created by Sergio on 03/08/2016.
  */
@@ -33,7 +35,7 @@ public class MainCharacter extends GameCharacter {
     private CircleShape rightHand, leftHand, rightFoot, leftFoot;
     private BiCircleShape leftEye, rightEye;
     private HUDBar healthBar;
-    private int[] powerUps = new int[4];
+    private HashMap<Integer, Integer> powerUps = new HashMap<Integer, Integer>();
 
     public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
         super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH);
@@ -380,6 +382,14 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void addPowerUp(int type) {
-        this.powerUps[type] += 1;
+        if (powerUps.containsKey(type)) {
+            powerUps.put(type, powerUps.get(type) + 1);
+        } else {
+            powerUps.put(type, 1);
+        }
+    }
+
+    public HashMap<Integer, Integer> getPowerUps() {
+        return powerUps;
     }
 }

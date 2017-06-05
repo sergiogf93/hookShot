@@ -3,7 +3,6 @@ package com.htss.hookshot.game.hud;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.RectF;
-import android.graphics.drawable.shapes.RoundRectShape;
 
 import com.htss.hookshot.executions.LaunchGame;
 import com.htss.hookshot.game.MyActivity;
@@ -16,8 +15,9 @@ import java.util.Vector;
  */
 public class HUDMenu extends HUDElement {
 
+    public static final int MENU_ALPHA = 150;
+
     private RectF background;
-    private int alpha = 150;
     private Vector<HUDMenuButton> buttons = new Vector<HUDMenuButton>();
     private int buttonHeight, buttonSeparation;
 
@@ -31,7 +31,7 @@ public class HUDMenu extends HUDElement {
     @Override
     public void draw(Canvas canvas) {
         setColor(Color.CYAN);
-        setAlpha(alpha);
+        setAlpha(MENU_ALPHA);
         canvas.drawRoundRect(this.background, MyActivity.TILE_WIDTH / 2, MyActivity.TILE_WIDTH / 2, getPaint());
     }
 

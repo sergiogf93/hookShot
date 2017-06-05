@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
+import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
@@ -15,7 +16,7 @@ import com.htss.hookshot.util.StringUtil;
  */
 public class HUDMenuButton extends HUDElement implements Clickable {
 
-    private static final int TEXT_SIZE = (int) (MyActivity.TILE_WIDTH *0.35);
+    private static final int TEXT_SIZE = (int) (MyActivity.TILE_WIDTH *0.5);
 
     private String text;
     private RectF background;
@@ -29,6 +30,8 @@ public class HUDMenuButton extends HUDElement implements Clickable {
         this.text = text;
         this.background = new RectF(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
         this.execOff = execOff;
+        getPaint().setTypeface(GameBoard.paint.getTypeface());
+        getPaint().setTextSize(TEXT_SIZE);
     }
 
     @Override

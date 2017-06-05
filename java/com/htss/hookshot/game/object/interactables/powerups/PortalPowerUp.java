@@ -10,8 +10,8 @@ import android.graphics.RectF;
  */
 public class PortalPowerUp extends GamePowerUp {
 
-    public PortalPowerUp(double xPos, double yPos, int width, int height) {
-        super(xPos, yPos, width, height, GamePowerUp.PORTAL);
+    public PortalPowerUp(double xPos, double yPos, int width) {
+        super(xPos, yPos, width, width*2, GamePowerUp.PORTAL);
     }
 
     @Override

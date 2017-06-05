@@ -37,9 +37,7 @@ public class LaunchGame implements Execution {
         MyActivity.dynamicObjects.add(MyActivity.character);
 
         MyActivity.hudElements.clear();
-        MyActivity.hudElements.add(MyActivity.joystick);
-        MyActivity.hudElements.add(MyActivity.buttonA);
-        MyActivity.hudElements.add(MyActivity.buttonB);
+        MyActivity.addControls();
         MyActivity.hudElements.add(MyActivity.pauseButton);
 
         if (MyActivity.paused) {

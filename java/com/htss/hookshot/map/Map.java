@@ -81,7 +81,7 @@ public class Map {
 //        addCoins();
 //        addDownDoor(4);
 //        addPassageDoor(2);
-        addPowerUps(1);
+        addPowerUps(2);
 //        addEnemies(1);
 
         generateMesh();
@@ -855,15 +855,17 @@ public class Map {
     public void addPowerUps(int N) {
         Random powerUpRandom = new Random();
         powerUpRandom.setSeed(seed + N + MyActivity.level);
-        MathVector position;
-        if (susceptibleRooms.size() > 0) {
-            position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, powerUpRandom);
-            susceptibleRooms.remove(susceptibleRooms.lastElement());
-        } else {
-            position = getRandomPointInRooms(roomRegions, 0, powerUpRandom);
+        for (int i = 0; i < N; i++) {
+            MathVector position;
+            if (susceptibleRooms.size() > 0) {
+                position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, powerUpRandom);
+                susceptibleRooms.remove(susceptibleRooms.lastElement());
+            } else {
+                position = getRandomPointInRooms(roomRegions, 0, powerUpRandom);
+            }
+            PortalPowerUp powerUp = new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2);
+            MyActivity.canvas.gameObjects.add(powerUp);
         }
-        PortalPowerUp powerUp = new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2, (int) SQUARE_SIZE);
-        MyActivity.canvas.gameObjects.add(powerUp);
     }
 
     public void addEnemies (int N){

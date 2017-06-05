@@ -23,18 +23,22 @@ import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.HUDMenu;
 import com.htss.hookshot.game.hud.HUDPauseButton;
+import com.htss.hookshot.game.hud.HUDPowerUpButton;
 import com.htss.hookshot.game.hud.HUDText;
 import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
+import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
 
+import java.util.LinkedList;
 import java.util.Vector;
 
 
@@ -62,6 +66,7 @@ public class MyActivity extends Activity {
     public static HUDCircleButton reloadButton, extendButton, buttonB, buttonA;
     public static HUDPauseButton pauseButton;
     public static HUDMenu menu;
+    public static LinkedList<HUDPowerUpButton> powerUpButtons = new LinkedList<HUDPowerUpButton>();
     public static boolean paused = false;
 
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
@@ -155,7 +160,7 @@ public class MyActivity extends Activity {
 
         final FadeEffect fadeEffect = new FadeEffect(new LaunchGame());
 
-        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", TILE_WIDTH *8/10, null, new Execution() {
+        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", TILE_WIDTH *8/10, new Execution() {
             @Override
             public double execute() {
                 gameEffects.add(fadeEffect);
@@ -411,6 +416,19 @@ public class MyActivity extends Activity {
         return new MathVector(xDown, yDown);
     }
 
+    public static void hideControls() {
+        joystick.reset();
+        MyActivity.hudElements.remove(MyActivity.joystick);
+        MyActivity.hudElements.remove(MyActivity.buttonA);
+        MyActivity.hudElements.remove(MyActivity.buttonB);
+    }
+
+    public static void addControls() {
+        MyActivity.hudElements.add(MyActivity.joystick);
+        MyActivity.hudElements.add(MyActivity.buttonA);
+        MyActivity.hudElements.add(MyActivity.buttonB);
+    }
+
     public static void setHUDUnclickable(){
         joystick.reset();
         joystick.setClickable(false);
@@ -460,15 +478,27 @@ public class MyActivity extends Activity {
 
     public static void pause() {
         MyActivity.paused = true;
-        setHUDUnclickable();
+        hideControls();
+
         hudElements.add(menu);
         menu.addMenuButtons();
+        powerUpButtons = new LinkedList<HUDPowerUpButton>();
+        for (Integer i : character.getPowerUps().keySet()) {
+            switch (i) {
+                case GamePowerUp.PORTAL:
+                    PortalPowerUp powerUp = new PortalPowerUp(screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, TILE_WIDTH / 2);
+                    powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2 , powerUp, character.getPowerUps().get(i)));
+                    break;
+            }
+        }
+        MyActivity.hudElements.addAll(powerUpButtons);
     }
 
     public static void unpause() {
         MyActivity.paused = false;
-        setHUDClickable();
+        addControls();
         menu.removeButtons();
         hudElements.remove(menu);
+        hudElements.removeAll(powerUpButtons);
     }
 }
