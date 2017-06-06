@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.math.GameMath;
+import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
 
 /**
@@ -14,6 +15,9 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class PortalObject extends GameDynamicObject {
 
+    private static int STATE_REST = 0, STATE_MOVING = 1, STATE_FINISH = 2;
+
+    private int state = STATE_REST;
     private int radius;
     private Paint paint = new Paint();
     private PortalObject twinPortal;
@@ -33,9 +37,37 @@ public class PortalObject extends GameDynamicObject {
 
     public void use() {
         if (getTwinPortal() != null) {
+            MyActivity.handleTouch = false;
+            MyActivity.canvas.gameObjects.remove(MyActivity.character);
             MyActivity.character.setPositionInRoom(getTwinPortal().getxPortal(), getTwinPortal().getyPortal());
+            state = STATE_MOVING;
+        }
+    }
+
+    @Override
+    public void update() {
+        updateFrame();
+        if (state == STATE_MOVING) {
+            MyActivity.hideControls();
+            MathVector currentD = new MathVector(MyActivity.canvas.dx, MyActivity.canvas.dy);
+            MathVector objectiveD = new MathVector(getTwinPortal().getDx(), getTwinPortal().getDy());
+            MathVector direction = new MathVector(currentD, objectiveD);
+            if (direction.magnitude() > MyActivity.TILE_WIDTH) {
+                direction = direction.getUnitVector().rescaled(MyActivity.TILE_WIDTH);
+                MyActivity.canvas.dx += direction.x;
+                MyActivity.canvas.dy += direction.y;
+            } else {
+                state = STATE_FINISH;
+            }
+        } else if (state == STATE_FINISH) {
+            MyActivity.handleTouch = true;
+            MyActivity.addControls();
+            MyActivity.canvas.gameObjects.add(MyActivity.canvas.gameObjects.size(),MyActivity.character);
+            MyActivity.character.setPositionInRoom(getTwinPortal().getxPortal(), getTwinPortal().getyPortal());
+            MyActivity.character.update();
             MyActivity.canvas.dx = getTwinPortal().getDx();
             MyActivity.canvas.dy = getTwinPortal().getDy();
+            state = STATE_REST;
         }
     }
 
@@ -62,8 +94,8 @@ public class PortalObject extends GameDynamicObject {
     }
 
     public int getRadius() {
-        if (getFrame() < TimeUtil.convertSecondToGameSecond(1)){
-            return (int) (radius*getFrame()/TimeUtil.convertSecondToGameSecond(1));
+        if (getFrame() < TimeUtil.convertSecondToGameSecond(0.5)){
+            return (int) (radius*getFrame()/TimeUtil.convertSecondToGameSecond(0.5));
         } else {
             return radius;
         }

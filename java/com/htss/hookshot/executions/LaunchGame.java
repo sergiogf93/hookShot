@@ -2,6 +2,7 @@ package com.htss.hookshot.executions;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
@@ -42,6 +43,9 @@ public class LaunchGame implements Execution {
             MyActivity.unpause();
         }
 
+        //////////////////
+        MyActivity.character.addPowerUp(GamePowerUp.PORTAL);
+        //////////////////
         return 0;
     }
 }

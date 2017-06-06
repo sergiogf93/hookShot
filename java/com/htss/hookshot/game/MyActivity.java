@@ -68,7 +68,7 @@ public class MyActivity extends Activity {
     public static HUDPauseButton pauseButton;
     public static HUDMenu menu;
     public static LinkedList<HUDPowerUpButton> powerUpButtons = new LinkedList<HUDPowerUpButton>();
-    public static boolean paused = false;
+    public static boolean paused = false, handleTouch = true;
 
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
     public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
@@ -154,7 +154,9 @@ public class MyActivity extends Activity {
         myLayout.setOnTouchListener(
                 new LinearLayout.OnTouchListener() {
                     public boolean onTouch(View v, MotionEvent ev){
-                        handleTouch(ev);
+                        if (handleTouch) {
+                            handleTouch(ev);
+                        }
                         return true;
                     }
                 }
@@ -433,6 +435,8 @@ public class MyActivity extends Activity {
 
     public static void hideControls() {
         joystick.reset();
+        buttonA.reset();
+        buttonB.reset();
         MyActivity.hudElements.remove(MyActivity.joystick);
         MyActivity.hudElements.remove(MyActivity.buttonA);
         MyActivity.hudElements.remove(MyActivity.buttonB);
@@ -446,6 +450,8 @@ public class MyActivity extends Activity {
 
     public static void setHUDUnclickable(){
         joystick.reset();
+        buttonA.reset();
+        buttonB.reset();
         joystick.setClickable(false);
         buttonA.setClickable(false);
         buttonB.setClickable(false);

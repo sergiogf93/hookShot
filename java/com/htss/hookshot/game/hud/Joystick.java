@@ -68,7 +68,7 @@ public class Joystick extends HUDElement implements Clickable {
 
     private void moveCharacter(int dx, int dy) {
         MathVector newP;
-        if (MyActivity.character.isHooked() && MyActivity.character.getHook().getNodes().size() <= MainCharacter.MIN_HOOSKSHOT_NODES + 2) {
+        if (MyActivity.character.isHooked() && MyActivity.character.getHook().getNodes().size() <= MainCharacter.MIN_HOOSKSHOT_NODES) {
             newP = new MathVector(dx, dy);
         } else {
             newP = new MathVector(dx, 0);
