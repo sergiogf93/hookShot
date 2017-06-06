@@ -37,14 +37,12 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
     }
 
     private void usePowerUp() {
-        MyActivity.character.usePowerUp(powerUp.getType());
+        MyActivity.character.equipPowerUp(powerUp.getType());
         MyActivity.unpause();
     }
 
     private void unequipPowerUp() {
         MyActivity.character.setCurrentPowerUp(-1);
-        MyActivity.character.addPowerUp(powerUp.getType());
-        this.quantity += 1;
     }
 
     @Override

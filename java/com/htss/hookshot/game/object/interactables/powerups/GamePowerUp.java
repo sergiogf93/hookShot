@@ -17,8 +17,8 @@ public abstract class GamePowerUp extends GameDynamicObject implements Interacta
     private int width, height;
     private Paint paint = new Paint();
 
-    public GamePowerUp(double xPos, double yPos, int width, int height, int type) {
-        super(xPos, yPos, 0, 0, 0);
+    public GamePowerUp(double xPos, double yPos, int width, int height, int type, boolean addToGameObjects, boolean addToDynamicObjects) {
+        super(xPos, yPos, 0, 0, 0, addToGameObjects, addToDynamicObjects);
         this.width = width;
         this.height = height;
         this.type = type;

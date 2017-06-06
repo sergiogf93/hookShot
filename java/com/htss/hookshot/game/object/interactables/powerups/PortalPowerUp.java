@@ -10,8 +10,9 @@ import android.graphics.RectF;
  */
 public class PortalPowerUp extends GamePowerUp {
 
-    public PortalPowerUp(double xPos, double yPos, int width) {
-        super(xPos, yPos, width, width*2, GamePowerUp.PORTAL);
+    public PortalPowerUp(double xPos, double yPos, int width, boolean addToGameObjects, boolean addToDynamicObjects) {
+        super(xPos, yPos, width, width*2, GamePowerUp.PORTAL, addToGameObjects, addToDynamicObjects);
+        getPaint().setStrokeWidth(getWidth() / 5);
     }
 
     @Override
@@ -25,7 +26,6 @@ public class PortalPowerUp extends GamePowerUp {
     private void drawArc(Canvas canvas, RectF oval, int color, int start, int sweep) {
         getPaint().setColor(color);
         getPaint().setStyle(Paint.Style.STROKE);
-        getPaint().setStrokeWidth(getWidth() / 5);
         canvas.drawArc(oval, start, sweep, true, getPaint());
     }
 

@@ -25,8 +25,8 @@ public class Door extends GameDynamicObject {
     private MathVector vector;
     private Paint paint = new Paint();
 
-    public Door(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons) {
-        super(xPos, yPos, 0, 0, 0);
+    public Door(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons, boolean addToLists) {
+        super(xPos, yPos, 0, 0, 0, addToLists, addToLists);
         this.width = width;
         this.height = height;
         this.vector = vector;
@@ -81,7 +81,7 @@ public class Door extends GameDynamicObject {
 
     @Override
     public GameShape getBounds() {
-        return new RectShape(getxPosInRoom(), getyPosInRoom(), getWidth(), getHeight(), getVector(), false);
+        return new RectShape(getxPosInRoom(), getyPosInRoom(), getWidth(), getHeight(), getVector(), false, false);
     }
 
     @Override

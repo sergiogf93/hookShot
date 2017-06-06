@@ -33,8 +33,6 @@ public class LaunchGame implements Execution {
         startPosition = startPosition.roomToScreen();
 
         MyActivity.character = new MainCharacter(startPosition.x,startPosition.y,1,5);
-        MyActivity.canvas.gameObjects.add(MyActivity.character);
-        MyActivity.dynamicObjects.add(MyActivity.character);
 
         MyActivity.hudElements.clear();
         MyActivity.addControls();

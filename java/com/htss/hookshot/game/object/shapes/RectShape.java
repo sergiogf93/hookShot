@@ -19,32 +19,32 @@ public class RectShape extends GameShape{
     private MathVector vector;
     private boolean fill;
 
-    public RectShape(double xPos, double yPos, int width, int height, boolean fill) {
-        super(xPos, yPos, Color.YELLOW);
+    public RectShape(double xPos, double yPos, int width, int height, boolean fill, boolean addToGameObjects) {
+        super(xPos, yPos, Color.YELLOW, addToGameObjects);
         this.width = width;
         this.height = height;
         this.fill = fill;
         this.vector = new MathVector(1, 0);
     }
 
-    public RectShape(double xPos, double yPos, int width, int height, boolean fill, int color) {
-        super(xPos, yPos, color);
+    public RectShape(double xPos, double yPos, int width, int height, boolean fill, int color, boolean addToGameObjects) {
+        super(xPos, yPos, color, addToGameObjects);
         this.width = width;
         this.height = height;
         this.vector = new MathVector(1, 0);
         this.fill = fill;
     }
 
-    public RectShape (Rect r, boolean fill, int color){
-        super(r.centerX(),r.centerY(),color);
+    public RectShape (Rect r, boolean fill, int color, boolean addToGameObjects){
+        super(r.centerX(),r.centerY(),color, addToGameObjects);
         this.width = r.width();
         this.height = r.height();
         this.vector = new MathVector(1, 0);
         this.fill = fill;
     }
 
-    public RectShape(double xPos, double yPos, int width, int height, MathVector vector, boolean fill) {
-        super(xPos, yPos, Color.YELLOW);
+    public RectShape(double xPos, double yPos, int width, int height, MathVector vector, boolean fill, boolean addToGameObjects) {
+        super(xPos, yPos, Color.YELLOW, addToGameObjects);
         this.width = width;
         this.height = height;
         this.vector = vector;

@@ -32,6 +32,7 @@ import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
+import com.htss.hookshot.game.object.miscellaneous.PortalObject;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
@@ -44,10 +45,10 @@ import java.util.Vector;
 
 public class MyActivity extends Activity {
 
-//    public static int FILL_PERCENT = 52; //Default 52 for screen size 30
-//    public static int mapXTiles = 110, mapYTiles = 80; //Default 110 80, for screen size 30 20
-    public static int FILL_PERCENT = 30;
-    public static int mapXTiles = 30, mapYTiles = 20;
+    public static int FILL_PERCENT = 52; //Default 52 for screen size 30
+    public static int mapXTiles = 110, mapYTiles = 80; //Default 110 80, for screen size 30 20
+//    public static int FILL_PERCENT = 30;
+//    public static int mapXTiles = 30, mapYTiles = 20;
 
     public static final int FRAME_RATE = 20, TILE_WIDTH = 100; //Default 52 for screen size 30
     public static int HORIZONTAL_MARGIN, VERTICAL_MARGIN;
@@ -114,7 +115,21 @@ public class MyActivity extends Activity {
                 if (MyActivity.character.getHook() != null) {
                     MyActivity.character.removeHook();
                 } else {
-                    MyActivity.character.getHurt(1);
+                    boolean portalUsed = false;
+                    if (MyActivity.character.getPortals().size() > 0) {
+                        for (PortalObject portal : MyActivity.character.getPortals()) {
+                            if (MyActivity.character.distanceTo(portal) < portal.getRadius()) {
+                                portal.use();
+                                portalUsed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!portalUsed) {
+                        if (MyActivity.character.getCurrentPowerUp() >= 0) {
+                            MyActivity.character.usePowerUp();
+                        }
+                    }
                 }
                 return 0;
             }
@@ -408,7 +423,7 @@ public class MyActivity extends Activity {
                 if (Color.alpha(pixel) == 255) {
                     return (new MathVector(point.x, point.y)).roomToScreen();
                 }
-                canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW));
+                canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
             } else {
                 break;
             }
@@ -484,11 +499,13 @@ public class MyActivity extends Activity {
         menu.addMenuButtons();
         powerUpButtons = new LinkedList<HUDPowerUpButton>();
         for (Integer i : character.getPowerUps().keySet()) {
-            switch (i) {
-                case GamePowerUp.PORTAL:
-                    PortalPowerUp powerUp = new PortalPowerUp(screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, TILE_WIDTH / 2);
-                    powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2 , powerUp, character.getPowerUps().get(i)));
-                    break;
+            if (character.getPowerUps().get(i) > 0) {
+                switch (i) {
+                    case GamePowerUp.PORTAL:
+                        PortalPowerUp powerUp = new PortalPowerUp(screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, TILE_WIDTH / 2, false, false);
+                        powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2, powerUp, character.getPowerUps().get(i)));
+                        break;
+                }
             }
         }
         MyActivity.hudElements.addAll(powerUpButtons);

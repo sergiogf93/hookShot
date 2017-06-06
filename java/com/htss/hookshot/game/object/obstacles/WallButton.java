@@ -16,8 +16,8 @@ public class WallButton extends GameDynamicObject implements Interactable{
     private float radius;
     private boolean on;
 
-    public WallButton(double xPos, double yPos, float radius, boolean on) {
-        super(xPos, yPos, 0, 0, 0);
+    public WallButton(double xPos, double yPos, float radius, boolean on, boolean addToGameObjects, boolean addToDynamicObjects) {
+        super(xPos, yPos, 0, 0, 0, addToGameObjects, addToDynamicObjects);
         this.radius = radius;
         this.on = on;
     }

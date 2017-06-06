@@ -28,7 +28,7 @@ public class Hook extends Chain {
     private int prevHookedMass = 0;
 
     public Hook(double xPos, double yPos, int mass, int collisionPriority, int nNodes, int radius, int color, int separation, GameDynamicObject parent, MathVector initP) {
-        super(xPos, yPos, mass, collisionPriority, nNodes, radius, color, separation);
+        super(xPos, yPos, mass, collisionPriority, nNodes, radius, color, separation, true, false);
         getFirstNode().removeAllConstraints();
         getFirstNode().addConstraint(new ChildOfConstraint(parent));
         for (Circle node : getNodes()){
@@ -37,8 +37,6 @@ public class Hook extends Chain {
                 node.setP(initP);
             }
         }
-        MyActivity.canvas.gameObjects.add(this);
-//        MyActivity.dynamicObjects.addAll(getNodes());
     }
 
     @Override
@@ -161,7 +159,7 @@ public class Hook extends Chain {
         int lastIndex = getNodes().indexOf(getLastNode());
         if (getNodesNumber() == 1 || getLastNode().distanceTo(getNode(lastIndex - getDirection())) > getSeparation()*2/3){
             if (getNodesNumber() < MyActivity.character.getMaxHookNodes()) {
-                Circle node = new Circle(getLastNode().getxPosInRoom(), getLastNode().getyPosInRoom(), getLastNode().getMass(), getLastNode().getCollisionPriority(), getLastNode().getRadius(), getLastNode().getColor());
+                Circle node = new Circle(getLastNode().getxPosInRoom(), getLastNode().getyPosInRoom(), getLastNode().getMass(), getLastNode().getCollisionPriority(), getLastNode().getRadius(), getLastNode().getColor(), false);
                 getNodes().insertElementAt(node, lastIndex - getDirection());
             }
         }

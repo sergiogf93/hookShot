@@ -14,8 +14,8 @@ public class Circle extends GameDynamicObject {
 
     private int radius, color;
 
-    public Circle(double xPos, double yPos, int mass, int collisionPriority, int radius, int color) {
-        super(xPos, yPos, mass, collisionPriority, 500);
+    public Circle(double xPos, double yPos, int mass, int collisionPriority, int radius, int color, boolean addToLists) {
+        super(xPos, yPos, mass, collisionPriority, 500, addToLists, addToLists);
         this.radius = radius;
         this.color = color;
     }
@@ -38,8 +38,8 @@ public class Circle extends GameDynamicObject {
     }
 
     @Override
-    public GameShape getBounds(){
-        return new CircleShape(getxPosInRoom(),getyPosInRoom(),getRadius());
+    public GameShape getBounds() {
+        return new CircleShape(getxPosInRoom(), getyPosInRoom(), getRadius(), false);
     }
 
     public int getRadius() {

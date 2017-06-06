@@ -18,8 +18,8 @@ public class Ball extends GameDynamicObject implements Hookable {
 
     private float radius;
 
-    public Ball(double xPos, double yPos, int mass, int collisionPriority, float radius) {
-        super(xPos, yPos, mass, collisionPriority, 5);
+    public Ball(double xPos, double yPos, int mass, int collisionPriority, float radius, boolean addToLists) {
+        super(xPos, yPos, mass, collisionPriority, 5, addToLists, addToLists);
         this.radius = radius;
         makeSureNotUnderground = true;
     }
@@ -55,7 +55,7 @@ public class Ball extends GameDynamicObject implements Hookable {
     @Override
     public void draw(Canvas canvas) {
         Paint paint = new Paint();
-        paint.setColor(Color.argb(255,220,200,200));
+        paint.setColor(Color.argb(255, 220, 200, 200));
         canvas.drawCircle((float)getxPosInScreen(),(float)getyPosInScreen(),getRadius(),paint);
     }
 
@@ -70,13 +70,13 @@ public class Ball extends GameDynamicObject implements Hookable {
     }
 
     @Override
-    public GameShape getBounds (){
-        return new CircleShape(getxPosInRoom(),getyPosInRoom(), (int) getRadius());
+    public GameShape getBounds () {
+        return new CircleShape(getxPosInRoom(), getyPosInRoom(), (int) getRadius(), false);
     }
 
     @Override
-    public GameShape getFutureBounds(){
-        return new CircleShape(getFuturePositionInRoom().x,getFuturePositionInRoom ().y, (int) getRadius());
+    public GameShape getFutureBounds() {
+        return new CircleShape(getFuturePositionInRoom().x, getFuturePositionInRoom().y, (int) getRadius(), false);
     }
 
     @Override

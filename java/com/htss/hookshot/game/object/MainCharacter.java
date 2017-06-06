@@ -10,6 +10,7 @@ import com.htss.hookshot.game.hud.HUDBar;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
+import com.htss.hookshot.game.object.miscellaneous.PortalObject;
 import com.htss.hookshot.game.object.shapes.BiCircleShape;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
@@ -17,6 +18,7 @@ import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.math.MathVector;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 
 /**
  * Created by Sergio on 03/08/2016.
@@ -38,14 +40,15 @@ public class MainCharacter extends GameCharacter {
     private HUDBar healthBar;
     private HashMap<Integer, Integer> powerUps = new HashMap<Integer, Integer>();
     private int currentPowerUp = -1;
+    private LinkedList<PortalObject> portals = new LinkedList<PortalObject>();
 
     public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
-        super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH);
+        super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH, true, true);
         makeSureNotUnderground = true;
-        rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE);
-        leftHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE);
-        leftFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED);
-        rightFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED);
+        rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
+        leftHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
+        leftFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED, false);
+        rightFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED, false);
         leftEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         rightEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         friction = 1.;
@@ -116,6 +119,10 @@ public class MainCharacter extends GameCharacter {
         }
         if (getyPosInScreen() > MyActivity.screenHeight + getHeight()) {
             MyActivity.switchMap(1);
+            for (PortalObject portal : getPortals()) {
+                portal.destroy();
+            }
+            getPortals().clear();
             if (isHooked()) {
                 removeHook();
             }
@@ -262,13 +269,13 @@ public class MainCharacter extends GameCharacter {
     }
 
     @Override
-    public GameShape getBounds (){
-        return new CircleShape(getxPosInRoom(),getyPosInRoom(),getWidth()/2);
+    public GameShape getBounds () {
+        return new CircleShape(getxPosInRoom(), getyPosInRoom(), getWidth() / 2, false);
     }
 
     @Override
-    public GameShape getFutureBounds (){
-        return new CircleShape(getFuturePositionInRoom().x,getFuturePositionInRoom().y,getWidth()/2);
+    public GameShape getFutureBounds () {
+        return new CircleShape(getFuturePositionInRoom().x, getFuturePositionInRoom().y, getWidth() / 2, false);
     }
 
     public double getHookVelocity() {
@@ -317,6 +324,10 @@ public class MainCharacter extends GameCharacter {
 
     public boolean isFacingRight() {
         return getFacing() == 1;
+    }
+
+    public LinkedList<PortalObject> getPortals() {
+        return portals;
     }
 
     @Override
@@ -399,9 +410,23 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
-    public void usePowerUp(int type) {
-        powerUps.put(type, powerUps.get(type) - 1);
+    public void equipPowerUp(int type) {
         setCurrentPowerUp(type);
+    }
+
+    public void usePowerUp() {
+        switch (getCurrentPowerUp()) {
+            case GamePowerUp.PORTAL:
+                PortalObject portal = new PortalObject(getxPosInRoom(), getyPosInRoom(), getxPosInScreen(), getyPosInScreen(), MyActivity.canvas.dx, MyActivity.canvas.dy, (int) (BODY_RADIUS * 2.5));
+                portals.add(portal);
+                if (portals.size() % 2 == 0) {
+                    portals.get(portals.size() - 2).setTwinPortal(portals.get(portals.size() - 1));
+                    portals.get(portals.size() - 1).setTwinPortal(portals.get(portals.size() - 2));
+                    setCurrentPowerUp(-1);
+                    powerUps.put(GamePowerUp.PORTAL, powerUps.get(GamePowerUp.PORTAL) - 1);
+                }
+                break;
+        }
     }
 
     public HashMap<Integer, Integer> getPowerUps() {
@@ -413,6 +438,12 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void setCurrentPowerUp(int currentPowerUp) {
+        if (currentPowerUp != GamePowerUp.PORTAL) {
+            if (portals.size() % 2 == 1){
+                portals.get(portals.size() - 1).destroy();
+                portals.remove(portals.size() - 1);
+            }
+        }
         this.currentPowerUp = currentPowerUp;
     }
 }

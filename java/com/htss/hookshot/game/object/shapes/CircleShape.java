@@ -14,13 +14,13 @@ public class CircleShape extends GameShape {
 
     private int radius;
 
-    public CircleShape(double xPos, double yPos, int radius) {
-        super(xPos,yPos,Color.YELLOW);
+    public CircleShape(double xPos, double yPos, int radius, boolean addToGameObjects) {
+        super(xPos, yPos, Color.YELLOW, addToGameObjects);
         this.radius = radius;
     }
 
-    public CircleShape(double xPos, double yPos, int radius, int color) {
-        super(xPos,yPos,color);
+    public CircleShape(double xPos, double yPos, int radius, int color, boolean addToGameObjects) {
+        super(xPos, yPos, color, addToGameObjects);
         this.radius = radius;
     }
 

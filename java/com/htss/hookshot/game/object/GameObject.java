@@ -15,9 +15,12 @@ public abstract class GameObject {
 
     protected double xPos, yPos;
 
-    public GameObject(double xPos, double yPos) {
+    public GameObject(double xPos, double yPos, boolean addToGameObjectsList) {
         this.xPos = xPos;
         this.yPos = yPos;
+        if (addToGameObjectsList) {
+            MyActivity.canvas.gameObjects.add(0, this);
+        }
     }
 
     public abstract void draw(Canvas canvas);
@@ -64,11 +67,11 @@ public abstract class GameObject {
     }
 
     public GameShape getBounds(){
-        return new RectShape(getxPosInRoom(),getyPosInRoom(),getWidth(),getHeight(),false);
+        return new RectShape(getxPosInRoom(),getyPosInRoom(),getWidth(),getHeight(),false, false);
     }
 
     public GameShape getBoundsInScreen(){
-        return new RectShape(getxPosInScreen(),getyPosInScreen(),getWidth(),getHeight(),false);
+        return new RectShape(getxPosInScreen(),getyPosInScreen(),getWidth(),getHeight(),false, false);
     }
 
     public double distanceTo (GameObject object){

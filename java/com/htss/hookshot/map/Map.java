@@ -707,9 +707,7 @@ public class Map {
                 substituteStructure(startStructure.tileX,startStructure.tileY+6,subsStructure);
                 int xBall = startStructure.tileX + 4;
                 int yBall = startStructure.tileY + 2;
-                Ball ball = new Ball(xBall * SQUARE_SIZE, yBall * SQUARE_SIZE, 100, 6, (float) (2*SQUARE_SIZE));
-                MyActivity.canvas.gameObjects.add(ball);
-                MyActivity.dynamicObjects.add(ball);
+                Ball ball = new Ball(xBall * SQUARE_SIZE, yBall * SQUARE_SIZE, 100, 6, (float) (2*SQUARE_SIZE), true);
                 added++;
                 xStart = startStructure.tileX;
                 yStart = startStructure.tileY;
@@ -783,9 +781,7 @@ public class Map {
     }
 
     public void addDoor(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons) {
-        Door door = new Door(xPos, yPos, width, height, vector, buttons);
-        MyActivity.canvas.gameObjects.add(0, door);
-        MyActivity.dynamicObjects.add(0, door);
+        Door door = new Door(xPos, yPos, width, height, vector, buttons, true);
     }
 
     public void addPassageDoor(int nButtons) {
@@ -845,9 +841,8 @@ public class Map {
             } else {
                 position = getRandomPointInRooms(rooms, 0, random);
             }
-            WallButton button = new WallButton(position.x, position.y, (float) (SQUARE_SIZE * 0.8), false);
+            WallButton button = new WallButton(position.x, position.y, (float) (SQUARE_SIZE * 0.8), false, true, false);
             buttons.add(button);
-            MyActivity.canvas.gameObjects.add(0,button);
         }
         return buttons;
     }
@@ -863,8 +858,7 @@ public class Map {
             } else {
                 position = getRandomPointInRooms(roomRegions, 0, powerUpRandom);
             }
-            PortalPowerUp powerUp = new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2);
-            MyActivity.canvas.gameObjects.add(powerUp);
+            new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2, true, false);
         }
     }
 
@@ -873,10 +867,7 @@ public class Map {
         enemyRandom.setSeed(this.seed + MyActivity.level + N);
         for (int i = 0;i < N;i++) {
             MathVector p = getRandomEmptyPoint(0, enemyRandom);
-            EnemyStalker stalker = new EnemyStalker(p.x, p.y);
-            MyActivity.canvas.gameObjects.add(stalker);
-            MyActivity.dynamicObjects.add(stalker);
-            MyActivity.enemies.add(stalker);
+            EnemyStalker stalker = new EnemyStalker(p.x, p.y, true);
         }
     }
 
@@ -1080,8 +1071,7 @@ public class Map {
         public void fill(int color) {
             for (Coord tile : tiles) {
                 Point position = tile.toRoomPoint();
-                CircleShape c = new CircleShape(position.x, position.y, (int) SQUARE_SIZE /3, color);
-                MyActivity.canvas.gameObjects.add(c);
+                CircleShape c = new CircleShape(position.x, position.y, (int) SQUARE_SIZE /3, color, true);
             }
         }
 
