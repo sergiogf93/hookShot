@@ -36,12 +36,6 @@ public abstract class HUDElement {
         canvas.drawRect(r,getPaint());
     }
 
-    public void drawCircle(Canvas canvas, float cx, float cy, int color, int alpha, float radius) {
-        paint.setColor(color);
-        paint.setAlpha(alpha);
-        canvas.drawCircle(cx, cy, radius, paint);
-    }
-
     public int getxCenter() {
         return xCenter;
     }

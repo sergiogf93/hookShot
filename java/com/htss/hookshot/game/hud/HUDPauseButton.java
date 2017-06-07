@@ -7,6 +7,7 @@ import android.graphics.RectF;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
+import com.htss.hookshot.util.DrawUtil;
 
 /**
  * Created by Sergio on 03/06/2017.
@@ -36,7 +37,7 @@ public class HUDPauseButton extends HUDElement implements Clickable {
 
     private void drawThreePoints(Canvas canvas) {
         for (int i = -1; i <= 1; i++) {
-            drawCircle(canvas, getxCenter() + i * super.getWidth() / 4, getyCenter(), Color.rgb(30, 30, 30), alpha, super.getWidth() / 15);
+            DrawUtil.drawCircle(canvas, getPaint(), getxCenter() + i * super.getWidth() / 4, getyCenter(), super.getWidth() / 15, Color.rgb(30, 30, 30), Paint.Style.FILL);
         }
     }
 

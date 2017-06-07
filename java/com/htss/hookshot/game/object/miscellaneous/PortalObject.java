@@ -8,6 +8,7 @@ import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.TimeUtil;
 
 /**
@@ -74,23 +75,12 @@ public class PortalObject extends GameDynamicObject {
     @Override
     public void draw(Canvas canvas) {
         int startAngle = getStartAngle();
-        drawArc(canvas, getRadius(), Color.RED, startAngle, 180);
-        drawArc(canvas, getRadius(), Color.BLUE, startAngle + 180, 180);
+        int radius = getRadius();
+        DrawUtil.drawArc(canvas, getPaint(), (float) getxPosInScreen() - radius, (float) getyPosInScreen() - radius, (float) getxPosInScreen() + radius, (float) getyPosInScreen() + radius, Color.RED, startAngle, 180);
+        DrawUtil.drawArc(canvas, getPaint(), (float) getxPosInScreen() - radius, (float) getyPosInScreen() - radius, (float) getxPosInScreen() + radius, (float) getyPosInScreen() + radius, Color.BLUE, startAngle + 180, 180);
         if (getTwinPortal() != null) {
-            drawBody(canvas);
+            DrawUtil.drawCircle(canvas, getPaint(),(float) getxPosInScreen(), (float) getyPosInScreen(), radius,Color.BLACK, Paint.Style.FILL);
         }
-    }
-
-    private void drawBody(Canvas canvas) {
-        getPaint().setColor(Color.BLACK);
-        getPaint().setStyle(Paint.Style.FILL);
-        canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), getPaint());
-    }
-
-    private void drawArc(Canvas canvas, float radius, int color, int start, int sweep) {
-        getPaint().setColor(color);
-        getPaint().setStyle(Paint.Style.STROKE);
-        canvas.drawArc((float) getxPosInScreen() - radius, (float) getyPosInScreen() - radius, (float) getxPosInScreen() + radius, (float) getyPosInScreen() + radius, start, sweep, false, getPaint());
     }
 
     public int getRadius() {

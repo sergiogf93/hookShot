@@ -27,6 +27,7 @@ public class WallButton extends GameDynamicObject implements Interactable{
         if (!isOn()){
             if (distanceTo(MyActivity.character) < getRadius()*1.5){
                 setOn(true);
+                MyActivity.character.checkIfRemoveInterest(this);
             }
         }
     }

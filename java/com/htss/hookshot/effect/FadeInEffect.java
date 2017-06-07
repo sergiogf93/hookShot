@@ -12,7 +12,7 @@ import com.htss.hookshot.game.MyActivity;
  */
 public class FadeInEffect extends GameEffect {
 
-    public final static int END_FRAME = 1000;
+    public final static int END_FRAME = 500;
     private final Rect rectangle = new Rect(0, 0, MyActivity.screenWidth, MyActivity.screenHeight);
     private Paint paint;
     private int frame = 0;

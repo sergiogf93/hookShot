@@ -10,12 +10,15 @@ import com.htss.hookshot.game.hud.HUDBar;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
+import com.htss.hookshot.game.object.miscellaneous.CompassObject;
 import com.htss.hookshot.game.object.miscellaneous.PortalObject;
 import com.htss.hookshot.game.object.shapes.BiCircleShape;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.DrawUtil;
+import com.htss.hookshot.util.TimeUtil;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -31,20 +34,22 @@ public class MainCharacter extends GameCharacter {
                             FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
                             MIN_HOOSKSHOT_NODES = 3;
 
-
+    private Paint paint = new Paint();
     private double hookVelocity = 300;
     private int maxHookNodes = 50, facing = 1;
     private Hook hook = null;
-    private CircleShape rightHand, leftHand, rightFoot, leftFoot;
+    private CircleShape rightHand, leftHand, rightFoot, leftFoot, body;
     private BiCircleShape leftEye, rightEye;
     private HUDBar healthBar;
     private HashMap<Integer, Integer> powerUps = new HashMap<Integer, Integer>();
     private int currentPowerUp = -1;
     private LinkedList<PortalObject> portals = new LinkedList<PortalObject>();
+    private CompassObject compass;
 
     public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
         super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH, true, true);
         makeSureNotUnderground = true;
+        body = new CircleShape(xPos, yPos, BODY_RADIUS, Color.BLACK, false);
         rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
         leftHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
         leftFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED, false);
@@ -119,12 +124,18 @@ public class MainCharacter extends GameCharacter {
         }
         if (getyPosInScreen() > MyActivity.screenHeight + getHeight()) {
             MyActivity.switchMap(1);
+            if (getCurrentPowerUp() == GamePowerUp.PORTAL){
+                equipPowerUp(GamePowerUp.PORTAL);
+            }
             for (PortalObject portal : getPortals()) {
                 portal.destroy();
             }
             getPortals().clear();
             if (isHooked()) {
                 removeHook();
+            }
+            if (compass != null) {
+                compass.clearInterests();
             }
         }
         this.healthBar.setxCenter((int) this.getxPosInScreen());
@@ -225,13 +236,22 @@ public class MainCharacter extends GameCharacter {
             }
             axisForFeet = new MathVector(0,1);
         }
+        // Right hand
         rightHand.setPositionInRoom(separationHand.applyTo(positionFromHands));
+        if (getCurrentPowerUp() == GamePowerUp.PORTAL) {
+            paint.setStrokeWidth(rightHand.getWidth()/4);
+            int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.convertSecondToGameSecond(1)) + 25);
+            DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.RED, startAngle, 180);
+            DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.BLUE, startAngle + 180, 180);
+        }
         rightHand.draw(canvas);
+        // Right foot
         rightFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
         rightFoot.draw(canvas);
-        Paint paint = new Paint();
-        paint.setColor(getBodyColor());
-        canvas.drawCircle((int) getxPosInScreen(), (int) getyPosInScreen(), BODY_RADIUS, paint);
+        // Body
+        body.setPositionInRoom(getPositionInRoom());
+        body.draw(canvas);
+        // Eyes
         paint.setColor(Color.YELLOW);
         vectorForEyes.rotateDeg(-1 * getFacing() * 90);
         vectorForEyes.rescale(separationToEye);
@@ -241,21 +261,19 @@ public class MainCharacter extends GameCharacter {
         vectorForEyes.scale(2);
         rightEye.setPositionInRoom(vectorForEyes.applyTo(getPositionInRoom()));
         rightEye.draw(canvas);
+        // Left hand
         separationHand.reflect(new MathVector(0,1));
         separationFoot.reflect(axisForFeet);
         leftHand.setPositionInRoom(separationHand.applyTo(positionFromHands));
+        if (getCurrentPowerUp() == GamePowerUp.PORTAL && portals.size() % 2 == 0) {
+            int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.convertSecondToGameSecond(1)) + 25);
+            DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.RED, startAngle, 180);
+            DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.BLUE, startAngle + 180, 180);
+        }
         leftHand.draw(canvas);
+        // Left foot
         leftFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
         leftFoot.draw(canvas);
-    }
-
-    private int getBodyColor() {
-        switch (getCurrentPowerUp()) {
-            case GamePowerUp.PORTAL:
-                return Color.MAGENTA;
-            default:
-                return Color.BLACK;
-        }
     }
 
     @Override
@@ -326,6 +344,14 @@ public class MainCharacter extends GameCharacter {
         return getFacing() == 1;
     }
 
+    public CompassObject getCompass() {
+        return compass;
+    }
+
+    public void setCompass(CompassObject compass) {
+        this.compass = compass;
+    }
+
     public LinkedList<PortalObject> getPortals() {
         return portals;
     }
@@ -333,6 +359,12 @@ public class MainCharacter extends GameCharacter {
     @Override
     public int getMargin(){
         return getWidth()/10;
+    }
+
+    public void checkIfRemoveInterest(GameObject interest) {
+        if (getCompass() != null) {
+            getCompass().removeInterest(interest);
+        }
     }
 
     public void shootHook(double xDown, double yDown) {
@@ -365,14 +397,6 @@ public class MainCharacter extends GameCharacter {
         MyActivity.extendButton = null;
         setMaxVelocity(MAX_VELOCITY);
         setState(STATE_MOVING);
-    }
-
-    public MathVector getHookVector() {
-        if (getHook() != null) {
-            return new MathVector(this,getHook().getLastNode());
-        } else {
-            return null;
-        }
     }
 
     @Override
@@ -412,6 +436,31 @@ public class MainCharacter extends GameCharacter {
 
     public void equipPowerUp(int type) {
         setCurrentPowerUp(type);
+        switch (type) {
+            case GamePowerUp.PORTAL:
+                setColors(Color.MAGENTA, Color.YELLOW, Color.BLACK, Color.BLACK, Color.RED, Color.RED);
+                break;
+            case GamePowerUp.COMPASS:
+                setColors(Color.BLACK, Color.YELLOW, Color.WHITE, Color.WHITE, Color.RED, Color.RED);
+                usePowerUp();
+                break;
+            default:
+                setColors(Color.BLACK, Color.YELLOW, Color.WHITE, Color.WHITE, Color.RED, Color.RED);
+                if (portals.size() % 2 == 1){
+                    portals.get(portals.size() - 1).destroy();
+                    portals.remove(portals.size() - 1);
+                }
+        }
+    }
+
+    public void setColors(int bodyColor, int eyesColor, int rightHandColor, int leftHandColor, int rightFootColor, int leftFootColor) {
+        body.setColor(bodyColor);
+        leftEye.setColor(eyesColor);
+        rightEye.setColor(eyesColor);
+        leftHand.setColor(leftHandColor);
+        rightHand.setColor(rightHandColor);
+        leftFoot.setColor(leftFootColor);
+        rightFoot.setColor(rightFootColor);
     }
 
     public void usePowerUp() {
@@ -419,12 +468,18 @@ public class MainCharacter extends GameCharacter {
             case GamePowerUp.PORTAL:
                 PortalObject portal = new PortalObject(getxPosInRoom(), getyPosInRoom(), getxPosInScreen(), getyPosInScreen(), MyActivity.canvas.dx, MyActivity.canvas.dy, (int) (BODY_RADIUS * 2.5));
                 portals.add(portal);
+                leftHand.setColor(Color.WHITE);
                 if (portals.size() % 2 == 0) {
                     portals.get(portals.size() - 2).setTwinPortal(portals.get(portals.size() - 1));
                     portals.get(portals.size() - 1).setTwinPortal(portals.get(portals.size() - 2));
-                    setCurrentPowerUp(-1);
+                    equipPowerUp(-1);
                     powerUps.put(GamePowerUp.PORTAL, powerUps.get(GamePowerUp.PORTAL) - 1);
                 }
+                break;
+            case GamePowerUp.COMPASS:
+                setCompass(new CompassObject(this, true, true));
+                setCurrentPowerUp(-1);
+                powerUps.put(GamePowerUp.COMPASS, powerUps.get(GamePowerUp.COMPASS) - 1);
                 break;
         }
     }
@@ -438,12 +493,6 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void setCurrentPowerUp(int currentPowerUp) {
-        if (currentPowerUp != GamePowerUp.PORTAL) {
-            if (portals.size() % 2 == 1){
-                portals.get(portals.size() - 1).destroy();
-                portals.remove(portals.size() - 1);
-            }
-        }
         this.currentPowerUp = currentPowerUp;
     }
 }

@@ -8,6 +8,7 @@ import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.interfaces.Clickable;
+import com.htss.hookshot.util.DrawUtil;
 
 /**
  * Created by Sergio on 05/06/2017.
@@ -19,13 +20,15 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
     private GamePowerUp powerUp;
     private int quantity;
 
-    public HUDPowerUpButton(int xCenter, int yCenter, int width, GamePowerUp powerUp, int quantity) {
+    public HUDPowerUpButton(int xCenter, int yCenter, int width, boolean clickable, GamePowerUp powerUp, int quantity) {
         super(xCenter, yCenter, width, width);
         this.powerUp = powerUp;
         this.quantity = quantity;
+        this.clickable = clickable;
         getPaint().setStrokeWidth(getWidth()/10);
         getPaint().setTypeface(GameBoard.paint.getTypeface());
         getPaint().setTextSize(width / 5);
+        setAlpha(HUDMenu.MENU_ALPHA);
     }
 
     private void manageExecution() {
@@ -42,7 +45,9 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
     }
 
     private void unequipPowerUp() {
-        MyActivity.character.setCurrentPowerUp(-1);
+        if (powerUp.getType() == GamePowerUp.PORTAL) {
+            MyActivity.character.equipPowerUp(-1);
+        }
     }
 
     @Override
@@ -56,14 +61,13 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
 
     private void drawQuantity(Canvas canvas) {
         setColor(Color.WHITE);
+        setAlpha(HUDMenu.MENU_ALPHA);
         canvas.drawText("x " + quantity, getxCenter() + getWidth() / 5, getyCenter() + getHeight() / 2, getPaint());
     }
 
     private void drawButton(Canvas canvas) {
-        setStyle(Paint.Style.STROKE);
-        drawCircle(canvas, getxCenter(), getyCenter(), Color.rgb(0, 150, 150), HUDMenu.MENU_ALPHA, getWidth() / 2);
-        setStyle(Paint.Style.FILL);
-        drawCircle(canvas, getxCenter(), getyCenter(), getMainColor(), HUDMenu.MENU_ALPHA, getWidth() / 2);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getWidth() / 2, Color.rgb(0, 150, 150), Paint.Style.STROKE);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getWidth() / 2, getMainColor(), Paint.Style.FILL);
     }
 
     private void drawPowerUp(Canvas canvas) {

@@ -11,6 +11,7 @@ import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.DrawUtil;
 
 /**
  * Created by Sergio on 03/08/2016.
@@ -31,6 +32,7 @@ public class Joystick extends HUDElement implements Clickable {
         this.touchId = -1;
         this.showing = true;
         this.clickable = true;
+        setAlpha(alpha);
     }
 
     @Override
@@ -40,13 +42,13 @@ public class Joystick extends HUDElement implements Clickable {
     }
 
     private void drawBase(Canvas canvas) {
-        drawCircle(canvas, getxCenter(), getyCenter(), Color.rgb(30, 30, 30), alpha, getRadius());
-        drawCircle(canvas, getxCenter(), getyCenter(), Color.WHITE, alpha, (float) (0.95 * getRadius()));
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getRadius(), Color.rgb(30, 30, 30), Paint.Style.FILL);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.95 * getRadius()), Color.WHITE, Paint.Style.FILL);
     }
 
     private void drawHandle(Canvas canvas) {
-        drawCircle(canvas, getxCenter() + getxJ(), getyCenter() + getyJ(), Color.rgb(30, 30, 30), alpha, getHandleRadius());
-        drawCircle(canvas, getxCenter() + getxJ(), getyCenter() + getyJ(), Color.rgb(200, 200, 200), alpha, (float) (0.95 * getHandleRadius()));
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter() + getxJ(), getyCenter() + getyJ(), getHandleRadius(), Color.rgb(30, 30, 30), Paint.Style.FILL);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter() + getxJ(), getyCenter() + getyJ(), (float) (0.95 * getHandleRadius()), Color.rgb(200, 200, 200), Paint.Style.FILL);
     }
 
     public void moveJoystick(double x, double y){

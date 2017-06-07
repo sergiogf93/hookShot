@@ -30,6 +30,7 @@ import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
 import com.htss.hookshot.game.object.miscellaneous.PortalObject;
@@ -50,7 +51,7 @@ public class MyActivity extends Activity {
 //    public static int FILL_PERCENT = 30;
 //    public static int mapXTiles = 30, mapYTiles = 20;
 
-    public static final int FRAME_RATE = 20, TILE_WIDTH = 100; //Default 52 for screen size 30
+    public static final int FRAME_RATE = 10, TILE_WIDTH = 100;
     public static int HORIZONTAL_MARGIN, VERTICAL_MARGIN;
     private static final int BUTTON_A_BOTTOM_PADDING = 70,
             BUTTON_A_RIGHT_PADDING = 50,
@@ -168,7 +169,7 @@ public class MyActivity extends Activity {
             public void run() {
                 initGfx();
             }
-        }, 1000);
+        }, FRAME_RATE);
 
     }
 
@@ -313,11 +314,11 @@ public class MyActivity extends Activity {
                                     if (clickable.isClickable()) {
                                         if (!clickable.isOn()) {
                                             if (clickable.pressed(xDown, yDown)) {
-                                                clickable.press(xDown, yDown, id, ev.findPointerIndex(id));
+//                                                clickable.press(xDown, yDown, id, ev.findPointerIndex(id));
                                             }
                                         } else if (clickable.getTouchId() == id) {
                                             if (!clickable.pressed(xDown, yDown)) {
-                                                clickable.reset();
+//                                                clickable.reset();
                                             }
                                         }
                                     }
@@ -474,6 +475,7 @@ public class MyActivity extends Activity {
     public static void resetObjectsLists(){
         canvas.gameObjects.clear();
         dynamicObjects.clear();
+        enemies.clear();
         canvas.gameObjects.add(character);
         dynamicObjects.add(character);
     }
@@ -508,8 +510,12 @@ public class MyActivity extends Activity {
             if (character.getPowerUps().get(i) > 0) {
                 switch (i) {
                     case GamePowerUp.PORTAL:
-                        PortalPowerUp powerUp = new PortalPowerUp(screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, TILE_WIDTH / 2, false, false);
-                        powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2, powerUp, character.getPowerUps().get(i)));
+                        PortalPowerUp portalPowerUp = new PortalPowerUp(screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, TILE_WIDTH / 2, false, false);
+                        powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2, true, portalPowerUp, character.getPowerUps().get(i)));
+                        break;
+                    case GamePowerUp.COMPASS:
+                        CompassPowerUp compassPowerUp = new CompassPowerUp(screenWidth / 6 - canvas.dx, 3 * screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.8), false, false);
+                        powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, 3 * screenHeight / 4, TILE_WIDTH * 2, MyActivity.character.getCompass() == null, compassPowerUp, character.getPowerUps().get(i)));
                         break;
                 }
             }

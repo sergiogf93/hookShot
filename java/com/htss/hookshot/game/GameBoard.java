@@ -115,6 +115,11 @@ public class GameBoard extends View{
             if (MyActivity.roomSwitchEffect.isFinished()){
                 MyActivity.roomSwitchEffect = null;
                 MyActivity.setHUDClickable();
+                if (MyActivity.character.getCompass() != null) {
+                    gameObjects.add(MyActivity.character.getCompass());
+                    MyActivity.dynamicObjects.add(MyActivity.character.getCompass());
+                    MyActivity.character.getCompass().findInterests();
+                }
             }
         }
 

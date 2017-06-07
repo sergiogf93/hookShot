@@ -11,7 +11,7 @@ import com.htss.hookshot.interfaces.Interactable;
  */
 public abstract class GamePowerUp extends GameDynamicObject implements Interactable {
 
-    public static final int PORTAL = 0;
+    public static final int PORTAL = 0, COMPASS = 1;
 
     private int type;
     private int width, height;
@@ -43,6 +43,7 @@ public abstract class GamePowerUp extends GameDynamicObject implements Interacta
         if (distanceTo(MyActivity.character) < MyActivity.TILE_WIDTH /2){
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.character.addPowerUp(this.type);
+            MyActivity.character.checkIfRemoveInterest(this);
         }
     }
 

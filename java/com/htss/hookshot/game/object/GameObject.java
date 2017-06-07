@@ -84,6 +84,10 @@ public abstract class GameObject {
         return v.magnitude();
     }
 
+    public MathVector vectorTo(GameObject object) {
+        return new MathVector(this, object);
+    }
+
     public boolean pressed (double xScreen, double yScreen){
         return xScreen >= getxPosInScreen() - getWidth()/2 && xScreen <= getxPosInScreen() + getWidth()/2 &&
                 yScreen >= getyPosInScreen() - getHeight()/2 && yScreen <= getyPosInScreen() + getHeight()/2;

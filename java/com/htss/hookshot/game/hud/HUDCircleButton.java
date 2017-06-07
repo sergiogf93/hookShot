@@ -9,6 +9,7 @@ import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
+import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.StringUtil;
 
 /**
@@ -34,6 +35,7 @@ public class HUDCircleButton extends HUDElement implements Clickable {
         this.execOn = execOn;
         this.execOff = null;
         this.execDoubleOn = null;
+        setAlpha(alpha);
     }
 
     public HUDCircleButton(int xCenter, int yCenter, float radius, String text, boolean clickable, Execution execOn, Execution execOff) {
@@ -44,6 +46,7 @@ public class HUDCircleButton extends HUDElement implements Clickable {
         this.execOn = execOn;
         this.execOff = execOff;
         this.execDoubleOn = null;
+        setAlpha(alpha);
     }
 
     public HUDCircleButton(int xCenter, int yCenter, float radius, String text, boolean clickable, Execution execOn, Execution execOff, Execution execDoubleOn) {
@@ -54,14 +57,16 @@ public class HUDCircleButton extends HUDElement implements Clickable {
         this.execOn = execOn;
         this.execOff = execOff;
         this.execDoubleOn = execDoubleOn;
+        setAlpha(alpha);
     }
 
     @Override
     public void draw(Canvas canvas) {
-        drawCircle(canvas, getxCenter(), getyCenter(), Color.rgb(30, 30, 30), alpha, getRadius());
-        drawCircle(canvas, getxCenter(), getyCenter(), Color.WHITE, alpha, (float) (0.95 * getRadius()));
-        drawCircle(canvas, getxCenter(), getyCenter(), Color.rgb(30, 30, 30), alpha, (float) (0.9 * getRadius()));
-        drawCircle(canvas, getxCenter(), getyCenter(), getMainColor(), alpha, (float) (0.85 * getRadius()));
+        setAlpha(alpha);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getRadius(), Color.rgb(30, 30, 30), Paint.Style.FILL);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.95 * getRadius()),  Color.WHITE, Paint.Style.FILL);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.9 * getRadius()), Color.rgb(30, 30, 30), Paint.Style.FILL);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.85 * getRadius()), getMainColor(), Paint.Style.FILL);
         getPaint().setColor(Color.rgb(30, 30, 30));
         int textSize = (int) (2 * getRadius() / 3);
         getPaint().setTextSize(textSize);

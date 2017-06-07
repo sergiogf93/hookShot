@@ -45,6 +45,7 @@ public class LaunchGame implements Execution {
 
         //////////////////
         MyActivity.character.addPowerUp(GamePowerUp.PORTAL);
+        MyActivity.character.addPowerUp(GamePowerUp.COMPASS);
         //////////////////
         return 0;
     }
