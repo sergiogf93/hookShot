@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
@@ -128,7 +130,6 @@ public class GameBoard extends View{
     }
 
     public Bitmap getMapInScreen(){
-        assertMapMargins();
         return Bitmap.createBitmap(mapBitmap,(int)-dx,(int)-dy,MyActivity.screenWidth,MyActivity.screenHeight);
     }
 
@@ -181,6 +182,14 @@ public class GameBoard extends View{
         if (dy > 0) {
             dy = 0;
         }
+    }
+
+    public void clearCircle(Bitmap bitmap, float cx, float cy, float radius) {
+        Paint p = new Paint();
+        p.setColor(getResources().getColor(android.R.color.transparent));
+        p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+        Canvas cnv = new Canvas(bitmap);
+        cnv.drawCircle(cx, cy, radius, p);
     }
 
 }

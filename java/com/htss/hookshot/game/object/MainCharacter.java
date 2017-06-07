@@ -42,7 +42,7 @@ public class MainCharacter extends GameCharacter {
     private BiCircleShape leftEye, rightEye;
     private HUDBar healthBar;
     private HashMap<Integer, Integer> powerUps = new HashMap<Integer, Integer>();
-    private int currentPowerUp = -1;
+    private int currentPowerUp = -1, prevPowerUp = -1;
     private LinkedList<PortalObject> portals = new LinkedList<PortalObject>();
     private CompassObject compass;
 
@@ -441,7 +441,6 @@ public class MainCharacter extends GameCharacter {
                 setColors(Color.MAGENTA, Color.YELLOW, Color.BLACK, Color.BLACK, Color.RED, Color.RED);
                 break;
             case GamePowerUp.COMPASS:
-                setColors(Color.BLACK, Color.YELLOW, Color.WHITE, Color.WHITE, Color.RED, Color.RED);
                 usePowerUp();
                 break;
             default:
@@ -478,7 +477,7 @@ public class MainCharacter extends GameCharacter {
                 break;
             case GamePowerUp.COMPASS:
                 setCompass(new CompassObject(this, true, true));
-                setCurrentPowerUp(-1);
+                setCurrentPowerUp(prevPowerUp);
                 powerUps.put(GamePowerUp.COMPASS, powerUps.get(GamePowerUp.COMPASS) - 1);
                 break;
         }
@@ -493,6 +492,7 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void setCurrentPowerUp(int currentPowerUp) {
+        prevPowerUp = getCurrentPowerUp();
         this.currentPowerUp = currentPowerUp;
     }
 }
