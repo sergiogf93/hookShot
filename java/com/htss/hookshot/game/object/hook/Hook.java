@@ -4,6 +4,7 @@ import com.htss.hookshot.R;
 import com.htss.hookshot.constraints.ChildOfConstraint;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.HUDButton;
+import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Execution;
@@ -12,18 +13,22 @@ import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
 
+import java.util.Vector;
+
 /**
  * Created by Sergio on 04/08/2016.
  */
 public class Hook extends Chain {
 
-    private boolean hooked = false, reloading = false, extending = false;
+    private static final int MIN_RELOADING_NODES = 2;
+
+    private boolean hooked = false, reloading = false, extending = false, fastReloading = false;
     private MathVector hookedPoint;
     private GameDynamicObject hookedObject;
     private int prevHookedMass = 0;
 
     public Hook(double xPos, double yPos, int mass, int collisionPriority, int nNodes, int radius, int color, int separation, GameDynamicObject parent, MathVector initP) {
-        super(xPos, yPos, mass, collisionPriority, nNodes, radius, color, separation);
+        super(xPos, yPos, mass, collisionPriority, nNodes, radius, color, separation, true, false);
         getFirstNode().removeAllConstraints();
         getFirstNode().addConstraint(new ChildOfConstraint(parent));
         for (Circle node : getNodes()){
@@ -32,38 +37,14 @@ public class Hook extends Chain {
                 node.setP(initP);
             }
         }
-        MyActivity.canvas.gameObjects.add(this);
-//        MyActivity.dynamicObjects.addAll(getNodes());
     }
 
     @Override
     public void update() {
         updateFrame();
-        if (!isHooked()){
-            for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects){
-                if (dynamicObject instanceof Hookable){
-                    if (dynamicObject.inContactWith(getLastNode())){
-                        hook(dynamicObject.getPositionInRoom());
-                        hookedObject = dynamicObject;
-                        prevHookedMass = dynamicObject.getMass();
-                        hookedObject.setMass(1);
-                    }
-                }
-            }
-            if (getLastNode().inContactWithMap(getLastNode().getRadius())) {
-                hook(getLastNode().getPositionInRoom());
-            }
-            if (getFrame() > TimeUtil.convertSecondToGameSecond(2)){
-                MyActivity.character.removeHook();
-            }
-        } else {
-//            int index = getNodes().indexOf(getFirstNode());
-//            do {
-//                MyActivity.reloadButton.setCenter(getNode(index).getPositionInScreen());
-//                index += getDirection();
-//            } while (!MyActivity.isInScreen(MyActivity.reloadButton.getCenter(),MyActivity.reloadButton.getWidth()/2));
-//            MyActivity.reloadButton.setCenter(new MathVector(9*MyActivity.screenWidth/10,MyActivity.screenHeight/2));
-            MyActivity.extendButton.setCenter(getLastNode().getPositionInScreen());
+        manageHooking();
+        if (isFastReloading()) {
+            fastReload();
         }
         for (int i = 0 ; i < getNodesNumber() ; i++){
             int factor = (getDirection() > 0) ? 0 : 1;
@@ -101,6 +82,9 @@ public class Hook extends Chain {
                         hookedObject.update();
                         hookedPoint = hookedObject.getPositionInRoom();
                     }
+                    if (getNodesNumber() == 1 && isExtending()) {
+                        extend();
+                    }
                 }
             }
         }
@@ -119,8 +103,8 @@ public class Hook extends Chain {
     }
 
     private void addHookButtons(){
-        MyActivity.reloadButton = new HUDButton(9*MyActivity.screenWidth/10,MyActivity.screenHeight/2,
-                MyActivity.canvas.getBitmapById(R.drawable.button_r),MyActivity.canvas.getBitmapById(R.drawable.button_r_pressed),true,new Execution() {
+        int buttonRadius = (int) (MyActivity.TILE_WIDTH*0.4);
+        MyActivity.reloadButton = new HUDCircleButton(9 * MyActivity.screenWidth / 10, MyActivity.screenHeight / 2, buttonRadius,"R", true, new Execution() {
             @Override
             public double execute() {
                 MyActivity.character.getHook().setReloading(true);
@@ -132,9 +116,15 @@ public class Hook extends Chain {
                 MyActivity.character.getHook().setReloading(false);
                 return 0;
             }
-        });
-        MyActivity.extendButton = new HUDButton((int)getPrevNodeOf(getLastNode()).getxPosInScreen(),(int)getPrevNodeOf(getLastNode()).getyPosInScreen(),
-                MyActivity.canvas.getBitmapById(R.drawable.button_e),MyActivity.canvas.getBitmapById(R.drawable.button_e_pressed),true,new Execution() {
+        }, new Execution() {
+            @Override
+            public double execute() {
+                setFastReloading(true);
+                return 0;
+            }
+        }
+        );
+        MyActivity.extendButton = new HUDCircleButton((int) getPrevNodeOf(getLastNode()).getxPosInScreen(), (int) getPrevNodeOf(getLastNode()).getyPosInScreen(), buttonRadius, "E", true, new Execution() {
             @Override
             public double execute() {
                 MyActivity.character.getHook().setExtending(true);
@@ -149,13 +139,14 @@ public class Hook extends Chain {
                 return 0;
             }
         });
+
         MyActivity.hudElements.add(MyActivity.reloadButton);
         MyActivity.hudElements.add(MyActivity.extendButton);
     }
 
     private void reload(Circle node, Circle prevNode){
         if (node.distanceTo(prevNode) <= node.getRadius()){
-            if (getNodes().size() > 2) {
+            if (getNodes().size() > MIN_RELOADING_NODES) {
                 removeNode(prevNode);
             }
         } else {
@@ -166,11 +157,20 @@ public class Hook extends Chain {
 
     private void extend(){
         int lastIndex = getNodes().indexOf(getLastNode());
-        if (getLastNode().distanceTo(getNode(lastIndex - getDirection())) > getSeparation()*2/3){
-            if (getNodes().size() < MyActivity.character.getMaxHookNodes()) {
-                Circle node = new Circle(getLastNode().getxPosInRoom(), getLastNode().getyPosInRoom(), getLastNode().getMass(), getLastNode().getCollisionPriority(), getLastNode().getRadius(), getLastNode().getColor());
+        if (getNodesNumber() == 1 || getLastNode().distanceTo(getNode(lastIndex - getDirection())) > getSeparation()*2/3){
+            if (getNodesNumber() < MyActivity.character.getMaxHookNodes()) {
+                Circle node = new Circle(getLastNode().getxPosInRoom(), getLastNode().getyPosInRoom(), getLastNode().getMass(), getLastNode().getCollisionPriority(), getLastNode().getRadius(), getLastNode().getColor(), false);
                 getNodes().insertElementAt(node, lastIndex - getDirection());
             }
+        }
+    }
+
+    public void fastReload() {
+        if (getNodesNumber() > MIN_RELOADING_NODES) {
+            setNodes(new Vector<Circle>(getNodes().subList(0, getNodesNumber()-1)));
+        } else {
+            getLastNode().setP(new MathVector(0,0));
+            setFastReloading(false);
         }
     }
 
@@ -180,6 +180,29 @@ public class Hook extends Chain {
             node.getP().scale(0.5);
         }
         prevNode.addP(node.getP());
+    }
+
+    private void manageHooking() {
+        if (!isHooked()){
+            for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects){
+                if (dynamicObject instanceof Hookable){
+                    if (dynamicObject.inContactWith(getLastNode())){
+                        hook(dynamicObject.getPositionInRoom());
+                        hookedObject = dynamicObject;
+                        prevHookedMass = dynamicObject.getMass();
+                        hookedObject.setMass(1);
+                    }
+                }
+            }
+            if (getLastNode().inContactWithMap(getLastNode().getRadius())) {
+                hook(getLastNode().getPositionInRoom());
+            }
+            if (getFrame() > TimeUtil.convertSecondToGameSecond(2)){
+                MyActivity.character.removeHook();
+            }
+        } else {
+            MyActivity.extendButton.setCenter(getLastNode().getPositionInScreen());
+        }
     }
 
     public boolean isHooked() {
@@ -228,5 +251,13 @@ public class Hook extends Chain {
 
     public void setPrevHookedMass(int prevHookedMass) {
         this.prevHookedMass = prevHookedMass;
+    }
+
+    public boolean isFastReloading() {
+        return fastReloading;
+    }
+
+    public void setFastReloading(boolean fastReloading) {
+        this.fastReloading = fastReloading;
     }
 }

@@ -26,8 +26,8 @@ public class EnemyStalker extends ClickableEnemy {
     private Paint paint = new Paint();
 
 
-    public EnemyStalker(double xPos, double yPos) {
-        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH);
+    public EnemyStalker(double xPos, double yPos, boolean addToLists) {
+        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, addToLists, addToLists);
         randomNewDirection();
     }
 

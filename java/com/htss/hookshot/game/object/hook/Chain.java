@@ -20,12 +20,12 @@ public class Chain extends GameDynamicObject {
     private int separation, direction = 1;
     private Vector<Circle> nodes;
 
-    public Chain(double xPos, double yPos, int mass, int collisionPriority, int nNodes, int radius, int color, int separation) {
-        super(xPos, yPos, mass, collisionPriority, 500);
+    public Chain(double xPos, double yPos, int mass, int collisionPriority, int nNodes, int radius, int color, int separation, boolean addToGameObjects, boolean addToDynamicObjects) {
+        super(xPos, yPos, mass, collisionPriority, 500, addToGameObjects, addToDynamicObjects);
         this.separation = separation;
         this.nodes = new Vector<Circle>();
-        for (int i = 0 ; i < nNodes ; i++){
-            Circle node = new Circle(xPos,yPos,mass,collisionPriority,radius,color);
+        for (int i = 0 ; i < nNodes ; i++) {
+            Circle node = new Circle(xPos, yPos, mass, collisionPriority, radius, color, false);
             this.nodes.add(node);
         }
         getFirstNode().addConstraint(new RelativeToPointConstraint(new MathVector(xPos,yPos),0));

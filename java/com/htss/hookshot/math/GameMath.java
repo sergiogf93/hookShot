@@ -19,4 +19,19 @@ public abstract class GameMath {
         return minVal*(max-val)/(max-min) + maxVal*(min-val)/(min-max);
     }
 
+    public static double areaTriangle(Point p1, Point p2, Point p3) {
+        double a = (new MathVector(p1,p2)).magnitude();
+        double b = (new MathVector(p2,p3)).magnitude();
+        double c = (new MathVector(p3,p1)).magnitude();
+        double s = (a + b + c) / 2;
+        return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+    }
+
+
+    public static double areaRectangle(Point[] corners) {
+        MathVector base = new MathVector(corners[1], corners[0]);
+        MathVector height = new MathVector(corners[1], corners[2]);
+        return base.magnitude() * height.magnitude();
+    }
+
 }

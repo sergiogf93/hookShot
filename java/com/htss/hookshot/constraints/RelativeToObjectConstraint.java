@@ -36,8 +36,8 @@ public class RelativeToObjectConstraint extends Constraint{
                 constrained.setP(applyConstraintToVector(vector,maxDistance,object.getP().applyTo(point),constrained.getPositionInRoom()));
             }
         }
-        MyActivity.canvas.debugObjects.add(new Circle((int)newX,(int)newY,0,1,5, Color.YELLOW));
-        MyActivity.canvas.debugObjects.add(new Line(object.getxPosInRoom(),object.getyPosInRoom(),constrained.getxPosInRoom(),constrained.getyPosInRoom()));
+        MyActivity.canvas.debugObjects.add(new Circle((int)newX,(int)newY,0,1,5, Color.YELLOW, false));
+        MyActivity.canvas.debugObjects.add(new Line(object.getxPosInRoom(), object.getyPosInRoom(), constrained.getxPosInRoom(), constrained.getyPosInRoom(), false));
     }
 
     public GameDynamicObject getObject() {

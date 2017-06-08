@@ -18,34 +18,19 @@ public class HUDText extends HUDElement implements Clickable {
     private int size;
     private String text;
     private boolean clickable, on = false;
-    protected Execution execOn, execOff;
+    protected Execution execOff;
     private int touchId = -1, touchIndex = -1;
 
     private static final int DEPTH = MyActivity.TILE_WIDTH /20;
 
-    public HUDText(int xPos, int yPos, boolean clickable, String text, int size) {
-        super(xPos, yPos);
+    public HUDText(int xPos, int yPos, boolean clickable, String text, int size, Execution execOff) {
+        super(xPos, yPos, StringUtil.sizeOfString(text, size), size);
         this.text = text;
-        this.size = size;
-        this.clickable = clickable;
-    }
-
-    public HUDText(int xPos, int yPos, boolean clickable, String text, int size, Execution execOn) {
-        super(xPos, yPos);
-        this.text = text;
-        this.execOn = execOn;
-        this.size = size;
-        this.clickable = clickable;
-        this.execOff = null;
-    }
-
-    public HUDText(int xPos, int yPos, boolean clickable, String text, int size, Execution execOn, Execution execOff) {
-        super(xPos, yPos);
-        this.text = text;
-        this.execOn = execOn;
         this.execOff = execOff;
         this.size = size;
         this.clickable = clickable;
+        getPaint().setTypeface(GameBoard.paint.getTypeface());
+        getPaint().setTextSize(getSize());
     }
 
 
@@ -54,9 +39,6 @@ public class HUDText extends HUDElement implements Clickable {
         setTouchIndex(index);
         setTouchId(id);
         setOn(true);
-        if (getExecOn() != null){
-            getExecOn().execute();
-        }
     }
 
     @Override
@@ -76,17 +58,14 @@ public class HUDText extends HUDElement implements Clickable {
 
     @Override
     public void draw(Canvas canvas) {
-        Paint p = new Paint();
-        p.setTypeface(GameBoard.paint.getTypeface());
-        p.setTextSize(getSize());
-        p.setColor(Color.BLACK);
-        canvas.drawText(getText(),getxCenter()-getWidth()/2,getyCenter()+getHeight()/4,p);
+        setColor(Color.BLACK);
+        canvas.drawText(getText(),getxCenter()-getWidth()/2,getyCenter()+getHeight()/4,getPaint());
         if(!isOn()) {
-            p.setColor(Color.WHITE);
-            canvas.drawText(getText(), getxCenter() - getWidth() / 2 + DEPTH, getyCenter() + getHeight() / 4 + DEPTH, p);
+            setColor(Color.WHITE);
+            canvas.drawText(getText(), getxCenter() - getWidth() / 2 + DEPTH, getyCenter() + getHeight() / 4 + DEPTH, getPaint());
         } else {
-            p.setColor(Color.GRAY);
-            canvas.drawText(getText(), getxCenter() - getWidth() / 2 + DEPTH / 2, getyCenter() + getHeight() / 4 + DEPTH / 2, p);
+            setColor(Color.GRAY);
+            canvas.drawText(getText(), getxCenter() - getWidth() / 2 + DEPTH / 2, getyCenter() + getHeight() / 4 + DEPTH / 2, getPaint());
         }
     }
 
@@ -130,14 +109,6 @@ public class HUDText extends HUDElement implements Clickable {
 
     public void setTouchIndex(int touchIndex) {
         this.touchIndex = touchIndex;
-    }
-
-    public Execution getExecOn() {
-        return execOn;
-    }
-
-    public void setExecOn(Execution execOn) {
-        this.execOn = execOn;
     }
 
     public Execution getExecOff() {

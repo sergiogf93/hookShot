@@ -12,8 +12,11 @@ import com.htss.hookshot.math.MathVector;
  */
 public abstract class GameEnemy extends GameCharacter {
 
-    public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth) {
-        super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth);
+    public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth, boolean addToLists, boolean addToEnemyList) {
+        super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth, addToLists, addToLists);
+        if (addToEnemyList) {
+            MyActivity.enemies.add(this);
+        }
     }
 
     protected MathVector firstInSight(GameObject object) {

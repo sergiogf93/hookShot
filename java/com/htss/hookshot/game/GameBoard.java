@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
@@ -81,11 +83,13 @@ public class GameBoard extends View{
 
                 for (int i = 0 ; i < gameObjects.size() ; i++) {
                     GameObject gameObject = gameObjects.get(i);
-                    if (gameObject instanceof GameDynamicObject) {
-                        ((GameDynamicObject) gameObject).update();
-                    }
-                    if (gameObject instanceof Interactable){
-                        ((Interactable) gameObject).detect();
+                    if (!MyActivity.paused) {
+                        if (gameObject instanceof GameDynamicObject) {
+                            ((GameDynamicObject) gameObject).update();
+                        }
+                        if (gameObject instanceof Interactable) {
+                            ((Interactable) gameObject).detect();
+                        }
                     }
                     gameObject.draw(canvas);
                 }
@@ -113,6 +117,17 @@ public class GameBoard extends View{
             if (MyActivity.roomSwitchEffect.isFinished()){
                 MyActivity.roomSwitchEffect = null;
                 MyActivity.setHUDClickable();
+                if (MyActivity.character.getCompass() != null) {
+                    gameObjects.add(MyActivity.character.getCompass());
+                    MyActivity.dynamicObjects.add(MyActivity.character.getCompass());
+                    gameObjects.add(MyActivity.character.getCompass().getTimer());
+                    MyActivity.dynamicObjects.add(MyActivity.character.getCompass().getTimer());
+                    MyActivity.character.getCompass().findInterests();
+                }
+                if (MyActivity.character.getInfiniteJumpsTimer() != null) {
+                    gameObjects.add(MyActivity.character.getInfiniteJumpsTimer());
+                    MyActivity.dynamicObjects.add(MyActivity.character.getInfiniteJumpsTimer());
+                }
             }
         }
 
@@ -121,7 +136,6 @@ public class GameBoard extends View{
     }
 
     public Bitmap getMapInScreen(){
-        assertMapMargins();
         return Bitmap.createBitmap(mapBitmap,(int)-dx,(int)-dy,MyActivity.screenWidth,MyActivity.screenHeight);
     }
 
@@ -174,6 +188,14 @@ public class GameBoard extends View{
         if (dy > 0) {
             dy = 0;
         }
+    }
+
+    public void clearCircle(Bitmap bitmap, float cx, float cy, float radius) {
+        Paint p = new Paint();
+        p.setColor(getResources().getColor(android.R.color.transparent));
+        p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+        Canvas cnv = new Canvas(bitmap);
+        cnv.drawCircle(cx, cy, radius, p);
     }
 
 }

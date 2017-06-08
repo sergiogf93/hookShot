@@ -12,8 +12,8 @@ public abstract class GameShape extends GameObject {
 
     int color;
 
-    public GameShape(double xPos, double yPos, int color) {
-        super(xPos, yPos);
+    public GameShape(double xPos, double yPos, int color, boolean addToGameObjectsList) {
+        super(xPos, yPos, addToGameObjectsList);
         this.color = color;
     }
 

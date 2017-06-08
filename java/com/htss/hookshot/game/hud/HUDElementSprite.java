@@ -2,6 +2,7 @@ package com.htss.hookshot.game.hud;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 
 /**
@@ -12,7 +13,7 @@ public abstract class HUDElementSprite extends HUDElement {
     protected Bitmap sprite;
 
     public HUDElementSprite(int xPos, int yPos, Bitmap sprite) {
-        super(xPos, yPos);
+        super(xPos, yPos, sprite.getWidth(), sprite.getHeight());
         this.sprite = sprite;
     }
 

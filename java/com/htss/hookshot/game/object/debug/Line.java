@@ -14,14 +14,14 @@ public class Line extends GameObject {
 
     private double endX, endY;
 
-    public Line(double xPos, double yPos, double endX, double endY) {
-        super(xPos, yPos);
+    public Line(double xPos, double yPos, double endX, double endY, boolean addToList) {
+        super(xPos, yPos, addToList);
         this.endX = endX;
         this.endY = endY;
     }
 
-    public Line(MathVector point1, MathVector point2) {
-        super(point1.x, point1.y);
+    public Line(MathVector point1, MathVector point2, boolean addToList) {
+        super(point1.x, point1.y, addToList);
         this.endX = point2.x;
         this.endY = point2.y;
     }

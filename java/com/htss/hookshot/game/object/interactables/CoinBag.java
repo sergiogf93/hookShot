@@ -1,4 +1,4 @@
-package com.htss.hookshot.game.object.collectables;
+package com.htss.hookshot.game.object.interactables;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -20,7 +20,7 @@ public class CoinBag extends GameDynamicObject implements Interactable {
     private final static int COINS = 10;
 
     public CoinBag(double xPos, double yPos) {
-        super(xPos, yPos, 0, 0, 0);
+        super(xPos, yPos, 0, 0, 0, true, true);
     }
 
 //    @Override

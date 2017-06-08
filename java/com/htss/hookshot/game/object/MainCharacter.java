@@ -3,17 +3,32 @@ package com.htss.hookshot.game.object;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Shader;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
 import com.htss.hookshot.game.hud.HUDBar;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.hook.Hook;
+import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
+import com.htss.hookshot.game.object.miscellaneous.CompassObject;
+import com.htss.hookshot.game.object.miscellaneous.ExplosionObject;
+import com.htss.hookshot.game.object.miscellaneous.JumpEffect;
+import com.htss.hookshot.game.object.miscellaneous.PortalObject;
+import com.htss.hookshot.game.object.miscellaneous.TimerObject;
 import com.htss.hookshot.game.object.shapes.BiCircleShape;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Execution;
+import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.DrawUtil;
+import com.htss.hookshot.util.TimeUtil;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+
+import toxi.math.MathUtils;
 
 /**
  * Created by Sergio on 03/08/2016.
@@ -21,26 +36,35 @@ import com.htss.hookshot.math.MathVector;
 public class MainCharacter extends GameCharacter {
 
     private static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
+    private static final int MAX_EXPLOSIONS = 5;
+    private static final int MASS = 1, COLLISION_PRIORITY = 5;
 
     public static final int BODY_RADIUS = 10*MyActivity.TILE_WIDTH /50, FIST_RADIUS = MyActivity.TILE_WIDTH /8,
                             FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
                             MIN_HOOSKSHOT_NODES = 3;
 
-
+    private Paint paint = new Paint();
     private double hookVelocity = 300;
     private int maxHookNodes = 50, facing = 1;
     private Hook hook = null;
-    private CircleShape rightHand, leftHand, rightFoot, leftFoot;
+    private CircleShape rightHand, leftHand, rightFoot, leftFoot, body;
     private BiCircleShape leftEye, rightEye;
     private HUDBar healthBar;
+    private HashMap<Integer, Integer> powerUps = new HashMap<Integer, Integer>();
+    private int currentPowerUp = -1, prevPowerUp = -1;
+    private LinkedList<PortalObject> portals = new LinkedList<PortalObject>();
+    private CompassObject compass;
+    private int explosionsUsed = 0;
+    private TimerObject infiniteJumpsTimer;
 
-    public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
-        super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH);
+    public MainCharacter(double xPos, double yPos) {
+        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, true, true);
         makeSureNotUnderground = true;
-        rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE);
-        leftHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE);
-        leftFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED);
-        rightFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED);
+        body = new CircleShape(xPos, yPos, BODY_RADIUS, Color.BLACK, false);
+        rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
+        leftHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
+        leftFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED, false);
+        rightFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED, false);
         leftEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         rightEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         friction = 1.;
@@ -111,8 +135,19 @@ public class MainCharacter extends GameCharacter {
         }
         if (getyPosInScreen() > MyActivity.screenHeight + getHeight()) {
             MyActivity.switchMap(1);
+            for (PortalObject portal : getPortals()) {
+                portal.destroy();
+            }
+            getPortals().clear();
+            if (getCurrentPowerUp() == GamePowerUp.PORTAL){
+                equipPowerUp(GamePowerUp.PORTAL);
+            }
+            getPortals().clear();
             if (isHooked()) {
                 removeHook();
+            }
+            if (compass != null) {
+                compass.clearInterests();
             }
         }
         this.healthBar.setxCenter((int) this.getxPosInScreen());
@@ -152,6 +187,11 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void manageHookUpdate () {
+        if (getHook().isFastReloading()) {
+            setMaxVelocity(MAX_VELOCITY*5);
+        } else {
+            setMaxVelocity(MAX_VELOCITY);
+        }
         if (getHook().isReloading()){
             MathVector vectorToLastNode = new MathVector(getPositionInRoom(),getHook().getLastNode().getPositionInRoom());
             setP(vectorToLastNode);
@@ -160,7 +200,9 @@ public class MainCharacter extends GameCharacter {
             if (distanceTo(getHook().getLastNode()) > maxSeparation) {
                 MathVector v = new MathVector(getHook().getLastNode().getPositionInRoom(), getFuturePositionInRoom());
                 v.rescale(maxSeparation);
-                getHook().getLastNode().addP(getP());
+                if (getHook().getNodesNumber() > 1) {
+                    getHook().getLastNode().addP(getP());
+                }
                 MathVector newP = new MathVector(getPositionInRoom(), v.applyTo(getHook().getLastNode().getPositionInRoom()));
                 setP(newP);
             }
@@ -206,13 +248,27 @@ public class MainCharacter extends GameCharacter {
             }
             axisForFeet = new MathVector(0,1);
         }
+        // Right hand
         rightHand.setPositionInRoom(separationHand.applyTo(positionFromHands));
+        if (getCurrentPowerUp() == GamePowerUp.PORTAL) {
+            paint.setStrokeWidth(rightHand.getWidth()/4);
+            int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.convertSecondToGameSecond(1)) + 25);
+            DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.RED, startAngle, 180);
+            DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.BLUE, startAngle + 180, 180);
+        }
+        if (getCurrentPowerUp() == GamePowerUp.BOMB) {
+            rightHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.convertSecondToGameSecond(0.2), FIST_RADIUS, getFrame() % TimeUtil.convertSecondToGameSecond(0.2)));
+        } else {
+            rightHand.setRadius(FIST_RADIUS);
+        }
         rightHand.draw(canvas);
+        // Right foot
         rightFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
         rightFoot.draw(canvas);
-        Paint paint = new Paint();
-        paint.setColor(Color.BLACK);
-        canvas.drawCircle((int) getxPosInScreen(), (int) getyPosInScreen(), BODY_RADIUS, paint);
+        // Body
+        body.setPositionInRoom(getPositionInRoom());
+        body.draw(canvas);
+        // Eyes
         paint.setColor(Color.YELLOW);
         vectorForEyes.rotateDeg(-1 * getFacing() * 90);
         vectorForEyes.rescale(separationToEye);
@@ -222,18 +278,44 @@ public class MainCharacter extends GameCharacter {
         vectorForEyes.scale(2);
         rightEye.setPositionInRoom(vectorForEyes.applyTo(getPositionInRoom()));
         rightEye.draw(canvas);
+        // Left hand
         separationHand.reflect(new MathVector(0,1));
         separationFoot.reflect(axisForFeet);
         leftHand.setPositionInRoom(separationHand.applyTo(positionFromHands));
+        if (getCurrentPowerUp() == GamePowerUp.PORTAL && portals.size() % 2 == 0) {
+            int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.convertSecondToGameSecond(1)) + 25);
+            DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.RED, startAngle, 180);
+            DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.BLUE, startAngle + 180, 180);
+        }
+        if (getCurrentPowerUp() == GamePowerUp.BOMB) {
+            leftHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.convertSecondToGameSecond(0.2), FIST_RADIUS, getFrame() % TimeUtil.convertSecondToGameSecond(0.2)));
+        } else {
+            leftHand.setRadius(FIST_RADIUS);
+        }
         leftHand.draw(canvas);
+        // Left foot
         leftFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
         leftFoot.draw(canvas);
+        // Bomb explosions left
+        if (getCurrentPowerUp() == GamePowerUp.BOMB) {
+            double[] angles = {0, 30, -30, 60, -60};
+            MathVector v = new MathVector(0, -getHeight() * 3 / 4);
+            Paint rPaint = new Paint();
+            for (int i = 0; i < MAX_EXPLOSIONS - (explosionsUsed % MAX_EXPLOSIONS); i++) {
+                MathVector p = v.rotatedDeg(angles[i]).applyTo(getPositionInScreen());
+                DrawUtil.drawRadialGradient(canvas, rPaint, (float) p.x, (float) p.y, FIST_RADIUS, Color.YELLOW, Color.RED, Shader.TileMode.MIRROR);
+            }
+        }
+    }
+
+    public void jump() {
+        MathVector jumpForce = new MathVector(0, -1 * MyActivity.TILE_WIDTH * getMass());
+        addP(jumpForce);
     }
 
     @Override
     public int getWidth() {
         return BODY_RADIUS*2;
-//        return (int) Math.abs(rightHand.getPositionInRoom().x - leftHand.getPositionInRoom().x) + rightHand.getRadius() + leftHand.getRadius();
     }
 
     @Override
@@ -242,13 +324,13 @@ public class MainCharacter extends GameCharacter {
     }
 
     @Override
-    public GameShape getBounds (){
-        return new CircleShape(getxPosInRoom(),getyPosInRoom(),getWidth()/2);
+    public GameShape getBounds () {
+        return new CircleShape(getxPosInRoom(), getyPosInRoom(), getWidth() / 2, false);
     }
 
     @Override
-    public GameShape getFutureBounds (){
-        return new CircleShape(getFuturePositionInRoom().x,getFuturePositionInRoom().y,getWidth()/2);
+    public GameShape getFutureBounds () {
+        return new CircleShape(getFuturePositionInRoom().x, getFuturePositionInRoom().y, getWidth() / 2, false);
     }
 
     public double getHookVelocity() {
@@ -299,9 +381,35 @@ public class MainCharacter extends GameCharacter {
         return getFacing() == 1;
     }
 
+    public CompassObject getCompass() {
+        return compass;
+    }
+
+    public void setCompass(CompassObject compass) {
+        this.compass = compass;
+    }
+
+    public LinkedList<PortalObject> getPortals() {
+        return portals;
+    }
+
+    public TimerObject getInfiniteJumpsTimer() {
+        return infiniteJumpsTimer;
+    }
+
+    public void setInfiniteJumpsTimer(TimerObject infiniteJumpsTimer) {
+        this.infiniteJumpsTimer = infiniteJumpsTimer;
+    }
+
     @Override
     public int getMargin(){
         return getWidth()/10;
+    }
+
+    public void checkIfRemoveInterest(GameObject interest) {
+        if (getCompass() != null) {
+            getCompass().removeInterest(interest);
+        }
     }
 
     public void shootHook(double xDown, double yDown) {
@@ -318,6 +426,7 @@ public class MainCharacter extends GameCharacter {
 //        initP.rescale(GameMath.linealValue(1,getHookVelocity()/1000,15,getHookVelocity(),nNodes));
         setHook(new Hook(getxPosInRoom(),getyPosInRoom(), 1, 0, nNodes, radius, Color.GRAY, separation,this,initP));
 //        setP(new MathVector(0,0));
+        MyActivity.canvas.debugText = getP().toString();
     }
 
     public void removeHook() {
@@ -332,15 +441,8 @@ public class MainCharacter extends GameCharacter {
         MyActivity.hudElements.remove(MyActivity.extendButton);
         MyActivity.reloadButton = null;
         MyActivity.extendButton = null;
+        setMaxVelocity(MAX_VELOCITY);
         setState(STATE_MOVING);
-    }
-
-    public MathVector getHookVector() {
-        if (getHook() != null) {
-            return new MathVector(this,getHook().getLastNode());
-        } else {
-            return null;
-        }
     }
 
     @Override
@@ -368,5 +470,113 @@ public class MainCharacter extends GameCharacter {
         if (!MyActivity.hudElements.contains(this.healthBar)){
             MyActivity.hudElements.add(this.healthBar);
         }
+    }
+
+    public void addPowerUp(int type) {
+        if (powerUps.containsKey(type)) {
+            powerUps.put(type, powerUps.get(type) + 1);
+        } else {
+            powerUps.put(type, 1);
+        }
+    }
+
+    public void equipPowerUp(int type) {
+        setCurrentPowerUp(type);
+        switch (type) {
+            case GamePowerUp.PORTAL:
+                if (portals.size() % 2 == 1){
+                    setColors(Color.MAGENTA, Color.YELLOW, Color.BLACK, Color.WHITE, Color.RED, Color.RED);
+                } else {
+                    setColors(Color.MAGENTA, Color.YELLOW, Color.BLACK, Color.BLACK, Color.RED, Color.RED);
+                }
+                if (getInfiniteJumpsTimer() != null) {
+                    getInfiniteJumpsTimer().destroy();
+                    setInfiniteJumpsTimer(null);
+                }
+                break;
+            case GamePowerUp.COMPASS:
+                usePowerUp();
+                break;
+            case GamePowerUp.BOMB:
+                setColors(Color.RED, Color.CYAN, Color.rgb(255, 255, 0), Color.rgb(255, 255, 0), Color.BLACK, Color.BLACK);
+                if (getInfiniteJumpsTimer() != null) {
+                    getInfiniteJumpsTimer().destroy();
+                    setInfiniteJumpsTimer(null);
+                }
+                break;
+            case GamePowerUp.INFINITE_JUMPS:
+                setColors(Color.CYAN, Color.BLACK, Color.WHITE, Color.WHITE, Color.BLUE, Color.BLUE);
+                powerUps.put(GamePowerUp.INFINITE_JUMPS, powerUps.get(GamePowerUp.INFINITE_JUMPS) - 1);
+                setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.convertSecondToGameSecond(5),Color.BLUE,true,true, new Execution() {
+                    @Override
+                    public double execute() {
+                        equipPowerUp(-1);
+                        setInfiniteJumpsTimer(null);
+                        return 0;
+                    }
+                }));
+                break;
+            default:
+                setColors(Color.BLACK, Color.YELLOW, Color.WHITE, Color.WHITE, Color.RED, Color.RED);
+                if (portals.size() % 2 == 1){
+                    portals.get(portals.size() - 1).destroy();
+                    portals.remove(portals.size() - 1);
+                }
+        }
+    }
+
+    public void setColors(int bodyColor, int eyesColor, int rightHandColor, int leftHandColor, int rightFootColor, int leftFootColor) {
+        body.setColor(bodyColor);
+        leftEye.setColor(eyesColor);
+        rightEye.setColor(eyesColor);
+        leftHand.setColor(leftHandColor);
+        rightHand.setColor(rightHandColor);
+        leftFoot.setColor(leftFootColor);
+        rightFoot.setColor(rightFootColor);
+    }
+
+    public void usePowerUp() {
+        switch (getCurrentPowerUp()) {
+            case GamePowerUp.PORTAL:
+                PortalObject portal = new PortalObject(getxPosInRoom(), getyPosInRoom(), getxPosInScreen(), getyPosInScreen(), MyActivity.canvas.dx, MyActivity.canvas.dy, (int) (BODY_RADIUS * 2.5));
+                portals.add(portal);
+                leftHand.setColor(Color.WHITE);
+                if (portals.size() % 2 == 0) {
+                    portals.get(portals.size() - 2).setTwinPortal(portals.get(portals.size() - 1));
+                    portals.get(portals.size() - 1).setTwinPortal(portals.get(portals.size() - 2));
+                    equipPowerUp(-1);
+                    powerUps.put(GamePowerUp.PORTAL, powerUps.get(GamePowerUp.PORTAL) - 1);
+                }
+                break;
+            case GamePowerUp.COMPASS:
+                setCompass(new CompassObject(this, true, true));
+                setCurrentPowerUp(prevPowerUp);
+                powerUps.put(GamePowerUp.COMPASS, powerUps.get(GamePowerUp.COMPASS) - 1);
+                break;
+            case GamePowerUp.BOMB:
+                new ExplosionObject(getxPosInRoom(), getyPosInRoom(), MyActivity.TILE_WIDTH, true, true);
+                explosionsUsed += 1;
+                if (explosionsUsed % MAX_EXPLOSIONS == 0) {
+                    equipPowerUp(-1);
+                    powerUps.put(GamePowerUp.BOMB, powerUps.get(GamePowerUp.BOMB) - 1);
+                }
+                break;
+            case GamePowerUp.INFINITE_JUMPS:
+                jump();
+                new JumpEffect(getxPosInRoom(), getyPosInRoom() + getHeight() / 2, MyActivity.TILE_WIDTH, (int) (MyActivity.TILE_WIDTH * 0.25), true, true);
+        }
+    }
+
+    public HashMap<Integer, Integer> getPowerUps() {
+        return powerUps;
+    }
+
+    public int getCurrentPowerUp() {
+        return currentPowerUp;
+    }
+
+    public void setCurrentPowerUp(int currentPowerUp) {
+        prevPowerUp = getCurrentPowerUp();
+        this.currentPowerUp = currentPowerUp;
     }
 }

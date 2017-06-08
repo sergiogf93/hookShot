@@ -1,4 +1,4 @@
-package com.htss.hookshot.game.object.collectables;
+package com.htss.hookshot.game.object.interactables;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -16,7 +16,7 @@ public class Coin extends GameDynamicObject implements Interactable{
     private static final float RADIUS = MyActivity.TILE_WIDTH /10;
 
     public Coin(double xPos, double yPos) {
-        super(xPos, yPos, 0, 0, 0);
+        super(xPos, yPos, 0, 0, 0, true, true);
     }
 
     @Override

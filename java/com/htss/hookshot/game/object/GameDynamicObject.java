@@ -24,13 +24,16 @@ public abstract class GameDynamicObject extends GameObject {
     private int mass, collisionPriority, frame = 0;
     private Vector<Constraint> constraints;
 
-    public GameDynamicObject(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity) {
-        super(xPos, yPos);
-        this.p = new MathVector(0,0);
+    public GameDynamicObject(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, boolean addToGameObjectsList, boolean addToDynamicObjectsList) {
+        super(xPos, yPos, addToGameObjectsList);
+        this.p = new MathVector(0, 0);
         this.mass = mass;
         this.constraints = new Vector<Constraint>();
         this.collisionPriority = collisionPriority;
         this.maxVelocity = maxVelocity;
+        if (addToDynamicObjectsList) {
+            MyActivity.dynamicObjects.add(this);
+        }
     }
 
     public void update(){
@@ -64,8 +67,10 @@ public abstract class GameDynamicObject extends GameObject {
     protected boolean checkCollisionWithOtherObjects(double x, double y) {
         if (getCollisionPriority() != 0) {
             for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects) {
-                if (!dynamicObject.equals(this) && !dynamicObject.isGhost()) {
-                    if (dynamicObject.getBounds().contains(new MathVector(x,y))) {
+                GameShape bounds = dynamicObject.getBounds();
+                MathVector point = new MathVector(x,y);
+                if (!dynamicObject.equals(this) && dynamicObject.distanceTo(point) < bounds.getIntersectMagnitude() && !dynamicObject.isGhost()) {
+                    if (bounds.contains(point)) {
                         return true;
                     }
                 }
@@ -406,7 +411,7 @@ public abstract class GameDynamicObject extends GameObject {
     }
 
     public GameShape getFutureBounds(){
-        return new RectShape(getFuturePositionInRoom().x,getFuturePositionInRoom().y,getWidth(),getHeight(),false);
+        return new RectShape(getFuturePositionInRoom().x,getFuturePositionInRoom().y,getWidth(),getHeight(),false, false);
     }
 
     public boolean inContactWithMap(int margin){
@@ -540,19 +545,9 @@ public abstract class GameDynamicObject extends GameObject {
         this.frame = frame;
     }
 
-    protected void updateFrame() {this.frame += MyActivity.FRAME_RATE;}
+    public void updateFrame() {this.frame += MyActivity.FRAME_RATE;}
 
     public boolean isOnFloor() {
-        if (!isGhost()){
-            for (int i = 0; i < MyActivity.dynamicObjects.size() ; i++){
-                GameDynamicObject gameDynamicObject = MyActivity.dynamicObjects.get(i);
-                if (!this.equals(gameDynamicObject)) {
-                    if (this.inContactWith(gameDynamicObject)) {
-                        return true;
-                    }
-                }
-            }
-        }
         return onFloor;
     }
 
@@ -578,5 +573,11 @@ public abstract class GameDynamicObject extends GameObject {
 
     public int getMargin(){
         return getWidth()/1;
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        MyActivity.dynamicObjects.remove(this);
     }
 }

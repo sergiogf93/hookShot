@@ -1,61 +1,83 @@
 package com.htss.hookshot.game.hud;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 
+import com.htss.hookshot.game.GameBoard;
+import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
-import com.htss.hookshot.util.TimeUtil;
+import com.htss.hookshot.util.DrawUtil;
+import com.htss.hookshot.util.StringUtil;
 
 /**
  * Created by Sergio on 03/08/2016.
  */
-public class HUDButton extends HUDElementSprite implements Clickable {
+public class HUDCircleButton extends HUDElement implements Clickable {
 
-    protected Bitmap spriteOff;
-    protected Bitmap spriteOn;
+    private float radius;
+    private int alpha = 99;
+    private String text;
     private boolean clickable, on = false;
     private int touchId = -1, touchIndex = -1;
     private long timeWhenOn = 0;
-    private int margin = 0;
+    private int margin = MyActivity.TILE_WIDTH/2;
 
     protected Execution execOn, execOff, execDoubleOn;
 
-    public HUDButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn) {
-        super(xCenter,yCenter,spriteOff);
-        this.spriteOff = spriteOff;
-        this.spriteOn = spriteOn;
+    public HUDCircleButton(int xCenter, int yCenter, float radius, String text, boolean clickable, Execution execOn) {
+        super(xCenter, yCenter, (int) radius * 2, (int) radius * 2);
         this.clickable = clickable;
+        this.radius = radius;
+        this.text = text;
         this.execOn = execOn;
         this.execOff = null;
         this.execDoubleOn = null;
-        if (spriteOff.getWidth() < 100) {
-            this.margin = 50;
-        }
+        setAlpha(alpha);
     }
 
-    public HUDButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn, Execution execOff) {
-        super(xCenter,yCenter,spriteOff);
-        this.spriteOff = spriteOff;
-        this.spriteOn = spriteOn;
+    public HUDCircleButton(int xCenter, int yCenter, float radius, String text, boolean clickable, Execution execOn, Execution execOff) {
+        super(xCenter, yCenter, (int) radius * 2, (int) radius * 2);
         this.clickable = clickable;
+        this.radius = radius;
+        this.text = text;
         this.execOn = execOn;
         this.execOff = execOff;
         this.execDoubleOn = null;
-        if (spriteOff.getWidth() < 100) {
-            this.margin = 80;
-        }
+        setAlpha(alpha);
     }
 
-    public HUDButton(int xCenter, int yCenter, Bitmap spriteOff, Bitmap spriteOn, boolean clickable, Execution execOn, Execution execOff, Execution execDoubleOn) {
-        super(xCenter,yCenter,spriteOff);
-        this.spriteOff = spriteOff;
-        this.spriteOn = spriteOn;
+    public HUDCircleButton(int xCenter, int yCenter, float radius, String text, boolean clickable, Execution execOn, Execution execOff, Execution execDoubleOn) {
+        super(xCenter, yCenter, (int) radius * 2, (int) radius * 2);
         this.clickable = clickable;
+        this.radius = radius;
+        this.text = text;
         this.execOn = execOn;
         this.execOff = execOff;
         this.execDoubleOn = execDoubleOn;
-        if (spriteOff.getWidth() < 100) {
-            this.margin = 80;
+        setAlpha(alpha);
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        setAlpha(alpha);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getRadius(), Color.rgb(30, 30, 30), Paint.Style.FILL);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.95 * getRadius()),  Color.WHITE, Paint.Style.FILL);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.9 * getRadius()), Color.rgb(30, 30, 30), Paint.Style.FILL);
+        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.85 * getRadius()), getMainColor(), Paint.Style.FILL);
+        getPaint().setColor(Color.rgb(30, 30, 30));
+        int textSize = (int) (2 * getRadius() / 3);
+        getPaint().setTextSize(textSize);
+        canvas.drawText(getText(), (float) (getxCenter() - StringUtil.sizeOfString(getText(), textSize) / 1.5), getyCenter() + textSize / 4, getPaint());
+    }
+
+    private int getMainColor() {
+        if (isOn()) {
+            return Color.rgb(180,180,180);
+        } else {
+            return Color.WHITE;
         }
     }
 
@@ -63,7 +85,6 @@ public class HUDButton extends HUDElementSprite implements Clickable {
     public void press(double x, double y, int id, int index) {
         setTouchIndex(index);
         setTouchId(id);
-        setSprite(getSpriteOn());
         setOn(true);
         if (getExecDoubleOn() != null) {
             if(System.currentTimeMillis() - getTimeWhenOn() < 500) {
@@ -87,7 +108,6 @@ public class HUDButton extends HUDElementSprite implements Clickable {
     public void reset() {
         setTouchIndex(-1);
         setTouchId(-1);
-        setSprite(getSpriteOff());
         setOn(false);
         if (getExecOff() != null){
             getExecOff().execute();
@@ -96,12 +116,12 @@ public class HUDButton extends HUDElementSprite implements Clickable {
 
     @Override
     public int getHeight() {
-        return super.getHeight() + margin;
+        return (int) (getRadius()*2 + margin);
     }
 
     @Override
     public int getWidth() {
-        return super.getWidth() + margin;
+        return (int) (getRadius()*2 + margin);
     }
 
     @Override
@@ -122,22 +142,6 @@ public class HUDButton extends HUDElementSprite implements Clickable {
     @Override
     public int getTouchIndex() {
         return touchIndex;
-    }
-
-    public Bitmap getSpriteOff() {
-        return spriteOff;
-    }
-
-    public void setSpriteOff(Bitmap spriteOff) {
-        this.spriteOff = spriteOff;
-    }
-
-    public Bitmap getSpriteOn() {
-        return spriteOn;
-    }
-
-    public void setSpriteOn(Bitmap spriteOn) {
-        this.spriteOn = spriteOn;
     }
 
     @Override
@@ -187,5 +191,21 @@ public class HUDButton extends HUDElementSprite implements Clickable {
 
     public void setExecDoubleOn(Execution execDoubleOn) {
         this.execDoubleOn = execDoubleOn;
+    }
+
+    public float getRadius() {
+        return radius;
+    }
+
+    public void setRadius(float radius) {
+        this.radius = radius;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
     }
 }

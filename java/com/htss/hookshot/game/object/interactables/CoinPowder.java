@@ -1,4 +1,4 @@
-package com.htss.hookshot.game.object.collectables;
+package com.htss.hookshot.game.object.interactables;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -18,7 +18,7 @@ public class CoinPowder extends GameDynamicObject implements Interactable {
     private int dir;
 
     public CoinPowder(double xPos, double yPos, MathVector initP) {
-        super(xPos, yPos, 0, 0, MyActivity.TILE_WIDTH /20);
+        super(xPos, yPos, 0, 0, MyActivity.TILE_WIDTH /20, true, true);
         this.setGhost(true);
         this.p = initP;
         MathVector toChar = new MathVector(getPositionInRoom(),MyActivity.character.getPositionInRoom());

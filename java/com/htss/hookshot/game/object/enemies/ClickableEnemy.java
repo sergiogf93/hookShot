@@ -1,5 +1,6 @@
 package com.htss.hookshot.game.object.enemies;
 
+import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
 
 /**
@@ -10,8 +11,8 @@ public abstract class ClickableEnemy extends GameEnemy implements Clickable {
     private boolean clickable = true, on = false;
     private int touchId = -1, touchIndex = -1;
 
-    public ClickableEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth) {
-        super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth);
+    public ClickableEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth, boolean addToLists, boolean addToEnemyList) {
+        super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth, addToLists, addToEnemyList);
     }
 
     @Override

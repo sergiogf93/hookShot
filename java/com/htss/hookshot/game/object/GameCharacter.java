@@ -13,8 +13,8 @@ public abstract class GameCharacter extends GameDynamicObject {
     private int state = STATE_REST;
     private double health, maxHealth;
 
-    public GameCharacter(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth) {
-        super(xPos, yPos, mass, collisionPriority, maxVelocity);
+    public GameCharacter(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth, boolean addToGameObjects, boolean addToDynamicObjects) {
+        super(xPos, yPos, mass, collisionPriority, maxVelocity, addToGameObjects, addToDynamicObjects);
         this.health = maxHealth;
         this.maxHealth = maxHealth;
     }

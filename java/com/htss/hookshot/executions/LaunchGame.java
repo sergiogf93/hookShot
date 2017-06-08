@@ -2,6 +2,7 @@ package com.htss.hookshot.executions;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
@@ -15,7 +16,7 @@ public class LaunchGame implements Execution {
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
 
-        MyActivity.currentMap = new Map(MyActivity.mapXTiles,MyActivity.mapYTiles,MyActivity.FILL_PERCENT,true, 0);
+        MyActivity.currentMap = new Map(MyActivity.mapXTiles, MyActivity.mapYTiles, MyActivity.FILL_PERCENT, true, 0);
         MathVector startPosition = MyActivity.currentMap.startPosition();
 
         while (startPosition.magnitude() == 0){
@@ -32,15 +33,22 @@ public class LaunchGame implements Execution {
 
         startPosition = startPosition.roomToScreen();
 
-        MyActivity.character = new MainCharacter(startPosition.x,startPosition.y,1,5);
-        MyActivity.canvas.gameObjects.add(MyActivity.character);
-        MyActivity.dynamicObjects.add(MyActivity.character);
+        MyActivity.character = new MainCharacter(startPosition.x,startPosition.y);
 
         MyActivity.hudElements.clear();
-        MyActivity.hudElements.add(MyActivity.joystick);
-        MyActivity.hudElements.add(MyActivity.buttonA);
-        MyActivity.hudElements.add(MyActivity.buttonB);
+        MyActivity.addControls();
+        MyActivity.hudElements.add(MyActivity.pauseButton);
 
+        if (MyActivity.paused) {
+            MyActivity.unpause();
+        }
+
+        //////////////////
+        MyActivity.character.addPowerUp(GamePowerUp.PORTAL);
+        MyActivity.character.addPowerUp(GamePowerUp.COMPASS);
+        MyActivity.character.addPowerUp(GamePowerUp.BOMB);
+        MyActivity.character.addPowerUp(GamePowerUp.INFINITE_JUMPS);
+        //////////////////
         return 0;
     }
 }
