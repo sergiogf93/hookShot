@@ -53,8 +53,8 @@ public class MyActivity extends Activity {
 //    public static int FILL_PERCENT = 30;
 //    public static int mapXTiles = 30, mapYTiles = 20;
 
-    public static final int FRAME_RATE = 10, TILE_WIDTH = 100;
-    public static int HORIZONTAL_MARGIN, VERTICAL_MARGIN;
+    public static final int FRAME_RATE = 10;
+    public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
     private static final int BUTTON_A_BOTTOM_PADDING = 70,
             BUTTON_A_RIGHT_PADDING = 50,
             BUTTON_B_BOTTOM_PADDING = 50,
@@ -88,8 +88,9 @@ public class MyActivity extends Activity {
 
         DisplayMetrics displaymetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
-        screenHeight = displaymetrics.heightPixels;
-        screenWidth = displaymetrics.widthPixels;
+        screenHeight = displaymetrics.heightPixels; //720
+        screenWidth = displaymetrics.widthPixels; //1280
+        TILE_WIDTH = 100 * screenHeight / 720;
         HORIZONTAL_MARGIN = screenWidth / 2 - TILE_WIDTH * 2;
         VERTICAL_MARGIN = screenHeight / 2;
 
@@ -180,7 +181,7 @@ public class MyActivity extends Activity {
 
         final FadeEffect fadeEffect = new FadeEffect(new LaunchGame());
 
-        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", TILE_WIDTH *8/10, new Execution() {
+        HUDText newGame = new HUDText(screenWidth / 2, screenHeight / 2 - canvas.fontSize * 3, true, "NEW GAME", TILE_WIDTH * 8 / 10, new Execution() {
             @Override
             public double execute() {
                 gameEffects.add(fadeEffect);
