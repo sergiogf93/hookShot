@@ -10,6 +10,7 @@ import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.obstacles.WallButton;
+import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.DrawUtil;
@@ -22,33 +23,35 @@ import java.util.LinkedList;
  */
 public class CompassObject extends GameDynamicObject {
 
-    private static final double MAX_TIME = TimeUtil.convertSecondToGameSecond(10);
-
     private GameDynamicObject parent;
     private LinkedList<GameObject> interests = new LinkedList<GameObject>();
     private Paint paint = new Paint();
+    private TimerObject timer;
 
     public CompassObject(GameDynamicObject parent, boolean addToGameObjectsList, boolean addToDynamicObjectsList) {
         super(parent.getxPosInRoom(), parent.getyPosInRoom(), 0, 0, 0, addToGameObjectsList, addToDynamicObjectsList);
         this.parent = parent;
         findInterests();
         paint.setStrokeWidth(getWidth() / 500);
+        this.timer = new TimerObject(parent, (int) (getWidth() / 1.75), TimeUtil.convertSecondToGameSecond(10), Color.YELLOW, addToGameObjectsList, addToDynamicObjectsList, new Execution() {
+            @Override
+            public double execute() {
+                MyActivity.character.getCompass().destroy();
+                MyActivity.character.setCompass(null);
+                return 0;
+            }
+        });
         setGhost(true);
     }
 
     @Override
     public void update() {
         updateFrame();
-        if (getFrame() >= MAX_TIME) {
-            MyActivity.character.setCompass(null);
-            this.destroy();
-        }
     }
 
     @Override
     public void draw(Canvas canvas) {
-        int start = (int) GameMath.linealValue(0, 0, MAX_TIME, 360, getFrame());
-        DrawUtil.drawArc(canvas, paint, (float) parent.getxPosInScreen(), (float) parent.getyPosInScreen(), (float) (getWidth() / 1.75), Color.YELLOW, start - 90, 360 - start);
+        timer.draw(canvas);
         for (GameObject object : interests) {
             drawArrow(canvas, parent.vectorTo(object));
         }
@@ -94,5 +97,9 @@ public class CompassObject extends GameDynamicObject {
 
     public void removeInterest(GameObject interest) {
         this.interests.remove(interest);
+    }
+
+    public TimerObject getTimer() {
+        return timer;
     }
 }

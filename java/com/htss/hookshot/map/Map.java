@@ -14,7 +14,9 @@ import android.graphics.Rect;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.interactables.CoinBag;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
+import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
+import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
 import com.htss.hookshot.game.object.obstacles.Ball;
 import com.htss.hookshot.game.object.obstacles.Door;
@@ -864,11 +866,15 @@ public class Map {
             } else {
                 position = getRandomPointInRooms(roomRegions, 0, powerUpRandom);
             }
-            int powerUpType = powerUpRandom.nextInt(2);
+            int powerUpType = powerUpRandom.nextInt(4);
             if (powerUpType == 0) {
                 new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2, true, false);
             } else if (powerUpType == 1) {
                 new CompassPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.8), true, false);
+            } else if (powerUpType == 2) {
+                new BombPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.8), true, false);
+            } else if (powerUpType == 3) {
+                new InfiniteJumpsPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.9), (int) (SQUARE_SIZE * 0.8), true, false);
             }
         }
     }

@@ -11,7 +11,7 @@ import com.htss.hookshot.interfaces.Interactable;
  */
 public abstract class GamePowerUp extends GameDynamicObject implements Interactable {
 
-    public static final int PORTAL = 0, COMPASS = 1;
+    public static final int PORTAL = 0, COMPASS = 1, BOMB = 2, INFINITE_JUMPS = 3;
 
     private int type;
     private int width, height;

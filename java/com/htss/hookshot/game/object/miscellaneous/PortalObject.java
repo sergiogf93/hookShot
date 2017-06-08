@@ -84,8 +84,8 @@ public class PortalObject extends GameDynamicObject {
     }
 
     public int getRadius() {
-        if (getFrame() < TimeUtil.convertSecondToGameSecond(0.5)){
-            return (int) (radius*getFrame()/TimeUtil.convertSecondToGameSecond(0.5));
+        if (getFrame() < TimeUtil.convertSecondToGameSecond(0.2)){
+            return (int) (radius*getFrame()/TimeUtil.convertSecondToGameSecond(0.2));
         } else {
             return radius;
         }

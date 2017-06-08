@@ -120,7 +120,13 @@ public class GameBoard extends View{
                 if (MyActivity.character.getCompass() != null) {
                     gameObjects.add(MyActivity.character.getCompass());
                     MyActivity.dynamicObjects.add(MyActivity.character.getCompass());
+                    gameObjects.add(MyActivity.character.getCompass().getTimer());
+                    MyActivity.dynamicObjects.add(MyActivity.character.getCompass().getTimer());
                     MyActivity.character.getCompass().findInterests();
+                }
+                if (MyActivity.character.getInfiniteJumpsTimer() != null) {
+                    gameObjects.add(MyActivity.character.getInfiniteJumpsTimer());
+                    MyActivity.dynamicObjects.add(MyActivity.character.getInfiniteJumpsTimer());
                 }
             }
         }

@@ -1,9 +1,12 @@
 package com.htss.hookshot.util;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.RadialGradient;
+import android.graphics.Shader;
 
 import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
@@ -61,14 +64,26 @@ public class DrawUtil {
         canvas.drawCircle(x, y, radius, paint);
     }
 
+    public static void drawRadialGradient(Canvas canvas, Paint paint, float x, float y, float radius, int colorCenter, int colorEdge, Shader.TileMode tileMode) {
+        int alpha = paint.getAlpha();
+        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        paint.setShader(new RadialGradient(x, y, radius, colorCenter, colorEdge, tileMode));
+        paint.setAlpha(alpha);
+        canvas.drawCircle(x, y, radius, paint);
+    }
+
     public static void drawArc(Canvas canvas, Paint paint, float x, float y, float radius, int color, int start, int sweep) {
+        int alpha = paint.getAlpha();
         paint.setColor(color);
+        paint.setAlpha(alpha);
         paint.setStyle(Paint.Style.STROKE);
         canvas.drawArc(x - radius, y - radius, x + radius, y + radius, start, sweep, false, paint);
     }
 
     public static void drawArc(Canvas canvas, Paint paint, float left, float top, float right, float bottom, int color, int start, int sweep) {
+        int alpha = paint.getAlpha();
         paint.setColor(color);
+        paint.setAlpha(alpha);
         paint.setStyle(Paint.Style.STROKE);
         canvas.drawArc(left, top, right, bottom, start, sweep, false, paint);
     }

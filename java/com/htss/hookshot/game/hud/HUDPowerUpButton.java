@@ -45,9 +45,7 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
     }
 
     private void unequipPowerUp() {
-        if (powerUp.getType() == GamePowerUp.PORTAL) {
-            MyActivity.character.equipPowerUp(-1);
-        }
+        MyActivity.character.equipPowerUp(-1);
     }
 
     @Override

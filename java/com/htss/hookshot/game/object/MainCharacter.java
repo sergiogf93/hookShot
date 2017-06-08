@@ -3,6 +3,7 @@ package com.htss.hookshot.game.object;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Shader;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
@@ -11,11 +12,15 @@ import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.miscellaneous.CompassObject;
+import com.htss.hookshot.game.object.miscellaneous.ExplosionObject;
+import com.htss.hookshot.game.object.miscellaneous.JumpEffect;
 import com.htss.hookshot.game.object.miscellaneous.PortalObject;
+import com.htss.hookshot.game.object.miscellaneous.TimerObject;
 import com.htss.hookshot.game.object.shapes.BiCircleShape;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Execution;
+import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.TimeUtil;
@@ -23,12 +28,16 @@ import com.htss.hookshot.util.TimeUtil;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import toxi.math.MathUtils;
+
 /**
  * Created by Sergio on 03/08/2016.
  */
 public class MainCharacter extends GameCharacter {
 
     private static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
+    private static final int MAX_EXPLOSIONS = 5;
+    private static final int MASS = 1, COLLISION_PRIORITY = 5;
 
     public static final int BODY_RADIUS = 10*MyActivity.TILE_WIDTH /50, FIST_RADIUS = MyActivity.TILE_WIDTH /8,
                             FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
@@ -45,9 +54,11 @@ public class MainCharacter extends GameCharacter {
     private int currentPowerUp = -1, prevPowerUp = -1;
     private LinkedList<PortalObject> portals = new LinkedList<PortalObject>();
     private CompassObject compass;
+    private int explosionsUsed = 0;
+    private TimerObject infiniteJumpsTimer;
 
-    public MainCharacter(double xPos, double yPos, int mass, int collisionPriority) {
-        super(xPos, yPos, mass, collisionPriority, MAX_VELOCITY, MAX_HEALTH, true, true);
+    public MainCharacter(double xPos, double yPos) {
+        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, true, true);
         makeSureNotUnderground = true;
         body = new CircleShape(xPos, yPos, BODY_RADIUS, Color.BLACK, false);
         rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
@@ -124,11 +135,12 @@ public class MainCharacter extends GameCharacter {
         }
         if (getyPosInScreen() > MyActivity.screenHeight + getHeight()) {
             MyActivity.switchMap(1);
-            if (getCurrentPowerUp() == GamePowerUp.PORTAL){
-                equipPowerUp(GamePowerUp.PORTAL);
-            }
             for (PortalObject portal : getPortals()) {
                 portal.destroy();
+            }
+            getPortals().clear();
+            if (getCurrentPowerUp() == GamePowerUp.PORTAL){
+                equipPowerUp(GamePowerUp.PORTAL);
             }
             getPortals().clear();
             if (isHooked()) {
@@ -244,6 +256,11 @@ public class MainCharacter extends GameCharacter {
             DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.RED, startAngle, 180);
             DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.BLUE, startAngle + 180, 180);
         }
+        if (getCurrentPowerUp() == GamePowerUp.BOMB) {
+            rightHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.convertSecondToGameSecond(0.2), FIST_RADIUS, getFrame() % TimeUtil.convertSecondToGameSecond(0.2)));
+        } else {
+            rightHand.setRadius(FIST_RADIUS);
+        }
         rightHand.draw(canvas);
         // Right foot
         rightFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
@@ -270,10 +287,30 @@ public class MainCharacter extends GameCharacter {
             DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.RED, startAngle, 180);
             DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.BLUE, startAngle + 180, 180);
         }
+        if (getCurrentPowerUp() == GamePowerUp.BOMB) {
+            leftHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.convertSecondToGameSecond(0.2), FIST_RADIUS, getFrame() % TimeUtil.convertSecondToGameSecond(0.2)));
+        } else {
+            leftHand.setRadius(FIST_RADIUS);
+        }
         leftHand.draw(canvas);
         // Left foot
         leftFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
         leftFoot.draw(canvas);
+        // Bomb explosions left
+        if (getCurrentPowerUp() == GamePowerUp.BOMB) {
+            double[] angles = {0, 30, -30, 60, -60};
+            MathVector v = new MathVector(0, -getHeight() * 3 / 4);
+            Paint rPaint = new Paint();
+            for (int i = 0; i < MAX_EXPLOSIONS - (explosionsUsed % MAX_EXPLOSIONS); i++) {
+                MathVector p = v.rotatedDeg(angles[i]).applyTo(getPositionInScreen());
+                DrawUtil.drawRadialGradient(canvas, rPaint, (float) p.x, (float) p.y, FIST_RADIUS, Color.YELLOW, Color.RED, Shader.TileMode.MIRROR);
+            }
+        }
+    }
+
+    public void jump() {
+        MathVector jumpForce = new MathVector(0, -1 * MyActivity.TILE_WIDTH * getMass());
+        addP(jumpForce);
     }
 
     @Override
@@ -356,6 +393,14 @@ public class MainCharacter extends GameCharacter {
         return portals;
     }
 
+    public TimerObject getInfiniteJumpsTimer() {
+        return infiniteJumpsTimer;
+    }
+
+    public void setInfiniteJumpsTimer(TimerObject infiniteJumpsTimer) {
+        this.infiniteJumpsTimer = infiniteJumpsTimer;
+    }
+
     @Override
     public int getMargin(){
         return getWidth()/10;
@@ -381,6 +426,7 @@ public class MainCharacter extends GameCharacter {
 //        initP.rescale(GameMath.linealValue(1,getHookVelocity()/1000,15,getHookVelocity(),nNodes));
         setHook(new Hook(getxPosInRoom(),getyPosInRoom(), 1, 0, nNodes, radius, Color.GRAY, separation,this,initP));
 //        setP(new MathVector(0,0));
+        MyActivity.canvas.debugText = getP().toString();
     }
 
     public void removeHook() {
@@ -438,10 +484,37 @@ public class MainCharacter extends GameCharacter {
         setCurrentPowerUp(type);
         switch (type) {
             case GamePowerUp.PORTAL:
-                setColors(Color.MAGENTA, Color.YELLOW, Color.BLACK, Color.BLACK, Color.RED, Color.RED);
+                if (portals.size() % 2 == 1){
+                    setColors(Color.MAGENTA, Color.YELLOW, Color.BLACK, Color.WHITE, Color.RED, Color.RED);
+                } else {
+                    setColors(Color.MAGENTA, Color.YELLOW, Color.BLACK, Color.BLACK, Color.RED, Color.RED);
+                }
+                if (getInfiniteJumpsTimer() != null) {
+                    getInfiniteJumpsTimer().destroy();
+                    setInfiniteJumpsTimer(null);
+                }
                 break;
             case GamePowerUp.COMPASS:
                 usePowerUp();
+                break;
+            case GamePowerUp.BOMB:
+                setColors(Color.RED, Color.CYAN, Color.rgb(255, 255, 0), Color.rgb(255, 255, 0), Color.BLACK, Color.BLACK);
+                if (getInfiniteJumpsTimer() != null) {
+                    getInfiniteJumpsTimer().destroy();
+                    setInfiniteJumpsTimer(null);
+                }
+                break;
+            case GamePowerUp.INFINITE_JUMPS:
+                setColors(Color.CYAN, Color.BLACK, Color.WHITE, Color.WHITE, Color.BLUE, Color.BLUE);
+                powerUps.put(GamePowerUp.INFINITE_JUMPS, powerUps.get(GamePowerUp.INFINITE_JUMPS) - 1);
+                setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.convertSecondToGameSecond(5),Color.BLUE,true,true, new Execution() {
+                    @Override
+                    public double execute() {
+                        equipPowerUp(-1);
+                        setInfiniteJumpsTimer(null);
+                        return 0;
+                    }
+                }));
                 break;
             default:
                 setColors(Color.BLACK, Color.YELLOW, Color.WHITE, Color.WHITE, Color.RED, Color.RED);
@@ -480,6 +553,17 @@ public class MainCharacter extends GameCharacter {
                 setCurrentPowerUp(prevPowerUp);
                 powerUps.put(GamePowerUp.COMPASS, powerUps.get(GamePowerUp.COMPASS) - 1);
                 break;
+            case GamePowerUp.BOMB:
+                new ExplosionObject(getxPosInRoom(), getyPosInRoom(), MyActivity.TILE_WIDTH, true, true);
+                explosionsUsed += 1;
+                if (explosionsUsed % MAX_EXPLOSIONS == 0) {
+                    equipPowerUp(-1);
+                    powerUps.put(GamePowerUp.BOMB, powerUps.get(GamePowerUp.BOMB) - 1);
+                }
+                break;
+            case GamePowerUp.INFINITE_JUMPS:
+                jump();
+                new JumpEffect(getxPosInRoom(), getyPosInRoom() + getHeight() / 2, MyActivity.TILE_WIDTH, (int) (MyActivity.TILE_WIDTH * 0.25), true, true);
         }
     }
 

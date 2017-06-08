@@ -33,7 +33,7 @@ public class LaunchGame implements Execution {
 
         startPosition = startPosition.roomToScreen();
 
-        MyActivity.character = new MainCharacter(startPosition.x,startPosition.y,1,5);
+        MyActivity.character = new MainCharacter(startPosition.x,startPosition.y);
 
         MyActivity.hudElements.clear();
         MyActivity.addControls();
@@ -46,6 +46,8 @@ public class LaunchGame implements Execution {
         //////////////////
         MyActivity.character.addPowerUp(GamePowerUp.PORTAL);
         MyActivity.character.addPowerUp(GamePowerUp.COMPASS);
+        MyActivity.character.addPowerUp(GamePowerUp.BOMB);
+        MyActivity.character.addPowerUp(GamePowerUp.INFINITE_JUMPS);
         //////////////////
         return 0;
     }

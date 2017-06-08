@@ -30,8 +30,10 @@ import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
+import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
 import com.htss.hookshot.game.object.miscellaneous.PortalObject;
 import com.htss.hookshot.interfaces.Clickable;
@@ -98,10 +100,10 @@ public class MyActivity extends Activity {
                 screenHeight - buttonRadius - BUTTON_A_BOTTOM_PADDING, buttonRadius, "A", true, new Execution() {
             @Override
             public double execute() {
-//                                                if (MyActivity.character.isOnFloor()) {
-                if (true) {
-                    MathVector jumpForce = new MathVector(0, -20 * MyActivity.character.getMass());
-                    MyActivity.character.addP(jumpForce);
+                if (MyActivity.character.isOnFloor()) {
+                    MyActivity.character.jump();
+                } else if (MyActivity.character.getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
+                    MyActivity.character.usePowerUp();
                 }
 
                 return 0;
@@ -516,6 +518,14 @@ public class MyActivity extends Activity {
                     case GamePowerUp.COMPASS:
                         CompassPowerUp compassPowerUp = new CompassPowerUp(screenWidth / 6 - canvas.dx, 3 * screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.8), false, false);
                         powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, 3 * screenHeight / 4, TILE_WIDTH * 2, MyActivity.character.getCompass() == null, compassPowerUp, character.getPowerUps().get(i)));
+                        break;
+                    case GamePowerUp.BOMB:
+                        BombPowerUp bombPowerUp = new BombPowerUp( 5 * screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.8), false, false);
+                        powerUpButtons.add(new HUDPowerUpButton( 5 * screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2, true, bombPowerUp, character.getPowerUps().get(i)));
+                        break;
+                    case GamePowerUp.INFINITE_JUMPS:
+                        InfiniteJumpsPowerUp infiniteJumpsPowerUp = new InfiniteJumpsPowerUp( 5 * screenWidth / 6 - canvas.dx, 3 * screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.9), (int) (TILE_WIDTH * 0.8), false, false);
+                        powerUpButtons.add(new HUDPowerUpButton( 5 * screenWidth / 6, 3 * screenHeight / 4, TILE_WIDTH * 2, character.getInfiniteJumpsTimer() == null, infiniteJumpsPowerUp, character.getPowerUps().get(i)));
                         break;
                 }
             }
