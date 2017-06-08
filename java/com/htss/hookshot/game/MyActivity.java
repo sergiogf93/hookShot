@@ -55,10 +55,7 @@ public class MyActivity extends Activity {
 
     public static final int FRAME_RATE = 10;
     public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
-    private static final int BUTTON_A_BOTTOM_PADDING = 70,
-            BUTTON_A_RIGHT_PADDING = 50,
-            BUTTON_B_BOTTOM_PADDING = 50,
-            BUTTON_B_RIGHT_PADDING = 250;
+    private static int BUTTON_A_BOTTOM_PADDING,BUTTON_A_RIGHT_PADDING,BUTTON_B_BOTTOM_PADDING,BUTTON_B_RIGHT_PADDING;
 
     public static GameBoard canvas;
     public static GameEffect roomSwitchEffect;
@@ -93,6 +90,10 @@ public class MyActivity extends Activity {
         TILE_WIDTH = 100 * screenHeight / 720;
         HORIZONTAL_MARGIN = screenWidth / 2 - TILE_WIDTH * 2;
         VERTICAL_MARGIN = screenHeight / 2;
+        BUTTON_A_BOTTOM_PADDING = 70 * TILE_WIDTH / 100;
+        BUTTON_A_RIGHT_PADDING = 50 * TILE_WIDTH / 100;
+        BUTTON_B_BOTTOM_PADDING = 50 * TILE_WIDTH / 100;
+        BUTTON_B_RIGHT_PADDING = 250 * TILE_WIDTH / 100;
 
         joystick = new Joystick(2 * TILE_WIDTH, screenHeight - TILE_WIDTH / 2 - TILE_WIDTH, TILE_WIDTH * 2, TILE_WIDTH * 2);
 
@@ -150,6 +151,8 @@ public class MyActivity extends Activity {
         menu = new HUDMenu(screenWidth / 2, screenHeight / 2, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
 
         canvas = (GameBoard) findViewById(R.id.the_canvas);
+        canvas.DEFAULT_FONT_SIZE = 48*MyActivity.TILE_WIDTH /100;
+        canvas.SMALL_FONT_SIZE = 27*MyActivity.TILE_WIDTH /100;
         canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");
         canvas.joystickMonospace = Typeface.createFromAsset(getAssets(),"fonts/joystix_monospace.ttf");
         canvas.setFont(GameBoard.ARCADECLASSIC_FONT_KEY, GameBoard.DEFAULT_FONT_SIZE);

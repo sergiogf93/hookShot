@@ -27,7 +27,7 @@ import java.util.Vector;
 public class GameBoard extends View{
 
     public static final int ARCADECLASSIC_FONT_KEY = 1, ARIAL_FONT_KEY = 2, JOYSTIX_MONOSPACE_FONT_KEY = 3;
-    public static final int DEFAULT_FONT_SIZE = 48*MyActivity.TILE_WIDTH /100, SMALL_FONT_SIZE = 27*MyActivity.TILE_WIDTH /100;
+    public static int DEFAULT_FONT_SIZE = 48*MyActivity.TILE_WIDTH /100, SMALL_FONT_SIZE = 27*MyActivity.TILE_WIDTH /100;
     public static int fontSize;
     public Typeface arcadeClassicFont, joystickMonospace;
 
