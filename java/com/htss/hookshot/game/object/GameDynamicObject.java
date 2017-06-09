@@ -15,7 +15,7 @@ import java.util.Vector;
  */
 public abstract class GameDynamicObject extends GameObject {
 
-    private static final int MAXIMUM_VERTICAL_MOMENTUM = 25;
+    public static int maximumVerticalMomentum = 25 * MyActivity.TILE_WIDTH / 100;
 
     private double maxVelocity;
     protected MathVector p;
@@ -195,8 +195,8 @@ public abstract class GameDynamicObject extends GameObject {
                 }
             }
         }
-        if (p.y > MAXIMUM_VERTICAL_MOMENTUM){
-            p.y = MAXIMUM_VERTICAL_MOMENTUM;
+        if (p.y > maximumVerticalMomentum){
+            p.y = maximumVerticalMomentum;
         }
         return false;
     }

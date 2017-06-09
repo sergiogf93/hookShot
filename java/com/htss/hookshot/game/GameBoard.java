@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
@@ -17,6 +18,7 @@ import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.interfaces.Interactable;
+import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.StringUtil;
 
 import java.util.Vector;
@@ -81,6 +83,8 @@ public class GameBoard extends View{
 
                 canvas.drawBitmap(mapInScreen, 0, 0, paint);
 
+                mapInScreen.recycle();
+
                 for (int i = 0 ; i < gameObjects.size() ; i++) {
                     GameObject gameObject = gameObjects.get(i);
                     if (!MyActivity.paused) {
@@ -139,6 +143,18 @@ public class GameBoard extends View{
         return Bitmap.createBitmap(mapBitmap,(int)-dx,(int)-dy,MyActivity.screenWidth,MyActivity.screenHeight);
     }
 
+    public void generateMap(){
+        if (mapBitmap != null) {
+            mapBitmap.recycle();
+        }
+        mapBitmap = Bitmap.createBitmap(MyActivity.currentMap.getWidth(), MyActivity.currentMap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas mapCanvas = new Canvas(mapBitmap);
+
+        MyActivity.currentMap.draw(mapCanvas);
+//        MyActivity.currentMap.drawNodes(mapCanvas);
+        MyActivity.currentMap.drawOutlines(mapCanvas);
+    }
+
     private void drawInfo(Canvas canvas) {
         int textSize = MyActivity.TILE_WIDTH /4;
         Paint whitePaint = new Paint();
@@ -156,19 +172,6 @@ public class GameBoard extends View{
         if (debugText != ""){
             canvas.drawText(debugText,MyActivity.screenWidth - MyActivity.TILE_WIDTH - StringUtil.sizeOfString(debugText, (int) whitePaint.getTextSize()), MyActivity.TILE_WIDTH,whitePaint);
         }
-    }
-
-    public void generateMap(){
-        if (mapBitmap != null) {
-            mapBitmap.recycle();
-        }
-        mapBitmap = Bitmap.createBitmap(MyActivity.currentMap.getWidth(), MyActivity.currentMap.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas mapCanvas = new Canvas(mapBitmap);
-
-        MyActivity.currentMap.draw(mapCanvas);
-//        MyActivity.currentMap.drawNodes(mapCanvas);
-        MyActivity.currentMap.drawOutlines(mapCanvas);
-
     }
 
     public Bitmap getBitmapById (int id){

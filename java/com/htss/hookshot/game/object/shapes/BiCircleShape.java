@@ -18,7 +18,7 @@ public class BiCircleShape extends GameShape {
     private MathVector direction;
 
     public BiCircleShape(double xPos, double yPos, double separation, MathVector direction, double radius, int color) {
-        super(xPos, yPos, color, true);
+        super(xPos, yPos, color, false);
         this.separation = separation;
         this.direction = direction.getUnitVector();
         this.radius = radius;

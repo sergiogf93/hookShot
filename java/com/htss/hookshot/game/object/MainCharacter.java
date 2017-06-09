@@ -190,7 +190,11 @@ public class MainCharacter extends GameCharacter {
         if (getHook().isFastReloading()) {
             setMaxVelocity(MAX_VELOCITY*5);
         } else {
-            setMaxVelocity(MAX_VELOCITY);
+            if (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
+                setMaxVelocity(MAX_VELOCITY * 2);
+            } else {
+                setMaxVelocity(MAX_VELOCITY);
+            }
         }
         if (getHook().isReloading()){
             MathVector vectorToLastNode = new MathVector(getPositionInRoom(),getHook().getLastNode().getPositionInRoom());
@@ -308,8 +312,8 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
-    public void jump() {
-        MathVector jumpForce = new MathVector(0, -1 * MyActivity.TILE_WIDTH * getMass());
+    public void jump(double jump) {
+        MathVector jumpForce = new MathVector(0, jump);
         addP(jumpForce);
     }
 
@@ -441,7 +445,11 @@ public class MainCharacter extends GameCharacter {
         MyActivity.hudElements.remove(MyActivity.extendButton);
         MyActivity.reloadButton = null;
         MyActivity.extendButton = null;
-        setMaxVelocity(MAX_VELOCITY);
+        if (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
+            setMaxVelocity(MAX_VELOCITY * 2);
+        } else {
+            setMaxVelocity(MAX_VELOCITY);
+        }
         setState(STATE_MOVING);
     }
 
@@ -505,11 +513,13 @@ public class MainCharacter extends GameCharacter {
                 }
                 break;
             case GamePowerUp.INFINITE_JUMPS:
+                setMaxVelocity(MAX_VELOCITY * 2);
                 setColors(Color.CYAN, Color.BLACK, Color.WHITE, Color.WHITE, Color.BLUE, Color.BLUE);
                 powerUps.put(GamePowerUp.INFINITE_JUMPS, powerUps.get(GamePowerUp.INFINITE_JUMPS) - 1);
                 setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.convertSecondToGameSecond(5),Color.BLUE,true,true, new Execution() {
                     @Override
                     public double execute() {
+                        setMaxVelocity(MAX_VELOCITY);
                         equipPowerUp(-1);
                         setInfiniteJumpsTimer(null);
                         return 0;
@@ -562,7 +572,7 @@ public class MainCharacter extends GameCharacter {
                 }
                 break;
             case GamePowerUp.INFINITE_JUMPS:
-                jump();
+                jump( -1 * MyActivity.TILE_WIDTH * 2);
                 new JumpEffect(getxPosInRoom(), getyPosInRoom() + getHeight() / 2, MyActivity.TILE_WIDTH, (int) (MyActivity.TILE_WIDTH * 0.25), true, true);
         }
     }
