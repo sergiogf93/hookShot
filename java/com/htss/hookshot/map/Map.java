@@ -46,7 +46,6 @@ public class Map {
     private int[][] map;
     private int xTiles, yTiles, fillPercent, upCenter, downCenter;
     private long seed;
-    private Random random;
     private SquareGrid squareGrid;
     private Vector<Point> vertices;
     private Vector<Integer> triangles;
@@ -69,9 +68,9 @@ public class Map {
         } else {
             this.seed = seed;
         }
-        this.random = new Random();
-        this.random.setSeed(this.seed);
-        randomFillMap(false,this.fillPercent);
+        Random random = new Random();
+        random.setSeed(this.seed + MyActivity.level);
+        randomFillMap(this.fillPercent, random);
         for (int i=0; i < SMOOTH_ITERATIONS; i++){
             smoothMap();
         }
@@ -91,32 +90,17 @@ public class Map {
 
     }
 
-    private void randomFillMap(boolean resetRandom, int fillPercent){
-        if (resetRandom) {
-            Random pseudoRandom = new Random();
-            pseudoRandom.setSeed(this.seed);
-            this.random = pseudoRandom;
-            for (int i = 0; i < MyActivity.level; i++) {
-                for (int x = 0; x < xTiles; x++) {
-                    for (int y = 0; y < yTiles; y++) {
-                        if (!(x <= BORDER_SIZE || x >= xTiles - BORDER_SIZE - 1 || y <= BORDER_SIZE || y >= yTiles - BORDER_SIZE - 1)) {
-                            this.random.nextInt(100);
-                        }
-                    }
-                }
-                upCenter = this.random.nextInt(xTiles);
-            }
-        }
+    private void randomFillMap(int fillPercent, Random random){
         for (int x = 0; x < xTiles; x++){
             for (int y = 0; y < yTiles; y++){
                 if (x <= BORDER_SIZE || x >= xTiles-BORDER_SIZE-1 || y <= BORDER_SIZE || y >= yTiles-BORDER_SIZE-1){
                     map[x][y] = 1;
                 } else {
-                    map[x][y] = (this.random.nextInt(100) < fillPercent) ? 1 : 0;
+                    map[x][y] = (random.nextInt(100) < fillPercent) ? 1 : 0;
                 }
             }
         }
-        downCenter = this.random.nextInt(xTiles);
+        downCenter = random.nextInt(xTiles);
     }
 
     private void smoothMap (){
@@ -658,7 +642,9 @@ public class Map {
         MyActivity.level += direction;
 
         upCenter = downCenter;
-        randomFillMap(direction < 0,this.fillPercent);
+        Random random = new Random();
+        random.setSeed(this.seed + MyActivity.level);
+        randomFillMap(this.fillPercent, random);
 
         for (int x = 0 ; x < xTiles ; x++){
             for (int y = 0 ; y < 5 ; y++) {
@@ -902,6 +888,10 @@ public class Map {
 
     public void setMap(int[][] map) {
         this.map = map;
+    }
+
+    public long getSeed() {
+        return seed;
     }
 
     public int getWidth() {

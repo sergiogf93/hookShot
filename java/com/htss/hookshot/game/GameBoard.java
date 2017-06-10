@@ -21,6 +21,7 @@ import com.htss.hookshot.interfaces.Interactable;
 import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.StringUtil;
 
+import java.util.Random;
 import java.util.Vector;
 
 /**
@@ -151,8 +152,25 @@ public class GameBoard extends View{
         Canvas mapCanvas = new Canvas(mapBitmap);
 
         MyActivity.currentMap.draw(mapCanvas);
+
+        Random random = new Random();
+        random.setSeed(MyActivity.currentMap.getSeed() + MyActivity.level);
+//        int CRACK_PERCENT = 80;
+//
+//        for (int x = 0; x < mapBitmap.getWidth(); x++) {
+//            for (int y = 0; y < mapBitmap.getHeight(); y++) {
+//                int pixel = mapBitmap.getPixel(x, y);
+//                if (Color.alpha(pixel) == 255) {
+//                    if (random.nextInt(100) < CRACK_PERCENT) {
+//                        mapBitmap.setPixel(x, y, Color.BLACK);
+//                    }
+//                }
+//            }
+//        }
+
 //        MyActivity.currentMap.drawNodes(mapCanvas);
         MyActivity.currentMap.drawOutlines(mapCanvas);
+
     }
 
     private void drawInfo(Canvas canvas) {

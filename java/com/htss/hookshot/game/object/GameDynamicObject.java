@@ -37,6 +37,10 @@ public abstract class GameDynamicObject extends GameObject {
     }
 
     public void update(){
+        if (!isGhost()) {
+            manageCollisions(getMargin());
+//            manageCollisionWithOtherObjects();
+        }
         if(Math.abs(getP().x) > getMaxVelocity()){
             setP(new MathVector(Math.signum(getP().x)*getMaxVelocity(),getP().y));
         }
@@ -50,10 +54,6 @@ public abstract class GameDynamicObject extends GameObject {
             }
         }
         manageConstraints();
-        if (!isGhost()) {
-            manageCollisions(getMargin());
-//            manageCollisionWithOtherObjects();
-        }
         updatePosition();
         updateFrame();
         if (isOnFloor()){
