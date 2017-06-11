@@ -533,10 +533,6 @@ public class MainCharacter extends GameCharacter {
                 break;
             default:
                 setColors(Color.BLACK, Color.YELLOW, Color.WHITE, Color.WHITE, Color.RED, Color.RED);
-                if (portals.size() % 2 == 1){
-                    portals.get(portals.size() - 1).destroy();
-                    portals.remove(portals.size() - 1);
-                }
         }
     }
 
