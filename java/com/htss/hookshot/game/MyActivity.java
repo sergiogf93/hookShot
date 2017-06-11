@@ -42,6 +42,7 @@ import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.TimeUtil;
 
 import java.util.LinkedList;
 import java.util.Vector;
@@ -49,10 +50,10 @@ import java.util.Vector;
 
 public class MyActivity extends Activity {
 
-//    public static int FILL_PERCENT = 52; //Default 52 for screen size 30
-//    public static int mapXTiles = 110, mapYTiles = 80; //Default 110 80, for screen size 30 20
-    public static int FILL_PERCENT = 30;
-    public static int mapXTiles = 30, mapYTiles = 20;
+    public static int FILL_PERCENT = 52; //Default 52 for screen size 30
+    public static int mapXTiles = 110, mapYTiles = 80; //Default 110 80, for screen size 30 20
+//    public static int FILL_PERCENT = 30;
+//    public static int mapXTiles = 30, mapYTiles = 20;
 
     public static final int FRAME_RATE = 10;
     public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
@@ -70,6 +71,7 @@ public class MyActivity extends Activity {
     public static HUDMenu menu;
     public static LinkedList<HUDPowerUpButton> powerUpButtons = new LinkedList<HUDPowerUpButton>();
     public static boolean paused = false, handleTouch = true, debugging = false;
+    public static long lastTap = 0;
 
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
     public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
@@ -363,9 +365,15 @@ public class MyActivity extends Activity {
                 MathVector objectiveInRoom = objective.screenToRoom();
                 int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
                 if (Color.alpha(pixel) == 255) {
-                    if (character.isHooked() && character.getHook().getHookedPoint().distanceTo(objectiveInRoom) < TILE_WIDTH) {
-                        character.getHook().setFastReloading(true);
+                    if (character.isHooked()) {
+                        if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
+                            character.getHook().setFastReloading(true);
+                        } else {
+                            lastTap = System.currentTimeMillis();
+                            character.shootHook(objective.x, objective.y);
+                        }
                     } else {
+                        lastTap = System.currentTimeMillis();
                         character.shootHook(objective.x, objective.y);
                     }
                 }

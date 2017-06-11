@@ -66,7 +66,7 @@ public class HUDButton extends HUDElementSprite implements Clickable {
         setSprite(getSpriteOn());
         setOn(true);
         if (getExecDoubleOn() != null) {
-            if(System.currentTimeMillis() - getTimeWhenOn() < 500) {
+            if(System.currentTimeMillis() - getTimeWhenOn() < TimeUtil.convertSecondToGameSecond(0.5)) {
                 setTimeWhenOn(0);
                 getExecDoubleOn().execute();
             } else {
