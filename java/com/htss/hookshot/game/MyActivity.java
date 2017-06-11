@@ -1,6 +1,7 @@
 package com.htss.hookshot.game;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -13,6 +14,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.htss.hookshot.R;
 import com.htss.hookshot.effect.FadeEffect;
@@ -20,6 +22,7 @@ import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapHorizontalEffect;
 import com.htss.hookshot.effect.SwitchMapVerticalEffect;
 import com.htss.hookshot.executions.LaunchGame;
+import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.HUDMenu;
@@ -40,6 +43,7 @@ import com.htss.hookshot.game.object.miscellaneous.PortalObject;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
+import com.htss.hookshot.map.Coord;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
@@ -62,7 +66,7 @@ public class MyActivity extends Activity {
     public static GameBoard canvas;
     public static GameEffect roomSwitchEffect;
     private Handler handler = new Handler();
-    public static int screenHeight, screenWidth, level = 0; //Default 110 80, for screen size 30 20
+    public static int screenHeight, screenWidth; //Default 110 80, for screen size 30 20
     public static int frame = 0;
     public static MainCharacter character;
     public static Joystick joystick;
@@ -72,6 +76,10 @@ public class MyActivity extends Activity {
     public static LinkedList<HUDPowerUpButton> powerUpButtons = new LinkedList<HUDPowerUpButton>();
     public static boolean paused = false, handleTouch = true, debugging = false;
     public static long lastTap = 0;
+    public Long seed;
+    public int level = 0;
+    public String entranceString = "";
+    public int portals = 0, bombs = 0, compass = 0, jumps = 0;
 
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
     public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
@@ -79,6 +87,23 @@ public class MyActivity extends Activity {
     public static Vector<GameEnemy> enemies = new Vector<GameEnemy>();
 
     public static Map currentMap;
+
+    @Override
+    protected void onStart() {
+        load();
+        super.onStart();
+    }
+
+    private void load() {
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        seed = preferences.getLong("Seed", -1);
+        level = preferences.getInt("Level", 0);
+        entranceString = preferences.getString("Entrance", mapXTiles / 2 + " " + mapYTiles / 2);
+        portals = preferences.getInt("Portals", 0);
+        compass = preferences.getInt("Compass", 0);
+        bombs = preferences.getInt("Bombs", 0);
+        jumps = preferences.getInt("Jumps", 0);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,7 +171,7 @@ public class MyActivity extends Activity {
 
         pauseButton = new HUDPauseButton(screenWidth / 2, screenHeight - TILE_WIDTH / 2, TILE_WIDTH, (int) (TILE_WIDTH * 0.5));
 
-        int nMenuButton = 3;
+        int nMenuButton = 4;
         int menuButtonHeight = TILE_WIDTH;
         int menuButtonSeparation = TILE_WIDTH / 5;
         int menuWidth = 5*TILE_WIDTH;
@@ -154,6 +179,7 @@ public class MyActivity extends Activity {
         menu = new HUDMenu(screenWidth / 2, screenHeight / 2, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
 
         canvas = (GameBoard) findViewById(R.id.the_canvas);
+        canvas.myActivity = this;
         canvas.DEFAULT_FONT_SIZE = 48*MyActivity.TILE_WIDTH /100;
         canvas.SMALL_FONT_SIZE = 27*MyActivity.TILE_WIDTH /100;
         canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");
@@ -185,16 +211,7 @@ public class MyActivity extends Activity {
     private void initGfx() {
         handler.removeCallbacks(frameUpdate);
 
-        final FadeEffect fadeEffect = new FadeEffect(new LaunchGame());
-
-        HUDText newGame = new HUDText(screenWidth / 2, screenHeight / 2 - canvas.fontSize * 3, true, "NEW GAME", TILE_WIDTH * 8 / 10, new Execution() {
-            @Override
-            public double execute() {
-                gameEffects.add(fadeEffect);
-                return 0;
-            }
-        });
-        hudElements.add(newGame);
+        (new MainMenu()).execute();
 
         canvas.invalidate();
 
@@ -559,4 +576,18 @@ public class MyActivity extends Activity {
         hudElements.remove(menu);
         hudElements.removeAll(powerUpButtons);
     }
+
+    public void save () {
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putLong("Seed", seed);
+        editor.putInt("Level", level);
+        editor.putString("Entrance", currentMap.getEntrance().toString());
+        editor.putInt("Portals", character.getPowerUps().get(GamePowerUp.PORTAL));
+        editor.putInt("Compass", character.getPowerUps().get(GamePowerUp.COMPASS));
+        editor.putInt("Bombs", character.getPowerUps().get(GamePowerUp.BOMB));
+        editor.putInt("Jumps", character.getPowerUps().get(GamePowerUp.INFINITE_JUMPS));
+        editor.commit();
+    }
+
 }

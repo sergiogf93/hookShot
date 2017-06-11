@@ -127,15 +127,19 @@ public class Hook extends Chain {
         MyActivity.extendButton = new HUDCircleButton((int) getPrevNodeOf(getLastNode()).getxPosInScreen(), (int) getPrevNodeOf(getLastNode()).getyPosInScreen(), buttonRadius, "E", true, new Execution() {
             @Override
             public double execute() {
-                MyActivity.character.getHook().setExtending(true);
-                MyActivity.character.setMass(10);
+                if (MyActivity.character.getHook() != null) {
+                    MyActivity.character.getHook().setExtending(true);
+                    MyActivity.character.setMass(10);
+                }
                 return 0;
             }
         }, new Execution() {
             @Override
             public double execute() {
-                MyActivity.character.getHook().setExtending(false);
-                MyActivity.character.setMass(1);
+                if (MyActivity.character.getHook() != null) {
+                    MyActivity.character.getHook().setExtending(false);
+                    MyActivity.character.setMass(1);
+                }
                 return 0;
             }
         });

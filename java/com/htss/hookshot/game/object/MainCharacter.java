@@ -484,11 +484,15 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
+    public void setPowerUp (int type, int quantity) {
+        powerUps.put(type, quantity);
+    }
+
     public void addPowerUp(int type) {
         if (powerUps.containsKey(type)) {
             powerUps.put(type, powerUps.get(type) + 1);
         } else {
-            powerUps.put(type, 99);
+            powerUps.put(type, 1);
         }
     }
 

@@ -45,7 +45,6 @@ public class Map {
     private int[][] map;
     private int xTiles, yTiles, fillPercent;
     private Coord entrance, exit;
-    private long seed;
     private SquareGrid squareGrid;
     private Vector<Point> vertices;
     private Vector<Integer> triangles;
@@ -58,22 +57,17 @@ public class Map {
 
     private Vector<Passage> passages = new Vector<Passage>();
 
-    public Map (int xTiles, int yTiles, int fillPercent, boolean useRandomSeed, long seed){
+    public Map (int xTiles, int yTiles, int fillPercent, Coord entrance){
         this.map = new int[xTiles][yTiles];
         this.xTiles = xTiles;
         this.yTiles = yTiles;
         this.fillPercent = fillPercent;
-        if (useRandomSeed){
-            this.seed = System.currentTimeMillis();
-        } else {
-            this.seed = seed;
-        }
 
-        entrance = new Coord(xTiles/2,yTiles / 2);
+        this.entrance = entrance;
 
         createMap();
 
-//        addPowerUps(2);
+        manageAddingFunctions();
 
         generateMesh();
     }
@@ -81,7 +75,7 @@ public class Map {
     public void extend(){
         int[] lineToCopy = getLineToCopy();
 
-        MyActivity.level += 1;
+        MyActivity.canvas.myActivity.level += 1;
 
         entrance = getEntranceFromExit(exit);
 
@@ -89,16 +83,22 @@ public class Map {
 
         copyLine(lineToCopy, 3);
 
-//        addExitDoor(4);
-//        addPassageDoor(2);
-//        addPowerUps(2);
+        manageAddingFunctions();
 
         generateMesh();
     }
 
+    private void manageAddingFunctions() {
+        addPowerUps(2);
+        if (MyActivity.canvas.myActivity.level > 0) {
+            addExitDoor(4);
+            addPassageDoor(2);
+        }
+    }
+
     private void createMap() {
         Random random = new Random();
-        random.setSeed(this.seed + MyActivity.level);
+        random.setSeed(MyActivity.canvas.myActivity.seed + MyActivity.canvas.myActivity.level);
         randomFillMap(this.fillPercent, random);
 
         for (int i=0; i < SMOOTH_ITERATIONS; i++){
@@ -665,11 +665,11 @@ public class Map {
     }
 
     public MathVector startPosition () {
-        if (MyActivity.level == 0) {
+        if (MyActivity.canvas.myActivity.level == 0) {
             for (int yTile = 0; yTile < yTiles; yTile++) {
                 for (int xTile = 0; xTile < xTiles; xTile++) {
                     if (map[xTile][yTile] == 0) {
-                        if (MyActivity.level == 0) {
+                        if (MyActivity.canvas.myActivity.level == 0) {
                             if (getSurroundingCount(xTile, yTile) == 0) {
                                 if (isInMapRange(xTile, yTile + 2)) {
                                     if (map[xTile][yTile + 2] == 1) {
@@ -712,7 +712,7 @@ public class Map {
             exit = new Coord(Math.min(random.nextInt(xTiles) + 1, xTiles - 2), yTiles - 1);
             manageDownExit(3);
         }
-        if (MyActivity.level > 0) {
+        if (MyActivity.canvas.myActivity.level > 0) {
             drawCircle(entrance, (int) (PASSAGE_RADIUS * 1.5));
         }
     }
@@ -856,7 +856,7 @@ public class Map {
 
     private void addExitDoor(int nButtons) {
         Random obstacleRandom = new Random();
-        obstacleRandom.setSeed(seed + nButtons + MyActivity.level);
+        obstacleRandom.setSeed(MyActivity.canvas.myActivity.seed + nButtons + MyActivity.canvas.myActivity.level);
 //        Calculate the width for the door
         MathVector vector = new MathVector(1, 0);
         int start = -1;
@@ -901,7 +901,7 @@ public class Map {
 
     public void addPassageDoor(int nButtons) {
         Random obstacleRandom = new Random();
-        obstacleRandom.setSeed(seed + nButtons + MyActivity.level);
+        obstacleRandom.setSeed(MyActivity.canvas.myActivity.seed + nButtons + MyActivity.canvas.myActivity.level);
         MathVector start = startPosition();
         Coord startCoord = new Coord((int)(start.x/SQUARE_SIZE),(int)(start.y/SQUARE_SIZE));
         Room startRoom = startCoord.getRoom(roomRegions);
@@ -968,7 +968,7 @@ public class Map {
 
     public void addPowerUps(int N) {
         Random powerUpRandom = new Random();
-        powerUpRandom.setSeed(seed + N + MyActivity.level);
+        powerUpRandom.setSeed(MyActivity.canvas.myActivity.seed + N + MyActivity.canvas.myActivity.level);
         for (int i = 0; i < N; i++) {
             MathVector position;
             if (susceptibleRooms.size() > 0) {
@@ -992,7 +992,7 @@ public class Map {
 
     public void addEnemies (int N){
         Random enemyRandom = new Random();
-        enemyRandom.setSeed(this.seed + MyActivity.level + N);
+        enemyRandom.setSeed(MyActivity.canvas.myActivity.seed + MyActivity.canvas.myActivity.level + N);
         for (int i = 0;i < N;i++) {
             MathVector p = getRandomEmptyPoint(0, enemyRandom);
             EnemyStalker stalker = new EnemyStalker(p.x, p.y, true);
@@ -1013,10 +1013,6 @@ public class Map {
 
     public void setMap(int[][] map) {
         this.map = map;
-    }
-
-    public long getSeed() {
-        return seed;
     }
 
     public Coord getExit() {

@@ -33,6 +33,7 @@ public class GameBoard extends View{
     public static int DEFAULT_FONT_SIZE = 48*MyActivity.TILE_WIDTH /100, SMALL_FONT_SIZE = 27*MyActivity.TILE_WIDTH /100;
     public static int fontSize;
     public Typeface arcadeClassicFont, joystickMonospace;
+    public MyActivity myActivity;
 
     public static float dx = 0, dy = 0;
 
@@ -77,70 +78,85 @@ public class GameBoard extends View{
         if (MyActivity.roomSwitchEffect == null) {
 
             if (MyActivity.character != null) {
-
-                assertMapMargins();
-
-                Bitmap mapInScreen = getMapInScreen();
-
-                canvas.drawBitmap(mapInScreen, 0, 0, paint);
-
-                mapInScreen.recycle();
-
-                for (int i = 0 ; i < gameObjects.size() ; i++) {
-                    GameObject gameObject = gameObjects.get(i);
-                    if (!MyActivity.paused) {
-                        if (gameObject instanceof GameDynamicObject) {
-                            ((GameDynamicObject) gameObject).update();
-                        }
-                        if (gameObject instanceof Interactable) {
-                            ((Interactable) gameObject).detect();
-                        }
-                    }
-                    gameObject.draw(canvas);
-                }
-                for (GameObject object : debugObjects) {
-                    object.draw(canvas);
-                }
-                debugObjects.clear();
-
+                drawGame(canvas);
             }
 
-            for (HUDElement hudElement : MyActivity.hudElements) {
-                hudElement.draw(canvas);
-            }
+            drawHudElements(canvas);
 
-            for (int i = 0 ; i < MyActivity.gameEffects.size() ; i++){
-                GameEffect effect = MyActivity.gameEffects.get(i);
-                effect.drawEffectAndUpdate(canvas);
-                if (effect.isFinished()){
-                    MyActivity.gameEffects.remove(effect);
-                }
-            }
+            manageGameEffects(canvas);
 
         } else {
-            MyActivity.roomSwitchEffect.drawEffectAndUpdate(canvas);
-            if (MyActivity.roomSwitchEffect.isFinished()){
-                MyActivity.roomSwitchEffect.recycle();
-                MyActivity.roomSwitchEffect = null;
-                MyActivity.setHUDClickable();
-                if (MyActivity.character.getCompass() != null) {
-                    gameObjects.add(MyActivity.character.getCompass());
-                    MyActivity.dynamicObjects.add(MyActivity.character.getCompass());
-                    gameObjects.add(MyActivity.character.getCompass().getTimer());
-                    MyActivity.dynamicObjects.add(MyActivity.character.getCompass().getTimer());
-                    MyActivity.character.getCompass().findInterests();
-                }
-                if (MyActivity.character.getInfiniteJumpsTimer() != null) {
-                    gameObjects.add(MyActivity.character.getInfiniteJumpsTimer());
-                    MyActivity.dynamicObjects.add(MyActivity.character.getInfiniteJumpsTimer());
-                }
-            }
+            manageRoomSwitchEffect(canvas);
         }
 
         if (MyActivity.debugging) {
             drawInfo(canvas);
         }
 
+    }
+
+    private void manageRoomSwitchEffect(Canvas canvas) {
+        MyActivity.roomSwitchEffect.drawEffectAndUpdate(canvas);
+        if (MyActivity.roomSwitchEffect.isFinished()){
+            myActivity.save();
+            MyActivity.roomSwitchEffect.recycle();
+            MyActivity.roomSwitchEffect = null;
+            MyActivity.setHUDClickable();
+            if (MyActivity.character.getCompass() != null) {
+                gameObjects.add(MyActivity.character.getCompass());
+                MyActivity.dynamicObjects.add(MyActivity.character.getCompass());
+                gameObjects.add(MyActivity.character.getCompass().getTimer());
+                MyActivity.dynamicObjects.add(MyActivity.character.getCompass().getTimer());
+                MyActivity.character.getCompass().findInterests();
+            }
+            if (MyActivity.character.getInfiniteJumpsTimer() != null) {
+                gameObjects.add(MyActivity.character.getInfiniteJumpsTimer());
+                MyActivity.dynamicObjects.add(MyActivity.character.getInfiniteJumpsTimer());
+            }
+        }
+    }
+
+    private void manageGameEffects(Canvas canvas) {
+        for (int i = 0 ; i < MyActivity.gameEffects.size() ; i++){
+            GameEffect effect = MyActivity.gameEffects.get(i);
+            effect.drawEffectAndUpdate(canvas);
+            if (effect.isFinished()){
+                MyActivity.gameEffects.remove(effect);
+            }
+        }
+    }
+
+    private void drawHudElements(Canvas canvas) {
+        for (HUDElement hudElement : MyActivity.hudElements) {
+            hudElement.draw(canvas);
+        }
+    }
+
+    private void drawGame(Canvas canvas) {
+        assertMapMargins();
+
+        Bitmap mapInScreen = getMapInScreen();
+
+        canvas.drawBitmap(mapInScreen, 0, 0, paint);
+
+        mapInScreen.recycle();
+
+        for (int i = 0; i < gameObjects.size(); i++) {
+            GameObject gameObject = gameObjects.get(i);
+            if (!MyActivity.paused) {
+                if (gameObject instanceof GameDynamicObject) {
+                    ((GameDynamicObject) gameObject).update();
+                }
+                if (gameObject instanceof Interactable) {
+                    ((Interactable) gameObject).detect();
+                }
+            }
+            gameObject.draw(canvas);
+        }
+        for (GameObject object : debugObjects) {
+            object.draw(canvas);
+        }
+        debugObjects.clear();
     }
 
     public Bitmap getMapInScreen(){
@@ -157,22 +173,6 @@ public class GameBoard extends View{
 
         MyActivity.currentMap.draw(mapCanvas);
 
-        Random random = new Random();
-        random.setSeed(MyActivity.currentMap.getSeed() + MyActivity.level);
-//        int CRACK_PERCENT = 80;
-//
-//        for (int x = 0; x < mapBitmap.getWidth(); x++) {
-//            for (int y = 0; y < mapBitmap.getHeight(); y++) {
-//                int pixel = mapBitmap.getPixel(x, y);
-//                if (Color.alpha(pixel) == 255) {
-//                    if (random.nextInt(100) < CRACK_PERCENT) {
-//                        mapBitmap.setPixel(x, y, Color.BLACK);
-//                    }
-//                }
-//            }
-//        }
-
-//        MyActivity.currentMap.drawNodes(mapCanvas);
         MyActivity.currentMap.drawOutlines(mapCanvas);
 
     }
