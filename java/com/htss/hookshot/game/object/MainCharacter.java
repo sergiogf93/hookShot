@@ -58,7 +58,7 @@ public class MainCharacter extends GameCharacter {
     private TimerObject infiniteJumpsTimer;
 
     public MainCharacter(double xPos, double yPos) {
-        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, true, true);
+        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, false, false);
         makeSureNotUnderground = true;
         body = new CircleShape(xPos, yPos, BODY_RADIUS, Color.BLACK, false);
         rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
@@ -75,6 +75,8 @@ public class MainCharacter extends GameCharacter {
             }
         });
         this.healthBar.setAlpha(0);
+        MyActivity.canvas.gameObjects.add(this);
+        MyActivity.dynamicObjects.add(this);
     }
 
     @Override
@@ -438,6 +440,7 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void removeHook() {
+        setMass(MASS);
         MyActivity.canvas.gameObjects.remove(hook);
         MyActivity.dynamicObjects.removeAll(hook.getNodes());
         if (hook.getHookedObject() != null){
