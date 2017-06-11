@@ -59,7 +59,7 @@ public class CompassObject extends GameDynamicObject {
 
     private void drawArrow(Canvas canvas, MathVector vector) {
         Point[] points = new Point[4];
-        double size = GameMath.linealValue(MyActivity.TILE_WIDTH, getWidth() * 0.8, MyActivity.TILE_WIDTH * MyActivity.mapXTiles / 2, getWidth(), vector.magnitude());
+        double size = getWidth() * 0.8;
         points[0] = vector.rescaled(getWidth() / 2).applyTo(parent.getPositionInScreen()).toPoint();
         points[1] = vector.getNormal().rescaled(getWidth() / 10).applyTo(vector.rescaled(getWidth() / 1.75).applyTo(parent.getPositionInScreen())).toPoint();
         points[2] = vector.rescaled(size).applyTo(parent.getPositionInScreen()).toPoint();

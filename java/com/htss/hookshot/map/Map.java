@@ -12,7 +12,6 @@ import android.graphics.Point;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.object.interactables.CoinBag;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
@@ -34,17 +33,18 @@ import java.util.Vector;
 
 public class Map {
 
-    private final int SMOOTH_ITERATIONS = 5,
+    private final int SMOOTH_ITERATIONS = 2,  //5, 4, 3, 5, 5, 3
             WALL_COUNT_SMOOTH_THRESHOLD = 4,
             BORDER_SIZE = 3,
-            WALL_COUNT_SIZE_THRESHOLD = 5,
-            ROOM_COUNT_SIZE_THRESHOLD = 5,
+            WALL_COUNT_SIZE_THRESHOLD = 2,
+            ROOM_COUNT_SIZE_THRESHOLD = 2,
             PASSAGE_RADIUS = 3,
             MAX_SIZE_FOR_SUSCEPTIBLE = 40;
-    public static final double SQUARE_SIZE = 45;
+    public static final double SQUARE_SIZE = 45 * MyActivity.TILE_WIDTH / 100;
 
     private int[][] map;
-    private int xTiles, yTiles, fillPercent, upCenter, downCenter;
+    private int xTiles, yTiles, fillPercent;
+    private Coord entrance, exit;
     private long seed;
     private SquareGrid squareGrid;
     private Vector<Point> vertices;
@@ -68,26 +68,130 @@ public class Map {
         } else {
             this.seed = seed;
         }
+
+        entrance = new Coord(xTiles/2,yTiles / 2);
+
+        createMap();
+
+//        addPowerUps(2);
+
+        generateMesh();
+    }
+
+    public void extend(){
+        int[] lineToCopy = getLineToCopy();
+
+        MyActivity.level += 1;
+
+        entrance = getEntranceFromExit(exit);
+
+        createMap();
+
+        copyLine(lineToCopy, 3);
+
+//        addExitDoor(4);
+//        addPassageDoor(2);
+//        addPowerUps(2);
+
+        generateMesh();
+    }
+
+    private void createMap() {
         Random random = new Random();
         random.setSeed(this.seed + MyActivity.level);
         randomFillMap(this.fillPercent, random);
+
         for (int i=0; i < SMOOTH_ITERATIONS; i++){
             smoothMap();
         }
 
-        manageRoomDownAndUp();
+        manageEntranceAndExit(random);
 
         manageRoomRemovingAndConnection();
 
-//        addBallObstacles(1);
-//        addCoins();
-//        addDownDoor(4);
-//        addPassageDoor(2);
-        addPowerUps(2);
-//        addEnemies(1);
+        manageBorders();
 
-        generateMesh();
+    }
 
+    private Coord getEntranceFromExit(Coord exit) {
+        if (exit.tileX == 0) {
+            return new Coord(xTiles - 1, exit.tileY);
+        } else if (exit.tileX == xTiles - 1) {
+            return new Coord(0, exit.tileY);
+        } else {
+            return new Coord(exit.tileX, 0);
+        }
+    }
+
+    private int[] getLineToCopy() {
+        if (exit.tileX == 0) {
+            int[] lineToCopy = new int[yTiles];
+            for (int y = 0 ; y < yTiles ; y++){
+                lineToCopy[y] = map[0][y];
+            }
+            return lineToCopy;
+        } else if (exit.tileX == xTiles - 1) {
+            int[] lineToCopy = new int[yTiles];
+            for (int y = 0 ; y < yTiles ; y++) {
+                lineToCopy[y] = map[xTiles - 1][y];
+            }
+            return lineToCopy;
+        } else {
+            int[] lineToCopy = new int[xTiles];
+            for (int x = 0 ; x < xTiles ; x++){
+                lineToCopy[x] = map[x][yTiles-1];
+            }
+            return lineToCopy;
+        }
+    }
+
+    private void copyLine(int[] lineToCopy, int copies) {
+        if (entrance.tileX == 0) {
+            for (int y = 0; y < yTiles; y++) {
+                for (int i = 0; i < copies; i++) {
+                    map[i][y] = lineToCopy[y];
+                }
+            }
+        } else if (entrance.tileX == xTiles - 1) {
+            for (int y = 0; y < yTiles; y++) {
+                for (int i = 0; i < copies; i++) {
+                    map[xTiles - 1 - i][y] = lineToCopy[y];
+                }
+            }
+        } else {
+            for (int x = 0; x < xTiles; x++) {
+                for (int i = 0; i < copies; i++) {
+                    map[x][i] = lineToCopy[x];
+                }
+            }
+        }
+    }
+
+    private void manageBorders() {
+        borderUp(getEntrance().tileY != 0, getExit().tileY != yTiles - 1, getEntrance().tileX != 0 && getExit().tileX != 0, getEntrance().tileX != xTiles - 1 && getExit().tileX != xTiles - 1);
+    }
+
+    private void borderUp(boolean top, boolean bottom, boolean left, boolean right) {
+        if (top) {
+            for (int x = 0; x < xTiles; x++) {
+                map[x][0] = 1;
+            }
+        }
+        if (bottom) {
+            for (int x = 0; x < xTiles; x++) {
+                map[x][yTiles - 1] = 1;
+            }
+        }
+        if (left) {
+            for (int y = 0; y < yTiles; y++) {
+                map[0][y] = 1;
+            }
+        }
+        if (right) {
+            for (int y = 0; y < yTiles; y++) {
+                map[xTiles - 1][y] = 1;
+            }
+        }
     }
 
     private void randomFillMap(int fillPercent, Random random){
@@ -100,7 +204,6 @@ public class Map {
                 }
             }
         }
-        downCenter = random.nextInt(xTiles);
     }
 
     private void smoothMap (){
@@ -392,7 +495,7 @@ public class Map {
 
         for (Vector<Coord> wallRegion : wallRegions){
             if (wallRegion.size() < WALL_COUNT_SIZE_THRESHOLD){
-                for (Coord tile : wallRegion){
+                for (Coord tile : wallRegion) {
                     map[tile.tileX][tile.tileY] = 0;
                 }
             }
@@ -554,45 +657,90 @@ public class Map {
                     int drawX = c.tileX+x;
                     int drawY = c.tileY+y;
                     if (isInMapRange(drawX,drawY)){
-                        if (drawX != 0 && drawX != xTiles-1) {
-                            map[drawX][drawY] = 0;
-                        }
+                        map[drawX][drawY] = 0;
                     }
                 }
             }
         }
     }
 
-    public MathVector startPosition (){
-        for (int yTile = 0 ; yTile < yTiles ; yTile++){
-            for (int xTile = 0 ; xTile < xTiles ; xTile++){
-                if (map[xTile][yTile] == 0){
-                    if (MyActivity.level == 0) {
-                        if (getSurroundingCount(xTile, yTile) == 0) {
-                            if (isInMapRange(xTile, yTile + 2)) {
-                                if (map[xTile][yTile + 2] == 1) {
-                                    return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
+    public MathVector startPosition () {
+        if (MyActivity.level == 0) {
+            for (int yTile = 0; yTile < yTiles; yTile++) {
+                for (int xTile = 0; xTile < xTiles; xTile++) {
+                    if (map[xTile][yTile] == 0) {
+                        if (MyActivity.level == 0) {
+                            if (getSurroundingCount(xTile, yTile) == 0) {
+                                if (isInMapRange(xTile, yTile + 2)) {
+                                    if (map[xTile][yTile + 2] == 1) {
+                                        return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
+                                    }
                                 }
                             }
+                        } else {
+                            return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
                         }
-                    } else {
-                        return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
                     }
                 }
             }
+        } else {
+            return new MathVector(getEntrance().tileX * SQUARE_SIZE, getEntrance().tileY * SQUARE_SIZE);
         }
-        return new MathVector(0,0);
+        return new MathVector(0, 0);
     }
 
-    private void manageRoomDownAndUp(){
-        drawCircle(new Coord(downCenter,yTiles-1), (int) (PASSAGE_RADIUS*1.5));
-        for (int x = 0 ; x < xTiles ; x++){
-            for (int i = 0 ; i < 3 ; i++) {
-                map[x][yTiles-1-i] = map[x][yTiles-1];
+    private void manageEntranceAndExit(Random random) {
+        // Decide where the exit will be
+        if (random.nextBoolean()) {
+            // Exit on the side
+            if (entrance.tileX == 0) {
+                exit = new Coord(xTiles - 1, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));
+                manageRightExit(3);
+            } else if (entrance.tileX == xTiles - 1) {
+                exit = new Coord(0, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));
+                manageLeftExit(3);
+            } else {
+                if (random.nextBoolean()) {
+                    exit = new Coord(xTiles - 1, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));
+                    manageRightExit(3);
+                } else {
+                    exit = new Coord(0, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));
+                    manageLeftExit(3);
+                }
+            }
+        } else {
+            exit = new Coord(Math.min(random.nextInt(xTiles) + 1, xTiles - 2), yTiles - 1);
+            manageDownExit(3);
+        }
+        if (MyActivity.level > 0) {
+            drawCircle(entrance, (int) (PASSAGE_RADIUS * 1.5));
+        }
+    }
+
+    private void manageDownExit(int copies) {
+        drawCircle(exit, (int) (PASSAGE_RADIUS * 1.5));
+        for (int x = 0; x < xTiles; x++) {
+            for (int i = 1; i < copies; i++) {
+                map[x][yTiles - 1 - i] = map[x][yTiles - 1];
             }
         }
-        if (MyActivity.level > 0){
-            drawCircle(new Coord(upCenter,0), (int) (PASSAGE_RADIUS*1.5));
+    }
+
+    private void manageLeftExit(int copies) {
+        drawCircle(exit, (int) (PASSAGE_RADIUS * 1.5));
+        for (int y = 0; y < yTiles; y++) {
+            for (int i = 1; i < copies; i++) {
+                map[i][y] = map[0][y];
+            }
+        }
+    }
+
+    private void manageRightExit(int copies) {
+        drawCircle(exit, (int) (PASSAGE_RADIUS * 1.5));
+        for (int y = 0; y < yTiles; y++) {
+            for (int i = 1; i < copies; i++) {
+                map[xTiles - 1 - i][y] = map[xTiles - 1][y];
+            }
         }
     }
 
@@ -630,43 +778,6 @@ public class Map {
             n++;
         } while ((map[x][y] == 1 || getSurroundingCount(x,y) != wallCount) && n < 1000);
         return new MathVector(x*SQUARE_SIZE,y*SQUARE_SIZE);
-    }
-
-    public void extend(int direction){
-        int[] lineToCopy = new int[xTiles];
-        int factor = (direction > 0) ? 0 : 1;
-        for (int x = 0 ; x < xTiles ; x++){
-            lineToCopy[x] = map[x][(1-factor)*(yTiles-1)];
-        }
-
-        MyActivity.level += direction;
-
-        upCenter = downCenter;
-        Random random = new Random();
-        random.setSeed(this.seed + MyActivity.level);
-        randomFillMap(this.fillPercent, random);
-
-        for (int x = 0 ; x < xTiles ; x++){
-            for (int y = 0 ; y < 5 ; y++) {
-                map[x][factor*(yTiles-1) + y] = lineToCopy[x];
-            }
-        }
-
-        for (int i=0; i < SMOOTH_ITERATIONS; i++){
-            smoothMap();
-        }
-
-        manageRoomDownAndUp();
-
-        manageRoomRemovingAndConnection();
-
-//        addBallObstacles(1);
-        addDownDoor(4);
-        addPassageDoor(2);
-        addPowerUps(1);
-//        addEnemies(1);
-
-        generateMesh();
     }
 
     public void addBallObstacles(int maxObstacles){
@@ -743,31 +854,45 @@ public class Map {
         }
     }
 
-    private void addDownDoor(int nButtons) {
+    private void addExitDoor(int nButtons) {
         Random obstacleRandom = new Random();
         obstacleRandom.setSeed(seed + nButtons + MyActivity.level);
-//        Calculate the position for the door
-        int leftX = 0, rightX = 0;
-        double yPos = (yTiles-2)*SQUARE_SIZE;
-        boolean  foundLeft = false;
-        for (int x = 1 ; x < xTiles ; x++){
-            if (!foundLeft) {
-                if (map[x][yTiles - 1] == 0) {
-                    leftX = x - 1;
-                    foundLeft = true;
+//        Calculate the width for the door
+        MathVector vector = new MathVector(1, 0);
+        int start = -1;
+        int end = yTiles;
+        if (getExit().tileX == 0 || getExit().tileX == xTiles - 1) {
+            vector = new MathVector(0, 1);
+            for (int y = 0; y < yTiles; y++) {
+                if (start == -1) {
+                    if (map[getExit().tileX][y] == 0) {
+                        start = y;
+                    }
+                } else {
+                    if (map[getExit().tileX][y] == 1) {
+                        end = y;
+                        break;
+                    }
                 }
-            } else {
-                if (map[x][yTiles - 1] == 1) {
-                    rightX = x;
-                    break;
+            }
+        } else {
+            for (int x = 0; x < xTiles; x++) {
+                if (start == -1) {
+                    if (map[x][yTiles - 1] == 0) {
+                        start = x;
+                    }
+                } else {
+                    if (map[x][yTiles - 1] == 1) {
+                        end = x;
+                        break;
+                    }
                 }
             }
         }
-        double xPos = (rightX - leftX)*SQUARE_SIZE/2 + leftX*SQUARE_SIZE;
 
 //      Set the WallButtons
         Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, obstacleRandom, true);
-        addDoor(xPos, yPos, (int) ((rightX - leftX + 1) * SQUARE_SIZE), (int) (1.5*SQUARE_SIZE), new MathVector(1, 0), buttons);
+        addDoor(getExit().tileX * SQUARE_SIZE, getExit().tileY * SQUARE_SIZE, (int) ((end - start + 2) * SQUARE_SIZE), (int) (1.5 * SQUARE_SIZE), vector, buttons);
     }
 
     public void addDoor(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons) {
@@ -892,6 +1017,14 @@ public class Map {
 
     public long getSeed() {
         return seed;
+    }
+
+    public Coord getExit() {
+        return exit;
+    }
+
+    public Coord getEntrance() {
+        return entrance;
     }
 
     public int getWidth() {

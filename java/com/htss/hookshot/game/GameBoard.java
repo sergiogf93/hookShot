@@ -120,6 +120,7 @@ public class GameBoard extends View{
         } else {
             MyActivity.roomSwitchEffect.drawEffectAndUpdate(canvas);
             if (MyActivity.roomSwitchEffect.isFinished()){
+                MyActivity.roomSwitchEffect.recycle();
                 MyActivity.roomSwitchEffect = null;
                 MyActivity.setHUDClickable();
                 if (MyActivity.character.getCompass() != null) {
@@ -136,11 +137,14 @@ public class GameBoard extends View{
             }
         }
 
-        drawInfo(canvas);
+        if (MyActivity.debugging) {
+            drawInfo(canvas);
+        }
 
     }
 
     public Bitmap getMapInScreen(){
+        assertMapMargins();
         return Bitmap.createBitmap(mapBitmap,(int)-dx,(int)-dy,MyActivity.screenWidth,MyActivity.screenHeight);
     }
 

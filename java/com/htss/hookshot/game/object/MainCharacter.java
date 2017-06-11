@@ -133,26 +133,30 @@ public class MainCharacter extends GameCharacter {
                 this.yPos = (int) (getyPosInScreen() + getP().y);
             }
         }
-        if (getyPosInScreen() > MyActivity.screenHeight + getHeight()) {
-            MyActivity.switchMap(1);
-            for (PortalObject portal : getPortals()) {
-                portal.destroy();
-            }
-            getPortals().clear();
-            if (getCurrentPowerUp() == GamePowerUp.PORTAL){
-                equipPowerUp(GamePowerUp.PORTAL);
-            }
-            getPortals().clear();
-            if (isHooked()) {
-                removeHook();
-            }
-            if (compass != null) {
-                compass.clearInterests();
-            }
+        if (getyPosInScreen() > MyActivity.screenHeight + getHeight() || getxPosInScreen() < 0 || getxPosInScreen() > MyActivity.screenWidth) {
+            manageExitMap();
         }
         this.healthBar.setxCenter((int) this.getxPosInScreen());
         int yDirection = (getyPosInScreen() < MyActivity.VERTICAL_MARGIN) ? -1 : 1;
         this.healthBar.setyCenter((int) (getyPosInScreen() + yDirection*getHeight()));
+    }
+
+    private void manageExitMap() {
+        MyActivity.switchMap();
+        for (PortalObject portal : getPortals()) {
+            portal.destroy();
+        }
+        getPortals().clear();
+        if (getCurrentPowerUp() == GamePowerUp.PORTAL){
+            equipPowerUp(GamePowerUp.PORTAL);
+        }
+        getPortals().clear();
+        if (isHooked()) {
+            removeHook();
+        }
+        if (compass != null) {
+            compass.clearInterests();
+        }
     }
 
     @Override
@@ -484,12 +488,13 @@ public class MainCharacter extends GameCharacter {
         if (powerUps.containsKey(type)) {
             powerUps.put(type, powerUps.get(type) + 1);
         } else {
-            powerUps.put(type, 1);
+            powerUps.put(type, 99);
         }
     }
 
     public void equipPowerUp(int type) {
         setCurrentPowerUp(type);
+        setMaxVelocity(MAX_VELOCITY);
         switch (type) {
             case GamePowerUp.PORTAL:
                 if (portals.size() % 2 == 1){

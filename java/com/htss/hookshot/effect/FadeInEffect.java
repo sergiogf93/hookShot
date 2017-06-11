@@ -44,6 +44,11 @@ public class FadeInEffect extends GameEffect {
         return frame > END_FRAME || frame < 0;
     }
 
+    @Override
+    public void recycle() {
+
+    }
+
     public int getDirection() {
         return direction;
     }

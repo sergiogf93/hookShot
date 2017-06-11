@@ -31,4 +31,9 @@ public class HurtEffect extends GameEffect {
     public boolean isFinished() {
         return frame > DURATION;
     }
+
+    @Override
+    public void recycle() {
+
+    }
 }

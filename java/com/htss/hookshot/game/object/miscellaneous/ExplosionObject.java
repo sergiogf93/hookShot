@@ -16,7 +16,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class ExplosionObject extends GameDynamicObject {
 
-    private static double DURATION = TimeUtil.convertSecondToGameSecond(0.1);
+    private static double DURATION = TimeUtil.convertSecondToGameSecond(0.05);
 
     private float maxRadius;
     private Paint paint = new Paint();
@@ -32,6 +32,7 @@ public class ExplosionObject extends GameDynamicObject {
         updateFrame();
         if (getFrame() > DURATION) {
             this.destroy();
+            MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
         }
     }
 
@@ -39,7 +40,7 @@ public class ExplosionObject extends GameDynamicObject {
     public void draw(Canvas canvas) {
         paint.setAlpha((int) GameMath.linealValue(0,255,DURATION,50,getFrame()));
         DrawUtil.drawRadialGradient(canvas, paint, (float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), Color.YELLOW, Color.RED, Shader.TileMode.MIRROR);
-        MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
+//        MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
     }
 
     public float getRadius() {

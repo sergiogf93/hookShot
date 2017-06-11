@@ -17,7 +17,8 @@ import android.widget.LinearLayout;
 import com.htss.hookshot.R;
 import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
-import com.htss.hookshot.effect.SwitchMapEffect;
+import com.htss.hookshot.effect.SwitchMapHorizontalEffect;
+import com.htss.hookshot.effect.SwitchMapVerticalEffect;
 import com.htss.hookshot.executions.LaunchGame;
 import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.hud.HUDElement;
@@ -48,10 +49,10 @@ import java.util.Vector;
 
 public class MyActivity extends Activity {
 
-    public static int FILL_PERCENT = 52; //Default 52 for screen size 30
-    public static int mapXTiles = 110, mapYTiles = 80; //Default 110 80, for screen size 30 20
-//    public static int FILL_PERCENT = 30;
-//    public static int mapXTiles = 30, mapYTiles = 20;
+//    public static int FILL_PERCENT = 52; //Default 52 for screen size 30
+//    public static int mapXTiles = 110, mapYTiles = 80; //Default 110 80, for screen size 30 20
+    public static int FILL_PERCENT = 30;
+    public static int mapXTiles = 30, mapYTiles = 20;
 
     public static final int FRAME_RATE = 10;
     public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
@@ -68,7 +69,7 @@ public class MyActivity extends Activity {
     public static HUDPauseButton pauseButton;
     public static HUDMenu menu;
     public static LinkedList<HUDPowerUpButton> powerUpButtons = new LinkedList<HUDPowerUpButton>();
-    public static boolean paused = false, handleTouch = true;
+    public static boolean paused = false, handleTouch = true, debugging = false;
 
     public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
     public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
@@ -143,7 +144,7 @@ public class MyActivity extends Activity {
 
         pauseButton = new HUDPauseButton(screenWidth / 2, screenHeight - TILE_WIDTH / 2, TILE_WIDTH, (int) (TILE_WIDTH * 0.5));
 
-        int nMenuButton = 2;
+        int nMenuButton = 3;
         int menuButtonHeight = TILE_WIDTH;
         int menuButtonSeparation = TILE_WIDTH / 5;
         int menuWidth = 5*TILE_WIDTH;
@@ -486,22 +487,28 @@ public class MyActivity extends Activity {
         dynamicObjects.add(character);
     }
 
-    public static void switchMap(int direction) {
+    public static void switchMap() {
         if (roomSwitchEffect == null) {
             setHUDUnclickable();
 
             resetObjectsLists();
 
             Bitmap currentMapInScreen = canvas.getMapInScreen();
-            currentMap.extend(direction);
+            currentMap.extend();
             canvas.generateMap();
-            if (direction > 0) {
+            if (currentMap.getEntrance().tileX == 0) {
+                canvas.dx = 0;
+                Bitmap nextMapInScreen = canvas.getMapInScreen();
+                roomSwitchEffect = new SwitchMapHorizontalEffect(currentMapInScreen, nextMapInScreen, 1);
+            } else if (currentMap.getEntrance().tileX == mapXTiles - 1) {
+                canvas.dx = MyActivity.screenWidth - MyActivity.currentMap.getWidth();
+                Bitmap nextMapInScreen = canvas.getMapInScreen();
+                roomSwitchEffect = new SwitchMapHorizontalEffect(currentMapInScreen, nextMapInScreen, -1);
+            } else {
                 canvas.dy = 0;
-            } else if (direction < 0){
-                canvas.dy = MyActivity.screenHeight - MyActivity.currentMap.getHeight();
+                Bitmap nextMapInScreen = canvas.getMapInScreen();
+                roomSwitchEffect = new SwitchMapVerticalEffect(currentMapInScreen, nextMapInScreen, 1);
             }
-            Bitmap nextMapInScreen = canvas.getMapInScreen();
-            roomSwitchEffect = new SwitchMapEffect(currentMapInScreen, nextMapInScreen, direction);
         }
     }
 

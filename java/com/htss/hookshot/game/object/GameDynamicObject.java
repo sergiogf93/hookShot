@@ -353,7 +353,9 @@ public abstract class GameDynamicObject extends GameObject {
                         }
                     }
                 } else {
-                    return 0;
+                    if (MyActivity.currentMap.getEntrance().tileX == MyActivity.mapXTiles - 1) {
+                        return 0f;
+                    }
                 }
             }
         }
@@ -384,7 +386,9 @@ public abstract class GameDynamicObject extends GameObject {
                         }
                     }
                 } else {
-                    return 0;
+                    if (MyActivity.currentMap.getEntrance().tileX == 0) {
+                        return 0f;
+                    }
                 }
             }
         }

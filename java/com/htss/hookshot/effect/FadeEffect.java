@@ -40,4 +40,9 @@ public class FadeEffect extends GameEffect {
     public boolean isFinished() {
         return fadeIn.getFrame() < 0;
     }
+
+    @Override
+    public void recycle() {
+        fadeIn = null;
+    }
 }
