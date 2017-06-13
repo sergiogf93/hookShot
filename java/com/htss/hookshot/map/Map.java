@@ -51,6 +51,7 @@ public class Map {
     private HashMap<Integer,Vector<Triangle>> triangleDictionary = new HashMap<Integer, Vector<Triangle>>();
     private Vector<Vector<Integer>> outlines = new Vector<Vector<Integer>>();
     private HashSet<Integer> checkedVertices = new HashSet<Integer>();
+    private Room entranceRoom, exitRoom;
     private Vector<Point[]> cracks = new Vector<Point[]>();
     private Vector<Room> roomRegions = new Vector<Room>();
     private Vector<Room> susceptibleRooms = new Vector<Room>();
@@ -89,6 +90,10 @@ public class Map {
     }
 
     private void manageAddingFunctions() {
+        susceptibleRooms.remove(entranceRoom);
+        susceptibleRooms.remove(exitRoom);
+        roomRegions.remove(entranceRoom);
+        roomRegions.remove(exitRoom);
         addPowerUps(2);
         if (MyActivity.canvas.myActivity.level > 0) {
             addExitDoor(4);
@@ -716,8 +721,12 @@ public class Map {
             exit = new Coord(Math.min(random.nextInt(xTiles) + 1, xTiles - 2), yTiles - 1);
             manageDownExit(3);
         }
+        exitRoom = exit.getRoom(roomRegions);
         if (MyActivity.canvas.myActivity.level > 0) {
             drawCircle(entrance, (int) (PASSAGE_RADIUS * 1.5));
+            MathVector start = startPosition();
+            Coord startCoord = new Coord((int)(start.x/SQUARE_SIZE),(int)(start.y/SQUARE_SIZE));
+            entranceRoom = startCoord.getRoom(roomRegions);
         }
     }
 
@@ -906,10 +915,8 @@ public class Map {
     public void addPassageDoor(int nButtons) {
         Random obstacleRandom = new Random();
         obstacleRandom.setSeed(MyActivity.canvas.myActivity.seed + nButtons + MyActivity.canvas.myActivity.level);
-        MathVector start = startPosition();
-        Coord startCoord = new Coord((int)(start.x/SQUARE_SIZE),(int)(start.y/SQUARE_SIZE));
-        Room startRoom = startCoord.getRoom(roomRegions);
-        if (startRoom == null || passages.size() == 0) {
+
+        if (entranceRoom == null || passages.size() == 0) {
             return;
         }
         Passage passage = passages.get(obstacleRandom.nextInt(passages.size()));
@@ -919,7 +926,7 @@ public class Map {
         roomsB.removeAll(roomsA);
         Vector<Room> accessibleRegions = new Vector<Room>();
         for (Room room : roomsA) {
-            if (room == startRoom) {
+            if (room == entranceRoom) {
                 accessibleRegions = roomsA;
                 Collections.sort(roomsB);
                 susceptibleRooms.addAll(0, roomsB);
