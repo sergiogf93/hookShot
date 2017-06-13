@@ -47,6 +47,7 @@ public class CompassObject extends GameDynamicObject {
     @Override
     public void update() {
         updateFrame();
+        timer.update();
     }
 
     @Override

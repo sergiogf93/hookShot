@@ -112,7 +112,9 @@ public class Map {
 
         manageEntranceAndExit(random);
 
-        manageRoomRemovingAndConnection();
+        manageRooms();
+
+        manageRoomConnection();
 
         manageBorders();
 
@@ -491,7 +493,7 @@ public class Map {
         return regions;
     }
 
-    public void manageRoomRemovingAndConnection() {
+    public void manageRooms() {
         passages.clear();
         roomRegions.clear();
         susceptibleRooms.clear();
@@ -522,6 +524,13 @@ public class Map {
         roomRegions.firstElement().isMainRoom = true;
         roomRegions.firstElement().isAccessibleFromMainRoom = true;
 
+        exitRoom = exit.getRoom(roomRegions);
+        if (MyActivity.canvas.myActivity.level > 0) {
+            entranceRoom = entrance.getRoom(roomRegions);
+        }
+    }
+
+    public void manageRoomConnection() {
         for (Room room : roomRegions){
             if (room.roomSize < MAX_SIZE_FOR_SUSCEPTIBLE && !room.isUpOrDown()){
                 susceptibleRooms.add(room);
@@ -721,12 +730,8 @@ public class Map {
             exit = new Coord(Math.min(random.nextInt(xTiles) + 1, xTiles - 2), yTiles - 1);
             manageDownExit(3);
         }
-        exitRoom = exit.getRoom(roomRegions);
         if (MyActivity.canvas.myActivity.level > 0) {
             drawCircle(entrance, (int) (PASSAGE_RADIUS * 1.5));
-            MathVector start = startPosition();
-            Coord startCoord = new Coord((int)(start.x/SQUARE_SIZE),(int)(start.y/SQUARE_SIZE));
-            entranceRoom = startCoord.getRoom(roomRegions);
         }
     }
 
