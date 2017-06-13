@@ -1,12 +1,10 @@
 package com.htss.hookshot.game.object.hook;
 
-import com.htss.hookshot.R;
 import com.htss.hookshot.constraints.ChildOfConstraint;
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.hud.HUDButton;
 import com.htss.hookshot.game.hud.HUDCircleButton;
-import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
+import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.math.GameMath;

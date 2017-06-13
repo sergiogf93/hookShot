@@ -24,13 +24,14 @@ public class HUDText extends HUDElement implements Clickable {
     private static final int DEPTH = MyActivity.TILE_WIDTH /20;
 
     public HUDText(int xPos, int yPos, boolean clickable, String text, int size, Execution execOff) {
-        super(xPos, yPos, StringUtil.sizeOfString(text, size), size);
+        super(xPos, yPos, 0, size);
         this.text = text;
         this.execOff = execOff;
         this.size = size;
         this.clickable = clickable;
         getPaint().setTypeface(GameBoard.paint.getTypeface());
         getPaint().setTextSize(getSize());
+        setWidth((int) getPaint().measureText(text));
     }
 
 
@@ -67,11 +68,6 @@ public class HUDText extends HUDElement implements Clickable {
             setColor(Color.GRAY);
             canvas.drawText(getText(), getxCenter() - getWidth() / 2 + DEPTH / 2, getyCenter() + getHeight() / 4 + DEPTH / 2, getPaint());
         }
-    }
-
-    @Override
-    public int getWidth() {
-        return StringUtil.sizeOfString(getText(), getSize());
     }
 
     @Override

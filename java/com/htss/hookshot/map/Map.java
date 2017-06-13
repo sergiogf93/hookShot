@@ -691,7 +691,11 @@ public class Map {
 
     private void manageEntranceAndExit(Random random) {
         // Decide where the exit will be
-        if (random.nextBoolean()) {
+        boolean exitOnSides = random.nextBoolean();
+        if (MyActivity.canvas.myActivity.level == 0) {
+            exitOnSides = false;
+        }
+        if (exitOnSides) {
             // Exit on the side
             if (entrance.tileX == 0) {
                 exit = new Coord(xTiles - 1, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));

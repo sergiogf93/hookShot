@@ -61,16 +61,14 @@ public class LaunchGame implements Execution {
         MyActivity.addControls();
         MyActivity.hudElements.add(MyActivity.pauseButton);
 
-        if (MyActivity.paused) {
-            MyActivity.unpause();
-        }
-
         //////////////////
         MyActivity.character.setPowerUp(GamePowerUp.PORTAL, portals);
         MyActivity.character.setPowerUp(GamePowerUp.COMPASS, compass);
         MyActivity.character.setPowerUp(GamePowerUp.BOMB, bombs);
         MyActivity.character.setPowerUp(GamePowerUp.INFINITE_JUMPS, jumps);
         //////////////////
+
+        MyActivity.paused = false;
         return 0;
     }
 }

@@ -15,6 +15,7 @@ import android.view.View;
 
 import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.game.hud.HUDElement;
+import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.interfaces.Interactable;
@@ -89,10 +90,18 @@ public class GameBoard extends View{
             manageRoomSwitchEffect(canvas);
         }
 
+        manageAdvices();
+
         if (MyActivity.debugging) {
             drawInfo(canvas);
         }
 
+    }
+
+    private void manageAdvices() {
+        for (int i = 0; i < MyActivity.advices.size(); i++) {
+            MyActivity.advices.get(i).check();
+        }
     }
 
     private void manageRoomSwitchEffect(Canvas canvas) {
@@ -122,6 +131,7 @@ public class GameBoard extends View{
             effect.drawEffectAndUpdate(canvas);
             if (effect.isFinished()){
                 MyActivity.gameEffects.remove(effect);
+                effect.recycle();
             }
         }
     }

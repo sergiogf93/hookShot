@@ -14,21 +14,18 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import com.htss.hookshot.R;
-import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapHorizontalEffect;
 import com.htss.hookshot.effect.SwitchMapVerticalEffect;
-import com.htss.hookshot.executions.LaunchGame;
 import com.htss.hookshot.executions.MainMenu;
+import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.HUDMenu;
 import com.htss.hookshot.game.hud.HUDPauseButton;
 import com.htss.hookshot.game.hud.HUDPowerUpButton;
-import com.htss.hookshot.game.hud.HUDText;
 import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
@@ -43,7 +40,6 @@ import com.htss.hookshot.game.object.miscellaneous.PortalObject;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
-import com.htss.hookshot.map.Coord;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
@@ -81,10 +77,11 @@ public class MyActivity extends Activity {
     public String entranceString = "";
     public int portals = 0, bombs = 0, compass = 0, jumps = 0;
 
-    public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
-    public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
-    public static Vector<GameEffect> gameEffects = new Vector<GameEffect>();
-    public static Vector<GameEnemy> enemies = new Vector<GameEnemy>();
+    public static LinkedList<HUDElement> hudElements = new LinkedList<HUDElement>();
+    public static LinkedList<GameDynamicObject> dynamicObjects = new LinkedList<GameDynamicObject>();
+    public static LinkedList<GameEffect> gameEffects = new LinkedList<GameEffect>();
+    public static LinkedList<GameEnemy> enemies = new LinkedList<GameEnemy>();
+    public static LinkedList<HUDAdvice> advices = new LinkedList<HUDAdvice>();
 
     public static Map currentMap;
 
@@ -94,7 +91,7 @@ public class MyActivity extends Activity {
         super.onStart();
     }
 
-    private void load() {
+    public void load() {
         SharedPreferences preferences = getPreferences(MODE_PRIVATE);
         seed = preferences.getLong("Seed", -1);
         level = preferences.getInt("Level", 0);

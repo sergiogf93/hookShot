@@ -19,7 +19,7 @@ public class HUDMenu extends HUDElement {
     public static final int MENU_ALPHA = 150;
 
     private RectF background;
-    private Vector<HUDMenuButton> buttons = new Vector<HUDMenuButton>();
+    private Vector<HUDButton> buttons = new Vector<HUDButton>();
     private int buttonHeight, buttonSeparation;
 
     public HUDMenu(int xCenter, int yCenter, int width, int height, int buttonHeight, int buttonSeparation) {
@@ -38,8 +38,8 @@ public class HUDMenu extends HUDElement {
 
     public void addMenuButtons() {
         buttons.clear();
-        buttons.add(new HUDMenuButton(getxCenter(), getyCenter() - getHeight() / 2 + buttonSeparation + buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "RESET", new LaunchGame()));
-        buttons.add(new HUDMenuButton(getxCenter(), getyCenter() - getHeight() / 2 + 2*buttonSeparation + 3* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "DEBUGGER " + MyActivity.debugging, new Execution() {
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + buttonSeparation + buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "RESET", new LaunchGame()));
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 2*buttonSeparation + 3* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "DEBUGGER " + MyActivity.debugging, new Execution() {
             @Override
             public double execute() {
                 MyActivity.debugging = !MyActivity.debugging;
@@ -47,18 +47,15 @@ public class HUDMenu extends HUDElement {
                 return 0;
             }
         }));
-        buttons.add(new HUDMenuButton(getxCenter(), getyCenter() - getHeight() / 2 + 3*buttonSeparation + 5* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "MAIN MENU", new Execution() {
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 3*buttonSeparation + 5* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "MAIN MENU", new Execution() {
             @Override
             public double execute() {
-                MyActivity.character = null;
-                MyActivity.hudElements.clear();
-                MyActivity.canvas.gameObjects.clear();
-                MyActivity.dynamicObjects.clear();
+                MyActivity.canvas.myActivity.load();
                 (new MainMenu()).execute();
                 return 0;
             }
         }));
-        buttons.add(new HUDMenuButton(getxCenter(), getyCenter() - getHeight() / 2 + 4*buttonSeparation + 7* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "EXIT GAME", new Execution() {
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 4*buttonSeparation + 7* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "EXIT GAME", new Execution() {
             @Override
             public double execute() {
                 System.exit(0);
