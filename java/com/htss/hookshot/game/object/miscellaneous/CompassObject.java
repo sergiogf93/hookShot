@@ -33,7 +33,7 @@ public class CompassObject extends GameDynamicObject {
         this.parent = parent;
         findInterests();
         paint.setStrokeWidth(getWidth() / 500);
-        this.timer = new TimerObject(parent, (int) (getWidth() / 1.75), TimeUtil.convertSecondToGameSecond(10), Color.YELLOW, addToGameObjectsList, addToDynamicObjectsList, new Execution() {
+        this.timer = new TimerObject(parent, (int) (getWidth() / 1.75), TimeUtil.convertSecondToGameSecond(10), Color.YELLOW, false, addToDynamicObjectsList, new Execution() {
             @Override
             public double execute() {
                 MyActivity.character.getCompass().destroy();

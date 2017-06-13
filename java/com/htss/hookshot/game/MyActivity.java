@@ -455,7 +455,7 @@ public class MyActivity extends Activity {
                 if (Color.alpha(pixel) == 255) {
                     return (new MathVector(point.x, point.y)).roomToScreen();
                 }
-                canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
+//                canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
             } else {
                 break;
             }
