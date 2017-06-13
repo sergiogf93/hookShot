@@ -20,6 +20,7 @@ import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapHorizontalEffect;
 import com.htss.hookshot.effect.SwitchMapVerticalEffect;
 import com.htss.hookshot.executions.MainMenu;
+import com.htss.hookshot.game.hud.HUDNotification;
 import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.hud.HUDElement;
@@ -82,6 +83,7 @@ public class MyActivity extends Activity {
     public static LinkedList<GameEffect> gameEffects = new LinkedList<GameEffect>();
     public static LinkedList<GameEnemy> enemies = new LinkedList<GameEnemy>();
     public static LinkedList<HUDAdvice> advices = new LinkedList<HUDAdvice>();
+    public static LinkedList<HUDNotification> notifications = new LinkedList<HUDNotification>();
 
     public static Map currentMap;
 

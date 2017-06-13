@@ -84,6 +84,8 @@ public class GameBoard extends View{
 
             drawHudElements(canvas);
 
+            drawNotifications(canvas);
+
             manageGameEffects(canvas);
 
         } else {
@@ -96,6 +98,12 @@ public class GameBoard extends View{
             drawInfo(canvas);
         }
 
+    }
+
+    private void drawNotifications(Canvas canvas) {
+        for (int i = 0; i < MyActivity.notifications.size(); i++) {
+            MyActivity.notifications.get(i).draw(canvas);
+        }
     }
 
     private void manageAdvices() {

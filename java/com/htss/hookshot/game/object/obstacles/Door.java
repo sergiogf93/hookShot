@@ -7,11 +7,13 @@ import android.graphics.Point;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.hud.HUDNotification;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.game.object.shapes.RectShape;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.DrawUtil;
+import com.htss.hookshot.util.TimeUtil;
 
 import java.util.Vector;
 
@@ -43,6 +45,7 @@ public class Door extends GameDynamicObject {
         if (allOn){
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.dynamicObjects.remove(this);
+            MyActivity.notifications.add(new HUDNotification("DOOR OPENED!", TimeUtil.convertSecondToGameSecond(1)));
         }
     }
 
