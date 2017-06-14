@@ -392,6 +392,18 @@ public class MyActivity extends Activity {
                         lastTap = System.currentTimeMillis();
                         character.shootHook(objective.x, objective.y);
                     }
+                } else {
+                    if (character.isHooked()) {
+                        if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
+                            character.getHook().setFastReloading(true);
+                        }
+                    }
+                }
+            } else {
+                if (character.isHooked()) {
+                    if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
+                        character.getHook().setFastReloading(true);
+                    }
                 }
             }
         }

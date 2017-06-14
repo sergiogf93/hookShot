@@ -94,11 +94,12 @@ public class Map {
         susceptibleRooms.remove(exitRoom);
         roomRegions.remove(entranceRoom);
         roomRegions.remove(exitRoom);
-        addPowerUps(2);
         if (MyActivity.canvas.myActivity.level > 0) {
-            addExitDoor(4);
             addPassageDoor(2);
+//            Collections.sort(susceptibleRooms);
+            addExitDoor(4);
         }
+        addPowerUps(2);
     }
 
     private void createMap() {
@@ -533,7 +534,7 @@ public class Map {
     public void manageRoomConnection() {
         for (Room room : roomRegions){
             if (room.roomSize < MAX_SIZE_FOR_SUSCEPTIBLE && !room.isUpOrDown()){
-                susceptibleRooms.add(room);
+                addSusceptibleRoom(room);
             }
         }
 
@@ -765,8 +766,9 @@ public class Map {
     public MathVector getRandomPointInRooms(Vector<Room> rooms, int maxWallCount, Random r) {
         Coord coord;
         int n = 0;
+        Room room;
         do {
-            Room room = rooms.get(r.nextInt(rooms.size()));
+            room = rooms.get(r.nextInt(rooms.size()));
             coord = room.tiles.get(r.nextInt(room.roomSize));
             n++;
         } while ((map[coord.tileX][coord.tileY] == 1 || getSurroundingCount(coord.tileX,coord.tileY) > maxWallCount || isUpOrDown(coord)) && n < 1000);
@@ -872,6 +874,15 @@ public class Map {
         }
     }
 
+    private void addSusceptibleRoom(Room room) {
+        if (!susceptibleRooms.contains(room)) {
+            susceptibleRooms.add(room);
+        } else {
+            susceptibleRooms.remove(room);
+            susceptibleRooms.add(room);
+        }
+    }
+
     private void addExitDoor(int nButtons) {
         Random obstacleRandom = new Random();
         obstacleRandom.setSeed(MyActivity.canvas.myActivity.seed + nButtons + MyActivity.canvas.myActivity.level);
@@ -914,7 +925,7 @@ public class Map {
     }
 
     public void addDoor(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons) {
-        Door door = new Door(xPos, yPos, width, height, vector, buttons, true);
+        new Door(xPos, yPos, width, height, vector, buttons, true);
     }
 
     public void addPassageDoor(int nButtons) {
@@ -934,15 +945,20 @@ public class Map {
             if (room == entranceRoom) {
                 accessibleRegions = roomsA;
                 Collections.sort(roomsB);
-                susceptibleRooms.addAll(0, roomsB);
+                for (Room roomb : roomsB) {
+                    addSusceptibleRoom(roomb);
+                }
             }
         }
         if (accessibleRegions.size() == 0) {
             accessibleRegions = roomsB;
             Collections.sort(roomsA);
-            susceptibleRooms.addAll(0, roomsA);
+            for (Room rooma : roomsA) {
+                addSusceptibleRoom(rooma);
+            }
         }
 //      Set the WallButtons
+        Collections.sort(accessibleRegions);
         Vector<WallButton> buttons = createWallButtons(accessibleRegions, nButtons, obstacleRandom, false);
         MathVector position = passage.getCenterInRoom();
         addDoor(position.x, position.y, (int) ((PASSAGE_RADIUS + 2) * SQUARE_SIZE * 2), (int) (1.5*SQUARE_SIZE), passage.vector.getNormal(), buttons);
