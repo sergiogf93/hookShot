@@ -385,11 +385,9 @@ public class MyActivity extends Activity {
                         if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5) || character.getHook().getHookedPoint().distanceTo(objectiveInRoom) < TILE_WIDTH) {
                             character.getHook().setFastReloading(true);
                         } else {
-                            lastTap = System.currentTimeMillis();
                             character.shootHook(objective.x, objective.y);
                         }
                     } else {
-                        lastTap = System.currentTimeMillis();
                         character.shootHook(objective.x, objective.y);
                     }
                 } else {
@@ -407,6 +405,7 @@ public class MyActivity extends Activity {
                 }
             }
         }
+        lastTap = System.currentTimeMillis();
     }
 
     private void manageUpTouch(boolean isPointer, int id, int actionIndex) {
