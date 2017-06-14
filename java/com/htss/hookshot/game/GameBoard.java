@@ -5,10 +5,12 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
@@ -39,6 +41,7 @@ public class GameBoard extends View{
     public static float dx = 0, dy = 0;
 
     public static Paint paint = new Paint();
+    public static Paint backgroundPaint = new Paint();
 
     public static Bitmap mapBitmap;
 
@@ -51,6 +54,7 @@ public class GameBoard extends View{
 
     public GameBoard(Context context, AttributeSet attrs) {
         super(context, attrs);
+        backgroundPaint.setColor(background);
     }
 
     public void setFont(int c, float size){
@@ -72,8 +76,6 @@ public class GameBoard extends View{
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        Paint backgroundPaint = new Paint();
-        backgroundPaint.setColor(background);
         canvas.drawRect(0, 0, MyActivity.screenWidth, MyActivity.screenHeight, backgroundPaint);
 
         if (MyActivity.roomSwitchEffect == null) {

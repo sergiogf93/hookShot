@@ -92,8 +92,10 @@ public class Map {
     private void manageAddingFunctions() {
         susceptibleRooms.remove(entranceRoom);
         susceptibleRooms.remove(exitRoom);
-        roomRegions.remove(entranceRoom);
-        roomRegions.remove(exitRoom);
+        if (roomRegions.size() > 2) {
+            roomRegions.remove(entranceRoom);
+            roomRegions.remove(exitRoom);
+        }
         if (MyActivity.canvas.myActivity.level > 0) {
             addPassageDoor(2);
 //            Collections.sort(susceptibleRooms);
