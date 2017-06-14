@@ -80,9 +80,11 @@ public class GameBoard extends View{
 
         if (MyActivity.roomSwitchEffect == null) {
 
-            if (MyActivity.character != null) {
+            if (MyActivity.currentMap != null) {
                 drawGame(canvas);
             }
+
+            drawObjects(canvas);
 
             drawHudElements(canvas);
 
@@ -160,7 +162,9 @@ public class GameBoard extends View{
         canvas.drawBitmap(mapInScreen, 0, 0, paint);
 
         mapInScreen.recycle();
+    }
 
+    private void drawObjects(Canvas canvas) {
         for (int i = 0; i < gameObjects.size(); i++) {
             GameObject gameObject = gameObjects.get(i);
             if (!MyActivity.paused) {

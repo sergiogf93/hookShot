@@ -327,35 +327,39 @@ public class MyActivity extends Activity {
                     }
                     case MotionEvent.ACTION_MOVE: {
                         nothingPressed = false;
-                        for (int k = 0; k < hudElements.size(); k++) {
-                            HUDElement element = hudElements.get(k);
-                            if (element instanceof Clickable) {
-                                if (element instanceof Joystick) {
-                                    if (joystick.isOn() && joystick.getTouchId() == id && joystick.getTouchIndex() == ev.findPointerIndex(id)) {
-                                        joystick.moveJoystick(xDown, yDown);
-                                    }
-                                } else {
-                                    Clickable clickable = (Clickable) element;
-                                    if (clickable.isClickable()) {
-                                        if (!clickable.isOn()) {
-                                            if (clickable.pressed(xDown, yDown)) {
+                        if (MyActivity.currentMap != null) {
+                            for (int k = 0; k < hudElements.size(); k++) {
+                                HUDElement element = hudElements.get(k);
+                                if (element instanceof Clickable) {
+                                    if (element instanceof Joystick) {
+                                        if (joystick.isOn() && joystick.getTouchId() == id && joystick.getTouchIndex() == ev.findPointerIndex(id)) {
+                                            joystick.moveJoystick(xDown, yDown);
+                                        }
+                                    } else {
+                                        Clickable clickable = (Clickable) element;
+                                        if (clickable.isClickable()) {
+                                            if (!clickable.isOn()) {
+                                                if (clickable.pressed(xDown, yDown)) {
 //                                                clickable.press(xDown, yDown, id, ev.findPointerIndex(id));
-                                            }
-                                        } else if (clickable.getTouchId() == id) {
-                                            if (!clickable.pressed(xDown, yDown)) {
+                                                }
+                                            } else if (clickable.getTouchId() == id) {
+                                                if (!clickable.pressed(xDown, yDown)) {
 //                                                clickable.reset();
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                        } else {
+                            MyActivity.character.setPositionInRoom(xDown,yDown);
                         }
                         break;
                     }
                 }
             }
             if (!paused) {
-                if (character != null) {
+                if (currentMap != null) {
                     if (nothingPressed) {
                         manageHooking(xHook, yHook);
                     }

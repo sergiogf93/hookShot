@@ -108,6 +108,17 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public void updatePosition() {
+        if (MyActivity.currentMap != null) {
+            managePositionRelativeToMap();
+            this.healthBar.setxCenter((int) this.getxPosInScreen());
+            int yDirection = (getyPosInScreen() < MyActivity.VERTICAL_MARGIN) ? -1 : 1;
+            this.healthBar.setyCenter((int) (getyPosInScreen() + yDirection * getHeight()));
+        } else {
+            super.updatePosition();
+        }
+    }
+
+    private void managePositionRelativeToMap() {
         MathVector futurePosition = getFuturePositionInScreen();
         if (getP().x > 0){
             if (futurePosition.x > MyActivity.screenWidth - MyActivity.HORIZONTAL_MARGIN && MyActivity.canvas.dx > - (MyActivity.currentMap.getWidth() - MyActivity.screenWidth)){
@@ -138,9 +149,6 @@ public class MainCharacter extends GameCharacter {
         if (getyPosInScreen() > MyActivity.screenHeight + getHeight() || getxPosInScreen() < 0 || getxPosInScreen() > MyActivity.screenWidth) {
             manageExitMap();
         }
-        this.healthBar.setxCenter((int) this.getxPosInScreen());
-        int yDirection = (getyPosInScreen() < MyActivity.VERTICAL_MARGIN) ? -1 : 1;
-        this.healthBar.setyCenter((int) (getyPosInScreen() + yDirection*getHeight()));
     }
 
     private void manageExitMap() {
@@ -428,13 +436,11 @@ public class MainCharacter extends GameCharacter {
         }
         MathVector downPoint = new MathVector(xDown,yDown);
         MathVector initP = new MathVector(getPositionInScreen(),downPoint);
-        int radius = 10;
-        int separation = 40;
-        int nNodes = Math.min((int) (initP.magnitude()/separation) + 2, maxHookNodes);
+        int nNodes = Math.min((int) (initP.magnitude()/Hook.SEPARATION) + 2, maxHookNodes);
         nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
         initP.scale(0.5);
 //        initP.rescale(GameMath.linealValue(1,getHookVelocity()/1000,15,getHookVelocity(),nNodes));
-        setHook(new Hook(getxPosInRoom(),getyPosInRoom(), 1, 0, nNodes, radius, Color.GRAY, separation,this,initP));
+        setHook(new Hook(getxPosInRoom(),getyPosInRoom(), nNodes, Color.GRAY,this,initP));
 //        setP(new MathVector(0,0));
         MyActivity.canvas.debugText = getP().toString();
     }

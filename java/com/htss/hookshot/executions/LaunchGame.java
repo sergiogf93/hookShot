@@ -68,7 +68,6 @@ public class LaunchGame implements Execution {
         MyActivity.character.setPowerUp(GamePowerUp.INFINITE_JUMPS, jumps);
         //////////////////
 
-        MyActivity.paused = false;
         return 0;
     }
 }

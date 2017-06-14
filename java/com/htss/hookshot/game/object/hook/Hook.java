@@ -18,6 +18,8 @@ import java.util.Vector;
  */
 public class Hook extends Chain {
 
+    public static final int RADIUS = 10 * MyActivity.TILE_WIDTH / 100, SEPARATION = 40 * MyActivity.TILE_WIDTH / 100;
+
     private static final int MIN_RELOADING_NODES = 2;
 
     private boolean hooked = false, reloading = false, extending = false, fastReloading = false;
@@ -25,8 +27,8 @@ public class Hook extends Chain {
     private GameDynamicObject hookedObject;
     private int prevHookedMass = 0;
 
-    public Hook(double xPos, double yPos, int mass, int collisionPriority, int nNodes, int radius, int color, int separation, GameDynamicObject parent, MathVector initP) {
-        super(xPos, yPos, mass, collisionPriority, nNodes, radius, color, separation, true, false);
+    public Hook(double xPos, double yPos, int nNodes, int color, GameDynamicObject parent, MathVector initP) {
+        super(xPos, yPos, 1, 0, nNodes, RADIUS, color,  SEPARATION, true, false);
         getFirstNode().removeAllConstraints();
         getFirstNode().addConstraint(new ChildOfConstraint(parent));
         for (Circle node : getNodes()){
@@ -88,14 +90,16 @@ public class Hook extends Chain {
         }
     }
 
-    private void hook(MathVector position) {
-        addHookButtons();
+    public void hook(MathVector position) {
+        if (MyActivity.currentMap != null) {
+            addHookButtons();
+        }
         hookedPoint = position;
 //        getLastNode().addConstraint(new RelativeToPointConstraint(position,0));
         hooked = true;
         setDirection(-1);
-        for (Circle node : getNodes()){
-            node.setP(new MathVector(0,0));
+        for (Circle node : getNodes()) {
+            node.setP(new MathVector(0, 0));
             node.setGhost(false);
         }
     }
@@ -203,7 +207,9 @@ public class Hook extends Chain {
                 MyActivity.character.removeHook();
             }
         } else {
-            MyActivity.extendButton.setCenter(getLastNode().getPositionInScreen());
+            if (MyActivity.extendButton != null) {
+                MyActivity.extendButton.setCenter(getLastNode().getPositionInScreen());
+            }
         }
     }
 

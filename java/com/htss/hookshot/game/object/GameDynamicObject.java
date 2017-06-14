@@ -38,8 +38,9 @@ public abstract class GameDynamicObject extends GameObject {
 
     public void update(){
         if (!isGhost()) {
-            manageCollisions(getMargin());
-//            manageCollisionWithOtherObjects();
+            if (MyActivity.currentMap != null) {
+                manageCollisions(getMargin());
+            }
         }
         if(Math.abs(getP().x) > getMaxVelocity()){
             setP(new MathVector(Math.signum(getP().x)*getMaxVelocity(),getP().y));

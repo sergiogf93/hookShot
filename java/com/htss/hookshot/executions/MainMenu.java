@@ -1,12 +1,17 @@
 package com.htss.hookshot.executions;
 
+import android.graphics.Color;
+
 import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.hud.HUDText;
 import com.htss.hookshot.game.hud.advices.HUDNewGameAdvice;
+import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.map.Coord;
+import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.persistence.GameStrings;
 
 /**
@@ -16,6 +21,9 @@ public class MainMenu implements Execution {
     @Override
     public double execute() {
         MyActivity.character = null;
+        MyActivity.currentMap = null;
+        MyActivity.canvas.dx = 0;
+        MyActivity.canvas.dy = 0;
         MyActivity.hudElements.clear();
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
@@ -56,6 +64,18 @@ public class MainMenu implements Execution {
             }
         });
         MyActivity.hudElements.add(exitGame);
+
+        MainCharacter c = new MainCharacter(0, MyActivity.screenHeight - MyActivity.TILE_WIDTH / 2);
+        c.setP(new MathVector(MyActivity.TILE_WIDTH / 50, 0));
+        c.setOnFloor(true);
+
+        int n = MyActivity.screenHeight / Hook.SEPARATION - 5;
+        MyActivity.character = new MainCharacter(MyActivity.screenWidth / 2, n * Hook.SEPARATION);
+        Hook hook = new Hook(MyActivity.screenWidth / 2, n * Hook.SEPARATION, n, Color.GRAY, MyActivity.character, new MathVector(0, 0));
+        MyActivity.character.setHook(hook);
+        hook.hook(new MathVector(MyActivity.screenWidth / 2, MyActivity.screenHeight / 10 ));
+
+        MyActivity.paused = false;
         return 0;
     }
 }
