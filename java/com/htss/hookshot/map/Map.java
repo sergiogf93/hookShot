@@ -38,12 +38,11 @@ public class Map {
             BORDER_SIZE = 3,
             WALL_COUNT_SIZE_THRESHOLD = 2,
             ROOM_COUNT_SIZE_THRESHOLD = 2,
-            PASSAGE_RADIUS = 3,
-            MAX_SIZE_FOR_SUSCEPTIBLE = 40;
+            PASSAGE_RADIUS = 3;
     public static final double SQUARE_SIZE = 45 * MyActivity.TILE_WIDTH / 100;
 
     private int[][] map;
-    private int xTiles, yTiles, fillPercent;
+    private int xTiles, yTiles, fillPercent, maxSizeForSusceptible;
     private Coord entrance, exit;
     private SquareGrid squareGrid;
     private Vector<Point> vertices;
@@ -55,6 +54,7 @@ public class Map {
     private Vector<Point[]> cracks = new Vector<Point[]>();
     private Vector<Room> roomRegions = new Vector<Room>();
     private Vector<Room> susceptibleRooms = new Vector<Room>();
+    private Vector<Room> roomsWithInterest = new Vector<Room>();
 
     private Vector<Passage> passages = new Vector<Passage>();
 
@@ -63,6 +63,7 @@ public class Map {
         this.xTiles = xTiles;
         this.yTiles = yTiles;
         this.fillPercent = fillPercent;
+        this.maxSizeForSusceptible = (int) ((xTiles*yTiles*(100-fillPercent)/100) * 0.005);
 
         this.entrance = entrance;
 
@@ -98,7 +99,6 @@ public class Map {
         }
         if (MyActivity.canvas.myActivity.level > 0) {
             addPassageDoor(2);
-//            Collections.sort(susceptibleRooms);
             addExitDoor(4);
         }
         addPowerUps(2);
@@ -500,6 +500,7 @@ public class Map {
         passages.clear();
         roomRegions.clear();
         susceptibleRooms.clear();
+        roomsWithInterest.clear();
 
         Vector<Vector<Coord>> wallRegions = getRegions(1);
 
@@ -531,15 +532,15 @@ public class Map {
         if (MyActivity.canvas.myActivity.level > 0) {
             entranceRoom = entrance.getRoom(roomRegions);
         }
-    }
 
-    public void manageRoomConnection() {
         for (Room room : roomRegions){
-            if (room.roomSize < MAX_SIZE_FOR_SUSCEPTIBLE && !room.isUpOrDown()){
+            if (room.roomSize < maxSizeForSusceptible && !room.isUpOrDown()){
                 addSusceptibleRoom(room);
             }
         }
+    }
 
+    public void manageRoomConnection() {
         connectClosestRooms(roomRegions, false);
     }
 
@@ -770,10 +771,13 @@ public class Map {
         int n = 0;
         Room room;
         do {
-            room = rooms.get(r.nextInt(rooms.size()));
+            do {
+                room = rooms.get(r.nextInt(rooms.size()));
+            } while (roomsWithInterest.contains(room) && rooms.size() > roomsWithInterest.size());
             coord = room.tiles.get(r.nextInt(room.roomSize));
             n++;
         } while ((map[coord.tileX][coord.tileY] == 1 || getSurroundingCount(coord.tileX,coord.tileY) > maxWallCount || isUpOrDown(coord)) && n < 1000);
+        roomsWithInterest.add(room);
         return new MathVector(coord.tileX * SQUARE_SIZE, coord.tileY * SQUARE_SIZE);
     }
 
@@ -960,7 +964,6 @@ public class Map {
             }
         }
 //      Set the WallButtons
-        Collections.sort(accessibleRegions);
         Vector<WallButton> buttons = createWallButtons(accessibleRegions, nButtons, obstacleRandom, false);
         MathVector position = passage.getCenterInRoom();
         addDoor(position.x, position.y, (int) ((PASSAGE_RADIUS + 2) * SQUARE_SIZE * 2), (int) (1.5*SQUARE_SIZE), passage.vector.getNormal(), buttons);
@@ -989,8 +992,7 @@ public class Map {
         for (int i = 0; i < nButtons; i++) {
             MathVector position;
             if (useSusceptibleRooms && susceptibleRooms.size() > 0) {
-                position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, random);
-                susceptibleRooms.remove(susceptibleRooms.lastElement());
+                position = getPositionFromSusceptibleRooms(random);
             } else {
                 position = getRandomPointInRooms(rooms, 0, random);
             }
@@ -1006,8 +1008,7 @@ public class Map {
         for (int i = 0; i < N; i++) {
             MathVector position;
             if (susceptibleRooms.size() > 0) {
-                position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, powerUpRandom);
-                susceptibleRooms.remove(susceptibleRooms.lastElement());
+                position = getPositionFromSusceptibleRooms(powerUpRandom);
             } else {
                 position = getRandomPointInRooms(roomRegions, 0, powerUpRandom);
             }
@@ -1022,6 +1023,16 @@ public class Map {
                 new InfiniteJumpsPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.9), (int) (SQUARE_SIZE * 0.8), true, false);
             }
         }
+    }
+
+    private MathVector getPositionFromSusceptibleRooms(Random random) {
+        if (susceptibleRooms.size() > roomsWithInterest.size()) {
+            susceptibleRooms.removeAll(roomsWithInterest);
+        }
+        MathVector position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, random);
+        roomsWithInterest.add(susceptibleRooms.lastElement());
+        susceptibleRooms.remove(susceptibleRooms.lastElement());
+        return position;
     }
 
     public void addEnemies (int N){

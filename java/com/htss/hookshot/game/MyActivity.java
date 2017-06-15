@@ -433,10 +433,14 @@ public class MyActivity extends Activity {
                 }
             }
         }
+        if (currentMap == null) {
+            MyActivity.character.setPositionInRoom(MyActivity.character.getHook().getLastNode().getPositionInRoom());
+        }
     }
 
     private boolean manageDownTouch(double xDown, double yDown, int id, int pointerIndex) {
         boolean nothingPressed = true;
+
         Vector joined = new Vector();
         joined.addAll(hudElements);
         if (!paused) {
@@ -448,13 +452,16 @@ public class MyActivity extends Activity {
                 Clickable clickable = (Clickable) element;
                 if (clickable.isClickable()) {
                     if (!clickable.isOn()) {
-                        if (clickable.pressed(xDown,yDown)) {
+                        if (clickable.pressed(xDown, yDown)) {
                             clickable.press(xDown, yDown, id, pointerIndex);
                             nothingPressed = false;
                         }
                     }
                 }
             }
+        }
+        if (currentMap == null) {
+            MyActivity.character.setPositionInRoom(xDown,yDown);
         }
         return nothingPressed;
     }
