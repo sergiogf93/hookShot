@@ -33,13 +33,16 @@ import java.util.Vector;
 
 public class Map {
 
-    private final int SMOOTH_ITERATIONS = 2,  //5, 4, 3, 5, 5, 3
+    private static final int MAX_BUTTONS = 7, MIN_BUTTONS = 2;
+    private static final int SMOOTH_ITERATIONS = 2,  //5, 4, 3, 5, 5, 3
             WALL_COUNT_SMOOTH_THRESHOLD = 4,
             BORDER_SIZE = 3,
             WALL_COUNT_SIZE_THRESHOLD = 2,
             ROOM_COUNT_SIZE_THRESHOLD = 2,
             PASSAGE_RADIUS = 3;
     public static final double SQUARE_SIZE = 45 * MyActivity.TILE_WIDTH / 100;
+    private static final int MAX_POWERUPS = 3;
+    private static final int MAX_ENEMIES = 2;
 
     private int[][] map;
     private int xTiles, yTiles, fillPercent, maxSizeForSusceptible;
@@ -91,6 +94,8 @@ public class Map {
     }
 
     private void manageAddingFunctions() {
+        Random addingRandom = new Random();
+        addingRandom.setSeed(MyActivity.canvas.myActivity.seed + MyActivity.canvas.myActivity.level);
         susceptibleRooms.remove(entranceRoom);
         susceptibleRooms.remove(exitRoom);
         if (roomRegions.size() > 2) {
@@ -98,10 +103,18 @@ public class Map {
             roomRegions.remove(exitRoom);
         }
         if (MyActivity.canvas.myActivity.level > 0) {
-            addPassageDoor(2);
-            addExitDoor(4);
+            double r = addingRandom.nextDouble();
+            if (r < 0.4) {
+                addPassageDoor(2);
+                addExitDoor(addingRandom, MAX_BUTTONS);
+            } else if (r < 0.8) {
+                addEnemies(addingRandom);
+            } else {
+                addExitDoor(addingRandom, MIN_BUTTONS);
+                addEnemies(addingRandom);
+            }
         }
-        addPowerUps(2);
+        addPowerUps(addingRandom);
     }
 
     private void createMap() {
@@ -889,9 +902,8 @@ public class Map {
         }
     }
 
-    private void addExitDoor(int nButtons) {
-        Random obstacleRandom = new Random();
-        obstacleRandom.setSeed(MyActivity.canvas.myActivity.seed + nButtons + MyActivity.canvas.myActivity.level);
+    private void addExitDoor(Random random, int maxButtons) {
+        int nButtons = getNButtons(random, maxButtons);
 //        Calculate the width for the door
         MathVector vector = new MathVector(1, 0);
         int start = -1;
@@ -926,8 +938,13 @@ public class Map {
         }
 
 //      Set the WallButtons
-        Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, obstacleRandom, true);
+        Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, random, true);
         addDoor(getExit().tileX * SQUARE_SIZE, getExit().tileY * SQUARE_SIZE, (int) ((end - start + 2) * SQUARE_SIZE), (int) (1.5 * SQUARE_SIZE), vector, buttons);
+    }
+
+    private int getNButtons(Random random, int maxButtons) {
+        int n = random.nextInt(maxButtons);
+        return Math.max(MIN_BUTTONS,n);
     }
 
     public void addDoor(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons) {
@@ -1002,17 +1019,16 @@ public class Map {
         return buttons;
     }
 
-    public void addPowerUps(int N) {
-        Random powerUpRandom = new Random();
-        powerUpRandom.setSeed(MyActivity.canvas.myActivity.seed + N + MyActivity.canvas.myActivity.level);
+    public void addPowerUps(Random random) {
+        int N = getNPowerUps(random);
         for (int i = 0; i < N; i++) {
             MathVector position;
             if (susceptibleRooms.size() > 0) {
-                position = getPositionFromSusceptibleRooms(powerUpRandom);
+                position = getPositionFromSusceptibleRooms(random);
             } else {
-                position = getRandomPointInRooms(roomRegions, 0, powerUpRandom);
+                position = getRandomPointInRooms(roomRegions, 0, random);
             }
-            int powerUpType = powerUpRandom.nextInt(4);
+            int powerUpType = random.nextInt(4);
             if (powerUpType == 0) {
                 new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2, true, false);
             } else if (powerUpType == 1) {
@@ -1025,6 +1041,10 @@ public class Map {
         }
     }
 
+    private int getNPowerUps(Random random) {
+        return random.nextInt(MAX_POWERUPS);
+    }
+
     private MathVector getPositionFromSusceptibleRooms(Random random) {
         if (susceptibleRooms.size() > roomsWithInterest.size()) {
             susceptibleRooms.removeAll(roomsWithInterest);
@@ -1035,13 +1055,16 @@ public class Map {
         return position;
     }
 
-    public void addEnemies (int N){
-        Random enemyRandom = new Random();
-        enemyRandom.setSeed(MyActivity.canvas.myActivity.seed + MyActivity.canvas.myActivity.level + N);
-        for (int i = 0;i < N;i++) {
-            MathVector p = getRandomEmptyPoint(0, enemyRandom);
-            EnemyStalker stalker = new EnemyStalker(p.x, p.y, true);
+    public void addEnemies (Random random) {
+        int N = getNEnemies(random);
+        for (int i = 0; i < N; i++) {
+            MathVector p = getRandomEmptyPoint(0, random);
+            new EnemyStalker(p.x, p.y, true);
         }
+    }
+
+    private int getNEnemies(Random random) {
+        return random.nextInt(MAX_ENEMIES) + 1;
     }
 
     private boolean isInMapRange (int x, int y){

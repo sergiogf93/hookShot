@@ -17,7 +17,7 @@ import java.util.Random;
  */
 public class EnemyStalker extends ClickableEnemy {
 
-    private static final double THRESHOLD_DISTANCE = MyActivity.TILE_WIDTH * 3, SEARCHING_DISTANCE = MyActivity.TILE_WIDTH * 20;
+    private static final double THRESHOLD_DISTANCE = MyActivity.TILE_WIDTH * 6, SEARCHING_DISTANCE = MyActivity.TILE_WIDTH * 20;
     private static final int MAX_SEARCHING_TIME = (int) TimeUtil.convertSecondToGameSecond(10), MAX_HEALTH = 5, MAX_VELOCITY = 8, COLLISION_PRIORITY = 0, MASS = 0;
     private static final double MAX_RADIUS = MyActivity.TILE_WIDTH / 2, MIN_RADIUS = MyActivity.TILE_WIDTH / 10, MARGIN = MyActivity.TILE_WIDTH*0.8;
 
@@ -72,20 +72,22 @@ public class EnemyStalker extends ClickableEnemy {
     }
 
     private void manageActivateDeactivate() {
-        if (!isInState(GameCharacter.STATE_FOLLOWING)) {
-            if (distanceTo(MyActivity.character) < getSearchingDistance()) {
-                MathVector sight = firstInSight(MyActivity.character);
-                if (MyActivity.character.containsPoint(sight.x, sight.y)) {
-                    setTargetPositionInRoom(MyActivity.character.getPositionInRoom());
-                    setState(GameCharacter.STATE_FOLLOWING);
-                    setGhost(true);
+        if (MyActivity.canvas.gameObjects.contains(MyActivity.character)) {
+            if (!isInState(GameCharacter.STATE_FOLLOWING)) {
+                if (distanceTo(MyActivity.character) < getSearchingDistance()) {
+                    MathVector sight = firstInSight(MyActivity.character);
+                    if (MyActivity.character.containsPoint(sight.x, sight.y)) {
+                        setTargetPositionInRoom(MyActivity.character.getPositionInRoom());
+                        setState(GameCharacter.STATE_FOLLOWING);
+                        setGhost(true);
+                    }
                 }
-            }
-        } else if (isInState(GameCharacter.STATE_SEARCHING)) {
-            if (getFrame() - frameWhenLost > MAX_SEARCHING_TIME) {
-                setState(GameCharacter.STATE_REST);
-                randomNewDirection();
-                setGhost(false);
+            } else if (isInState(GameCharacter.STATE_SEARCHING)) {
+                if (getFrame() - frameWhenLost > MAX_SEARCHING_TIME) {
+                    setState(GameCharacter.STATE_REST);
+                    randomNewDirection();
+                    setGhost(false);
+                }
             }
         }
     }
@@ -106,16 +108,6 @@ public class EnemyStalker extends ClickableEnemy {
             paint.setColor(Color.RED);
         }
         canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), (float) getMinRadius(), paint);
-        if (getTargetPositionInRoom() != null){
-            paint.setColor(Color.MAGENTA);
-            paint.setAlpha(255);
-            MathVector p = getTargetPositionInRoom().roomToScreen();
-            canvas.drawCircle((float)p.x, (float) p.y,10,paint);
-        }
-        if(!isInState(GameCharacter.STATE_FOLLOWING)) {
-            paint.setColor(Color.GREEN);
-            canvas.drawLine((float) getPositionInScreen().x, (float) getPositionInScreen().y, (float) getCurrentDirection().rescaled(getMaxRadius() * 1.5).applyTo(getPositionInScreen()).x, (float) getCurrentDirection().rescaled(getMaxRadius() * 1.5).applyTo(getPositionInScreen()).y, paint);
-        }
     }
 
     @Override
@@ -161,7 +153,8 @@ public class EnemyStalker extends ClickableEnemy {
     }
 
     public int getMargin(){
-        return getWidth()/2;
+//        return getWidth()/10;
+        return 1;
     }
 
     public MathVector getCurrentDirection() {

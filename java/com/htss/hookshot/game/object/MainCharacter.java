@@ -240,7 +240,7 @@ public class MainCharacter extends GameCharacter {
             separationFoot = new MathVector(getFacing() * BODY_RADIUS / 3, BODY_RADIUS + FOOT_RADIUS / 3);
             axisForFeet = new MathVector(0,-1);
             if (!isOnFloor()){
-                axisForFeet = new MathVector(getHook().getLastNode().getPositionInRoom(), getPositionInRoom());
+                axisForFeet = new MathVector(getHook().getFirstNode().getPositionInRoom(), getPositionInRoom());
                 axisForFeet.normalize();
                 double angle = separationFoot.angleDeg(new MathVector(0, 1));
                 separationFoot = axisForFeet.rotatedDeg(angle).rescaled(separationFoot.magnitude());
@@ -421,7 +421,7 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public int getMargin(){
-        return getWidth()/10;
+        return 1;
     }
 
     public void checkIfRemoveInterest(GameObject interest) {
