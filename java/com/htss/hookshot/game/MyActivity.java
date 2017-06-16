@@ -53,7 +53,7 @@ public class MyActivity extends Activity {
 
     public static int FILL_PERCENT = 52; //Default 52 for screen size 30
     public static int mapXTiles = 110, mapYTiles = 80; //Default 110 80, for screen size 30 20
-//    public static int FILL_PERCENT = 30;
+//    public static int FILL_PERCENT = 20;
 //    public static int mapXTiles = 30, mapYTiles = 20;
 
     public static final int FRAME_RATE = 10;

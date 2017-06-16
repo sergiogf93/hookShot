@@ -57,6 +57,7 @@ public class DrawUtil {
     }
 
     public static void drawCircle(Canvas canvas, Paint paint, float x, float y, float radius, int color, Paint.Style style) {
+        paint.setShader(null);
         int alpha = paint.getAlpha();
         paint.setColor(color);
         paint.setAlpha(alpha);

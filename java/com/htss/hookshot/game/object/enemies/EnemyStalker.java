@@ -2,7 +2,6 @@ package com.htss.hookshot.game.object.enemies;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.StalkerAnimation;
@@ -10,21 +9,18 @@ import com.htss.hookshot.game.object.GameCharacter;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
 
-import java.util.Random;
-
 /**
  * Created by Sergio on 31/08/2016.
  */
 public class EnemyStalker extends ClickableEnemy {
 
+    private static final int COLLISION_PRIORITY = 0, MASS = 0, MAX_HEALTH = 5, MAX_VELOCITY = 10 * MyActivity.TILE_WIDTH / 100;
+
     private static final double THRESHOLD_DISTANCE = MyActivity.TILE_WIDTH * 6, SEARCHING_DISTANCE = MyActivity.TILE_WIDTH * 20;
-    private static final int MAX_SEARCHING_TIME = (int) TimeUtil.convertSecondToGameSecond(10), MAX_HEALTH = 5, MAX_VELOCITY = 8, COLLISION_PRIORITY = 0, MASS = 0;
+    private static final int MAX_SEARCHING_TIME = (int) TimeUtil.convertSecondToGameSecond(10);
     private static final double MAX_RADIUS = MyActivity.TILE_WIDTH / 2, MIN_RADIUS = MyActivity.TILE_WIDTH / 10, MARGIN = MyActivity.TILE_WIDTH*0.8;
 
-    private MathVector targetPositionInRoom, currentDirection;
     private int frameWhenLost = 0, bodyColor = Color.BLACK;
-    private Paint paint = new Paint();
-
 
     public EnemyStalker(double xPos, double yPos, boolean addToLists) {
         super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, addToLists, addToLists);
@@ -98,16 +94,16 @@ public class EnemyStalker extends ClickableEnemy {
         if (animatedAlpha > 245) {
             setBodyColor(Color.BLACK);
         }
-        paint.setColor(bodyColor);
-        paint.setAlpha(animatedAlpha);
-        canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), paint);
-        paint.setAlpha(255);
+        getPaint().setColor(bodyColor);
+        getPaint().setAlpha(animatedAlpha);
+        canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), getPaint());
+        getPaint().setAlpha(255);
         if (isInState(GameCharacter.STATE_REST)) {
-            paint.setColor(Color.YELLOW);
+            getPaint().setColor(Color.YELLOW);
         } else {
-            paint.setColor(Color.RED);
+            getPaint().setColor(Color.RED);
         }
-        canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), (float) getMinRadius(), paint);
+        canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), (float) getMinRadius(), getPaint());
     }
 
     @Override
@@ -134,14 +130,6 @@ public class EnemyStalker extends ClickableEnemy {
         return MIN_RADIUS;
     }
 
-    public MathVector getTargetPositionInRoom() {
-        return targetPositionInRoom;
-    }
-
-    public void setTargetPositionInRoom(MathVector targetPosition) {
-        this.targetPositionInRoom = targetPosition;
-    }
-
     public double getSearchingDistance() {
         if (isInState(GameCharacter.STATE_REST)) {
             return THRESHOLD_DISTANCE;
@@ -157,30 +145,8 @@ public class EnemyStalker extends ClickableEnemy {
         return 1;
     }
 
-    public MathVector getCurrentDirection() {
-        return currentDirection;
-    }
-
-    public void setCurrentDirection(MathVector currentDirection) {
-        this.currentDirection = currentDirection;
-    }
-
-    public int getBodyColor() {
-        return bodyColor;
-    }
-
     public void setBodyColor(int bodyColor) {
         this.bodyColor = bodyColor;
-    }
-
-    public void rotate(double deg){
-        setCurrentDirection(getCurrentDirection().rotatedDeg(deg));
-    }
-
-    public void randomNewDirection () {
-        Random random = new Random();
-        MathVector v = new MathVector(1,0);
-        setCurrentDirection(v.rotatedDeg(random.nextInt(360)));
     }
 
     @Override

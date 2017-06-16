@@ -20,7 +20,7 @@ public class BombPowerUp extends GamePowerUp {
 
     @Override
     public void draw(Canvas canvas) {
+        DrawUtil.drawCircle(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), (float) ((getWidth() / 2) * 0.9), Color.rgb(50,30,0), Paint.Style.STROKE);
         DrawUtil.drawRadialGradient(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), (float) getWidth() / 2, Color.YELLOW, Color.RED, Shader.TileMode.MIRROR);
-        DrawUtil.drawCircle(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), (float) getWidth() / 2, Color.rgb(50,30,0), Paint.Style.STROKE);
     }
 }

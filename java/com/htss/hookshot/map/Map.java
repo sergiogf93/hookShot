@@ -13,6 +13,7 @@ import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
+import com.htss.hookshot.game.object.enemies.EnemyTerraWorm;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
@@ -1056,10 +1057,15 @@ public class Map {
     }
 
     public void addEnemies (Random random) {
-        int N = getNEnemies(random);
-        for (int i = 0; i < N; i++) {
+        if (random.nextBoolean()) {
+            int N = getNEnemies(random);
+            for (int i = 0; i < N; i++) {
+                MathVector p = getRandomEmptyPoint(0, random);
+                new EnemyStalker(p.x, p.y, true);
+            }
+        } else {
             MathVector p = getRandomEmptyPoint(0, random);
-            new EnemyStalker(p.x, p.y, true);
+            new EnemyTerraWorm(p.x, p.y, 5, true, true);
         }
     }
 
