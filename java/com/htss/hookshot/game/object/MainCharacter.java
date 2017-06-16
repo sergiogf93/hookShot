@@ -574,6 +574,9 @@ public class MainCharacter extends GameCharacter {
                 break;
             case GamePowerUp.COMPASS:
                 setCompass(new CompassObject(this, true, true));
+                if (prevPowerUp == GamePowerUp.INFINITE_JUMPS) {
+                    setMaxVelocity(MAX_VELOCITY * 2);
+                }
                 setCurrentPowerUp(prevPowerUp);
                 powerUps.put(GamePowerUp.COMPASS, powerUps.get(GamePowerUp.COMPASS) - 1);
                 break;

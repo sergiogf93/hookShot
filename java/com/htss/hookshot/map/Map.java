@@ -95,7 +95,7 @@ public class Map {
 
     private void manageAddingFunctions() {
         Random addingRandom = new Random();
-        addingRandom.setSeed(MyActivity.canvas.myActivity.seed + MyActivity.canvas.myActivity.level);
+        addingRandom.setSeed(MyActivity.canvas.myActivity.seed * MyActivity.canvas.myActivity.level);
         susceptibleRooms.remove(entranceRoom);
         susceptibleRooms.remove(exitRoom);
         if (roomRegions.size() > 2) {
