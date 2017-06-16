@@ -38,6 +38,7 @@ import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
 import com.htss.hookshot.game.object.miscellaneous.PortalObject;
+import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
@@ -145,7 +146,13 @@ public class MyActivity extends Activity {
             @Override
             public double execute() {
                 if (MyActivity.character.getHook() != null) {
-                    MyActivity.character.removeHook();
+                    if (MyActivity.character.getHook().isFastReloading()){
+                        if (!MyActivity.character.inContactWithMap(MyActivity.character.getMargin())) {
+                            MyActivity.character.removeHook();
+                        }
+                    } else {
+                        MyActivity.character.removeHook();
+                    }
                 } else {
                     boolean portalUsed = false;
                     if (MyActivity.character.getPortals().size() > 0) {
@@ -332,7 +339,7 @@ public class MyActivity extends Activity {
                                 HUDElement element = hudElements.get(k);
                                 if (element instanceof Clickable) {
                                     if (element instanceof Joystick) {
-                                        if (joystick.isOn() && joystick.getTouchId() == id && joystick.getTouchIndex() == ev.findPointerIndex(id)) {
+                                        if (joystick.isClickable() && joystick.isOn() && joystick.getTouchId() == id && joystick.getTouchIndex() == ev.findPointerIndex(id)) {
                                             joystick.moveJoystick(xDown, yDown);
                                         }
                                     } else {
@@ -384,7 +391,7 @@ public class MyActivity extends Activity {
             if (isInScreen(objective.x, objective.y)) {
                 MathVector objectiveInRoom = objective.screenToRoom();
                 int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
-                if (Color.alpha(pixel) == 255) {
+                if (Color.alpha(pixel) == 255 || checkIfDoorsContain(objectiveInRoom)) {
                     if (character.isHooked()) {
                         if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5) || character.getHook().getHookedPoint().distanceTo(objectiveInRoom) < TILE_WIDTH) {
                             character.getHook().setFastReloading(true);
@@ -398,8 +405,6 @@ public class MyActivity extends Activity {
                     if (character.isHooked()) {
                         if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
                             character.getHook().setFastReloading(true);
-                        } else {
-                            character.shootHook(objective.x, objective.y);
                         }
                     }
                 }
@@ -468,6 +473,17 @@ public class MyActivity extends Activity {
         return nothingPressed;
     }
 
+    private boolean checkIfDoorsContain(MathVector point) {
+        for (GameDynamicObject dynamicObject : dynamicObjects) {
+            if (dynamicObject instanceof Door) {
+                if (dynamicObject.getBounds().contains(point)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private MathVector checkIfSomethingInTheWay(double xDown, double yDown) {
         MathVector vector = new MathVector(character.getPositionInScreen(),new MathVector(xDown,yDown));
         int i = 0;
@@ -475,7 +491,10 @@ public class MyActivity extends Activity {
             i++;
             vector.rescale(i);
             MathVector point = vector.applyTo(character.getPositionInRoom());
-            if (isInRoom(point.x,point.y)) {
+            if (checkIfDoorsContain(point)) {
+                return (new MathVector(point.x, point.y)).roomToScreen();
+            }
+            if (isInRoom(point.x, point.y)) {
                 int pixel = canvas.mapBitmap.getPixel((int) point.x, (int) point.y);
                 if (Color.alpha(pixel) == 255) {
                     return (new MathVector(point.x, point.y)).roomToScreen();

@@ -56,7 +56,7 @@ public class TerraWormBody extends ClickableEnemy {
 
     @Override
     public int getDamageDone() {
-        return 0;
+        return 1;
     }
 
     @Override

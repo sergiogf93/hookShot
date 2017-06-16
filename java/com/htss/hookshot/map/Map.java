@@ -959,7 +959,10 @@ public class Map {
         if (entranceRoom == null || passages.size() == 0) {
             return;
         }
-        Passage passage = passages.get(obstacleRandom.nextInt(passages.size()));
+        Passage passage;
+        do {
+            passage = passages.get(obstacleRandom.nextInt(passages.size()));
+        } while ((passage.roomA == entranceRoom || passage.roomA == exitRoom || passage.roomB == entranceRoom || passage.roomB == exitRoom) && passages.size() > 1);
 //      Separate rooms by accessibility
         Vector<Room> roomsA = getRoomsConnectedWithException(passage.roomA, passage.roomB);
         Vector<Room> roomsB = new Vector<Room>(roomRegions);

@@ -28,8 +28,6 @@ import com.htss.hookshot.util.TimeUtil;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import toxi.math.MathUtils;
-
 /**
  * Created by Sergio on 03/08/2016.
  */
@@ -446,7 +444,10 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void removeHook() {
-        setMass(MASS);
+        if (getHook().isFastReloading()) {
+            setMass(MASS);
+            setIgnoringMap(false);
+        }
         MyActivity.canvas.gameObjects.remove(hook);
         MyActivity.dynamicObjects.removeAll(hook.getNodes());
         if (hook.getHookedObject() != null){

@@ -17,7 +17,7 @@ public class EnemyTerraWorm extends GameEnemy {
 
     private static final int COLLISION_PRIORITY = 0, MASS = 0, MAX_VELOCITY = 8 * MyActivity.TILE_WIDTH / 100;
     private static final float MAX_RADIUS = (float) (MyActivity.TILE_WIDTH * 0.8);
-    private static final double DISTANCE_TO_ATTACK = MyActivity.TILE_WIDTH * 15;
+    private static final double DISTANCE_TO_ATTACK = MyActivity.TILE_WIDTH * 60;
 
     private int nParts, frameWhenChangedDirection = 0, currentRotation = 0;
     private boolean attacking = false;
@@ -69,7 +69,7 @@ public class EnemyTerraWorm extends GameEnemy {
         } else {
             attacking = false;
         }
-        int r = getRotationToAvoidBorder(getCurrentDirection(), MyActivity.TILE_WIDTH * 3, 90);
+        int r = getRotationToAvoidBorder(getCurrentDirection(), MyActivity.TILE_WIDTH * 5, 90);
         if (r != 0) {
             rotate(r);
             currentRotation = 0;
@@ -93,7 +93,7 @@ public class EnemyTerraWorm extends GameEnemy {
     }
 
     private int changeRotation() {
-        currentRotation = getRotationToAvoidBorder(getCurrentDirection(), MyActivity.TILE_WIDTH * 3, 90);
+        currentRotation = getRotationToAvoidBorder(getCurrentDirection(), MyActivity.TILE_WIDTH * 5, 90);
         if (currentRotation != 0) {
             return currentRotation;
         } else {

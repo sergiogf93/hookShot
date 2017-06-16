@@ -28,7 +28,7 @@ public class Hook extends Chain {
     private int prevHookedMass = 0;
 
     public Hook(double xPos, double yPos, int nNodes, int color, GameDynamicObject parent, MathVector initP) {
-        super(xPos, yPos, 1, 0, nNodes, RADIUS, color,  SEPARATION, true, false);
+        super(xPos, yPos, 1, 1, nNodes, RADIUS, color,  SEPARATION, true, false);
         getFirstNode().removeAllConstraints();
         getFirstNode().addConstraint(new ChildOfConstraint(parent));
         for (Circle node : getNodes()){
@@ -200,7 +200,7 @@ public class Hook extends Chain {
                     }
                 }
             }
-            if (getLastNode().inContactWithMap(getLastNode().getRadius())) {
+            if (getLastNode().inContactWithMap(getLastNode().getRadius()) && getLastNode().getPositionInRoom() != MyActivity.character.getPositionInRoom()) {
                 hook(getLastNode().getPositionInRoom());
             }
             if (getFrame() > TimeUtil.convertSecondToGameSecond(2)){
@@ -266,7 +266,7 @@ public class Hook extends Chain {
     }
 
     public void setFastReloading(boolean fastReloading) {
-        MyActivity.character.setGhost(fastReloading);
+        MyActivity.character.setIgnoringMap(fastReloading);
         this.fastReloading = fastReloading;
     }
 }
