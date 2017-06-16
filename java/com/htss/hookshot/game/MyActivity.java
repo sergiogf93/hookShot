@@ -398,6 +398,8 @@ public class MyActivity extends Activity {
                     if (character.isHooked()) {
                         if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
                             character.getHook().setFastReloading(true);
+                        } else {
+                            character.shootHook(objective.x, objective.y);
                         }
                     }
                 }
