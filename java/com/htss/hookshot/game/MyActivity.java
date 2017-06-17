@@ -32,6 +32,7 @@ import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
@@ -391,19 +392,11 @@ public class MyActivity extends Activity {
         }
         if (!hookableFound) {
             MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
-            if (isInScreen(objective.x, objective.y)) {
-                MathVector objectiveInRoom = objective.screenToRoom();
+            MathVector objectiveInRoom = objective.screenToRoom();
+            if (character.distanceTo(objectiveInRoom) <= (character.getMaxHookNodes() - 1) * Hook.SEPARATION) {
                 int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
                 if (Color.alpha(pixel) == 255 || checkIfDoorsContain(objectiveInRoom)) {
-                    if (character.isHooked()) {
-                        if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5) || character.getHook().getHookedPoint().distanceTo(objectiveInRoom) < TILE_WIDTH) {
-                            character.getHook().setFastReloading(true);
-                        } else {
-                            character.shootHook(objective.x, objective.y);
-                        }
-                    } else {
-                        character.shootHook(objective.x, objective.y);
-                    }
+                    decideBetweenFastReloadOrShoot(objective);
                 } else {
                     if (character.isHooked()) {
                         if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
@@ -411,15 +404,21 @@ public class MyActivity extends Activity {
                         }
                     }
                 }
-            } else {
-                if (character.isHooked()) {
-                    if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
-                        character.getHook().setFastReloading(true);
-                    }
-                }
             }
         }
         lastTap = System.currentTimeMillis();
+    }
+
+    private void decideBetweenFastReloadOrShoot(MathVector objective) {
+        if (character.isHooked()) {
+            if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5) || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
+                character.getHook().setFastReloading(true);
+            } else {
+                character.shootHook(objective.x, objective.y);
+            }
+        } else {
+            character.shootHook(objective.x, objective.y);
+        }
     }
 
     private void manageUpTouch(boolean isPointer, int id, int actionIndex) {
@@ -490,22 +489,18 @@ public class MyActivity extends Activity {
     private MathVector checkIfSomethingInTheWay(double xDown, double yDown) {
         MathVector vector = new MathVector(character.getPositionInScreen(),new MathVector(xDown,yDown));
         int i = 0;
-        while (true){
+        while (vector.magnitude() <= (character.getMaxHookNodes() - 1) * Hook.SEPARATION){
             i++;
             vector.rescale(i);
             MathVector point = vector.applyTo(character.getPositionInRoom());
             if (checkIfDoorsContain(point)) {
                 return (new MathVector(point.x, point.y)).roomToScreen();
             }
-            if (isInRoom(point.x, point.y)) {
-                int pixel = canvas.mapBitmap.getPixel((int) point.x, (int) point.y);
-                if (Color.alpha(pixel) == 255) {
-                    return (new MathVector(point.x, point.y)).roomToScreen();
-                }
-                canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
-            } else {
-                break;
+            int pixel = canvas.mapBitmap.getPixel((int) point.x, (int) point.y);
+            if (Color.alpha(pixel) == 255) {
+                return (new MathVector(point.x, point.y)).roomToScreen();
             }
+            canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
         }
         return new MathVector(xDown, yDown);
     }

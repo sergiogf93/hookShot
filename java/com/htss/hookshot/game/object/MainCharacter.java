@@ -447,7 +447,7 @@ public class MainCharacter extends GameCharacter {
         }
         MathVector downPoint = new MathVector(xDown,yDown);
         MathVector initP = new MathVector(getPositionInScreen(),downPoint);
-        int nNodes = Math.min((int) (initP.magnitude()/Hook.SEPARATION) + 2, maxHookNodes);
+        int nNodes = (int) (initP.magnitude()/Hook.SEPARATION) + 2;
         nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
         initP.scale(0.5);
 //        initP.rescale(GameMath.linealValue(1,getHookVelocity()/1000,15,getHookVelocity(),nNodes));
