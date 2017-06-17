@@ -65,9 +65,17 @@ public class MainMenu implements Execution {
         });
         MyActivity.hudElements.add(exitGame);
 
-        MainCharacter c = new MainCharacter(0, MyActivity.screenHeight - MyActivity.TILE_WIDTH / 2);
-        c.setP(new MathVector(MyActivity.TILE_WIDTH / 50, 0));
-        c.setOnFloor(true);
+        double r = Math.random();
+        MainCharacter c;
+        if (r < 0.5) {
+            c = new MainCharacter(0, MyActivity.screenHeight - MyActivity.TILE_WIDTH / 2);
+            c.setP(new MathVector(MyActivity.TILE_WIDTH / 50, 0));
+            c.setOnFloor(true);
+        } else {
+            c = new MainCharacter(MyActivity.screenWidth, MyActivity.screenHeight - MyActivity.TILE_WIDTH / 2);
+            c.setP(new MathVector(-MyActivity.TILE_WIDTH / 50, 0));
+            c.setOnFloor(true);
+        }
 
         int n = MyActivity.screenHeight / Hook.SEPARATION - 5;
         MyActivity.character = new MainCharacter(MyActivity.screenWidth / 2, n * Hook.SEPARATION);
