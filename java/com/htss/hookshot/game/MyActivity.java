@@ -78,6 +78,7 @@ public class MyActivity extends Activity {
     public int level = 0;
     public String entranceString = "";
     public int portals = 0, bombs = 0, compass = 0, jumps = 0, explosionsUsed = 0;
+    public double health = MainCharacter.MAX_HEALTH;
 
     public static LinkedList<HUDElement> hudElements = new LinkedList<HUDElement>();
     public static LinkedList<GameDynamicObject> dynamicObjects = new LinkedList<GameDynamicObject>();
@@ -104,6 +105,7 @@ public class MyActivity extends Activity {
         bombs = preferences.getInt("Bombs", 0);
         jumps = preferences.getInt("Jumps", 0);
         explosionsUsed = preferences.getInt("ExplosionsUsed", 0);
+        health = preferences.getFloat("Health", MainCharacter.MAX_HEALTH);
     }
 
     @Override
@@ -630,6 +632,7 @@ public class MyActivity extends Activity {
         editor.putInt("Bombs", character.getPowerUps().get(GamePowerUp.BOMB));
         editor.putInt("Jumps", character.getPowerUps().get(GamePowerUp.INFINITE_JUMPS));
         editor.putInt("ExplosionsUsed", character.getExplosionsUsed());
+        editor.putFloat("Health", (float) character.getHealth());
         editor.commit();
     }
 

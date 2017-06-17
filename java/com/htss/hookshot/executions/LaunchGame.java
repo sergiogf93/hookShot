@@ -15,17 +15,19 @@ public class LaunchGame implements Execution {
 
     private Coord entrance = null;
     private int portals = 0, compass = 0, bombs = 0, jumps = 0, explosionsUsed = 0;
+    private double health = MainCharacter.MAX_HEALTH;
 
     public LaunchGame() {
     }
 
-    public LaunchGame(Coord entrance, int portals, int compass, int bombs, int jumps, int explosionsUsed) {
+    public LaunchGame(Coord entrance, int portals, int compass, int bombs, int jumps, int explosionsUsed, double health) {
         this.entrance = entrance;
         this.portals = portals;
         this.compass = compass;
         this.bombs = bombs;
         this.jumps = jumps;
         this.explosionsUsed = explosionsUsed;
+        this.health = health;
     }
 
     @Override
@@ -68,6 +70,7 @@ public class LaunchGame implements Execution {
         MyActivity.character.setPowerUp(GamePowerUp.BOMB, bombs);
         MyActivity.character.setPowerUp(GamePowerUp.INFINITE_JUMPS, jumps);
         MyActivity.character.setExplosionsUsed(explosionsUsed);
+        MyActivity.character.setHealth(health);
         //////////////////
 
         return 0;

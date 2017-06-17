@@ -33,7 +33,7 @@ import java.util.LinkedList;
  */
 public class MainCharacter extends GameCharacter {
 
-    private static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
+    public static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
     private static final int MAX_EXPLOSIONS = 5;
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
 
