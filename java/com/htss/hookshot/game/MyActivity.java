@@ -80,6 +80,7 @@ public class MyActivity extends Activity {
     public String entranceString = "";
     public int portals = 0, bombs = 0, compass = 0, jumps = 0, explosionsUsed = 0;
     public double health = MainCharacter.MAX_HEALTH;
+    public boolean portalsAdvice = false, compassAdvice = false, bombAdvice = false, jumpsAdvice = false;
 
     public static LinkedList<HUDElement> hudElements = new LinkedList<HUDElement>();
     public static LinkedList<GameDynamicObject> dynamicObjects = new LinkedList<GameDynamicObject>();
@@ -107,6 +108,10 @@ public class MyActivity extends Activity {
         jumps = preferences.getInt("Jumps", 0);
         explosionsUsed = preferences.getInt("ExplosionsUsed", 0);
         health = preferences.getFloat("Health", MainCharacter.MAX_HEALTH);
+        portalsAdvice = preferences.getBoolean("PortalsAdvice", false);
+        compassAdvice = preferences.getBoolean("CompassAdvice", false);
+        bombAdvice = preferences.getBoolean("BombAdvice", false);
+        jumpsAdvice = preferences.getBoolean("JumpsAdvice", false);
     }
 
     @Override
@@ -628,6 +633,10 @@ public class MyActivity extends Activity {
         editor.putInt("Jumps", character.getPowerUps().get(GamePowerUp.INFINITE_JUMPS));
         editor.putInt("ExplosionsUsed", character.getExplosionsUsed());
         editor.putFloat("Health", (float) character.getHealth());
+        editor.putBoolean("PortalsAdvice", portalsAdvice);
+        editor.putBoolean("CompassAdvice", compassAdvice);
+        editor.putBoolean("BombAdvice", bombAdvice);
+        editor.putBoolean("JumpsAdvice", jumpsAdvice);
         editor.commit();
     }
 

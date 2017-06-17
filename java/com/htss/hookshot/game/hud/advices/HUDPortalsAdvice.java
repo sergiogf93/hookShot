@@ -11,6 +11,7 @@ public class HUDPortalsAdvice extends HUDAdvice {
 
     public HUDPortalsAdvice() {
         super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getPortalAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3));
+        MyActivity.canvas.myActivity.portalsAdvice = true;
     }
 
     @Override
@@ -36,6 +37,7 @@ public class HUDPortalsAdvice extends HUDAdvice {
                     break;
                 case 3:
                     finish();
+                    MyActivity.canvas.myActivity.portalsAdvice = false;
                     break;
             }
         }

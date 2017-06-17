@@ -11,6 +11,7 @@ public class HUDJumpsAdvice extends HUDAdvice {
 
     public HUDJumpsAdvice() {
         super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getInfiniteJumpsAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3));
+        MyActivity.canvas.myActivity.jumpsAdvice = true;
     }
 
     @Override
@@ -24,6 +25,7 @@ public class HUDJumpsAdvice extends HUDAdvice {
                     break;
                 case 1:
                     finish();
+                    MyActivity.canvas.myActivity.jumpsAdvice = true;
                     break;
             }
         }

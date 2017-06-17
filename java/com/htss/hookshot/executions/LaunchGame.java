@@ -1,6 +1,10 @@
 package com.htss.hookshot.executions;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.hud.advices.HUDBombsAdvice;
+import com.htss.hookshot.game.hud.advices.HUDCompassAdvice;
+import com.htss.hookshot.game.hud.advices.HUDJumpsAdvice;
+import com.htss.hookshot.game.hud.advices.HUDPortalsAdvice;
 import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.interfaces.Execution;
@@ -71,6 +75,19 @@ public class LaunchGame implements Execution {
         MyActivity.character.setPowerUp(GamePowerUp.INFINITE_JUMPS, jumps);
         MyActivity.character.setExplosionsUsed(explosionsUsed);
         MyActivity.character.setHealth(health);
+
+        if (MyActivity.canvas.myActivity.portalsAdvice) {
+            MyActivity.advices.add(new HUDPortalsAdvice());
+        }
+        if (MyActivity.canvas.myActivity.compassAdvice) {
+            MyActivity.advices.add(new HUDCompassAdvice());
+        }
+        if (MyActivity.canvas.myActivity.bombAdvice) {
+            MyActivity.advices.add(new HUDBombsAdvice());
+        }
+        if (MyActivity.canvas.myActivity.jumpsAdvice) {
+            MyActivity.advices.add(new HUDJumpsAdvice());
+        }
         //////////////////
 
         return 0;

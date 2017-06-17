@@ -11,6 +11,7 @@ public class HUDCompassAdvice extends HUDAdvice {
 
     public HUDCompassAdvice() {
         super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getCompassAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3));
+        MyActivity.canvas.myActivity.compassAdvice = true;
     }
 
     @Override
@@ -24,6 +25,7 @@ public class HUDCompassAdvice extends HUDAdvice {
                     break;
                 case 1:
                     finish();
+                    MyActivity.canvas.myActivity.compassAdvice = true;
                     break;
             }
         }
