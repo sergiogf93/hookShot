@@ -77,7 +77,7 @@ public class MyActivity extends Activity {
     public Long seed;
     public int level = 0;
     public String entranceString = "";
-    public int portals = 0, bombs = 0, compass = 0, jumps = 0;
+    public int portals = 0, bombs = 0, compass = 0, jumps = 0, explosionsUsed = 0;
 
     public static LinkedList<HUDElement> hudElements = new LinkedList<HUDElement>();
     public static LinkedList<GameDynamicObject> dynamicObjects = new LinkedList<GameDynamicObject>();
@@ -103,6 +103,7 @@ public class MyActivity extends Activity {
         compass = preferences.getInt("Compass", 0);
         bombs = preferences.getInt("Bombs", 0);
         jumps = preferences.getInt("Jumps", 0);
+        explosionsUsed = preferences.getInt("ExplosionsUsed", 0);
     }
 
     @Override
@@ -628,6 +629,7 @@ public class MyActivity extends Activity {
         editor.putInt("Compass", character.getPowerUps().get(GamePowerUp.COMPASS));
         editor.putInt("Bombs", character.getPowerUps().get(GamePowerUp.BOMB));
         editor.putInt("Jumps", character.getPowerUps().get(GamePowerUp.INFINITE_JUMPS));
+        editor.putInt("ExplosionsUsed", character.getExplosionsUsed());
         editor.commit();
     }
 

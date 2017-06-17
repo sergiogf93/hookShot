@@ -173,6 +173,11 @@ public class MainCharacter extends GameCharacter {
             if (getHook().isHooked()){
                 manageHookUpdate();
             }
+            if (getHook().isFastReloading()) {
+                if (distanceTo(rightHand) > BODY_RADIUS * 5) {
+                    removeHook();
+                }
+            }
         }
         super.update();
         if (getP().x != 0f){
@@ -365,6 +370,14 @@ public class MainCharacter extends GameCharacter {
         this.hook = hook;
     }
 
+    public int getExplosionsUsed() {
+        return explosionsUsed;
+    }
+
+    public void setExplosionsUsed(int explosionsUsed) {
+        this.explosionsUsed = explosionsUsed;
+    }
+
     public boolean isHooked(){
         if (getHook() != null){
             return getHook().isHooked();
@@ -446,7 +459,6 @@ public class MainCharacter extends GameCharacter {
     public void removeHook() {
         if (getHook().isFastReloading()) {
             setMass(MASS);
-            setIgnoringMap(false);
         }
         MyActivity.canvas.gameObjects.remove(hook);
         MyActivity.dynamicObjects.removeAll(hook.getNodes());

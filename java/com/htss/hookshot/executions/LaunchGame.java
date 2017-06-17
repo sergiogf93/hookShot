@@ -14,17 +14,18 @@ import com.htss.hookshot.math.MathVector;
 public class LaunchGame implements Execution {
 
     private Coord entrance = null;
-    private int portals = 0, compass = 0, bombs = 0, jumps = 0;
+    private int portals = 0, compass = 0, bombs = 0, jumps = 0, explosionsUsed = 0;
 
     public LaunchGame() {
     }
 
-    public LaunchGame(Coord entrance, int portals, int compass, int bombs, int jumps) {
+    public LaunchGame(Coord entrance, int portals, int compass, int bombs, int jumps, int explosionsUsed) {
         this.entrance = entrance;
         this.portals = portals;
         this.compass = compass;
         this.bombs = bombs;
         this.jumps = jumps;
+        this.explosionsUsed = explosionsUsed;
     }
 
     @Override
@@ -66,6 +67,7 @@ public class LaunchGame implements Execution {
         MyActivity.character.setPowerUp(GamePowerUp.COMPASS, compass);
         MyActivity.character.setPowerUp(GamePowerUp.BOMB, bombs);
         MyActivity.character.setPowerUp(GamePowerUp.INFINITE_JUMPS, jumps);
+        MyActivity.character.setExplosionsUsed(explosionsUsed);
         //////////////////
 
         return 0;

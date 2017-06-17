@@ -266,7 +266,6 @@ public class Hook extends Chain {
     }
 
     public void setFastReloading(boolean fastReloading) {
-        MyActivity.character.setIgnoringMap(fastReloading);
         this.fastReloading = fastReloading;
     }
 }
