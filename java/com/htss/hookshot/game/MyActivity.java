@@ -180,13 +180,6 @@ public class MyActivity extends Activity {
 
         pauseButton = new HUDPauseButton(screenWidth / 2, screenHeight - TILE_WIDTH / 2, TILE_WIDTH, (int) (TILE_WIDTH * 0.5));
 
-        int nMenuButton = 4;
-        int menuButtonHeight = TILE_WIDTH;
-        int menuButtonSeparation = TILE_WIDTH / 5;
-        int menuWidth = 5*TILE_WIDTH;
-        int menuHeight = menuButtonHeight*nMenuButton + (nMenuButton+1)*menuButtonSeparation;
-        menu = new HUDMenu(screenWidth / 2, screenHeight / 2, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
-
         canvas = (GameBoard) findViewById(R.id.the_canvas);
         canvas.myActivity = this;
         canvas.DEFAULT_FONT_SIZE = 48*MyActivity.TILE_WIDTH /100;
@@ -194,6 +187,13 @@ public class MyActivity extends Activity {
         canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");
         canvas.joystickMonospace = Typeface.createFromAsset(getAssets(),"fonts/joystix_monospace.ttf");
         canvas.setFont(GameBoard.ARCADECLASSIC_FONT_KEY, GameBoard.DEFAULT_FONT_SIZE);
+
+        int nMenuButton = 4;
+        int menuButtonHeight = TILE_WIDTH;
+        int menuButtonSeparation = TILE_WIDTH / 5;
+        int menuWidth = 5*TILE_WIDTH;
+        int menuHeight = menuButtonHeight*nMenuButton + (nMenuButton+1)*menuButtonSeparation;
+        menu = new HUDMenu(screenWidth / 2, screenHeight / 2, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
 
         LinearLayout myLayout = (LinearLayout) findViewById(R.id.layout);
         myLayout.setOnTouchListener(

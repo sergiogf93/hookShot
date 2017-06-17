@@ -200,7 +200,7 @@ public class Hook extends Chain {
                     }
                 }
             }
-            if (getLastNode().inContactWithMap(getLastNode().getRadius()) && getLastNode().getPositionInRoom() != MyActivity.character.getPositionInRoom()) {
+            if (getLastNode().inContactWithMap(getLastNode().getRadius()) && getLastNode().getPositionInRoom().distanceTo(MyActivity.character.getPositionInRoom()) > MyActivity.TILE_WIDTH/500.0) {
                 hook(getLastNode().getPositionInRoom());
             }
             if (getFrame() > TimeUtil.convertSecondToGameSecond(2)){
