@@ -501,9 +501,13 @@ public class MyActivity extends Activity {
             if (checkIfDoorsContain(point)) {
                 return (new MathVector(point.x, point.y)).roomToScreen();
             }
-            int pixel = canvas.mapBitmap.getPixel((int) point.x, (int) point.y);
-            if (Color.alpha(pixel) == 255) {
-                return (new MathVector(point.x, point.y)).roomToScreen();
+            if (isInRoom(point.x, point.y)) {
+                int pixel = canvas.mapBitmap.getPixel((int) point.x, (int) point.y);
+                if (Color.alpha(pixel) == 255) {
+                    return (new MathVector(point.x, point.y)).roomToScreen();
+                }
+            } else {
+                return new MathVector(xDown, yDown);
             }
             canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
         }

@@ -14,6 +14,7 @@ import android.graphics.Rect;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
 import com.htss.hookshot.game.object.enemies.EnemyTerraWorm;
+import com.htss.hookshot.game.object.interactables.HealthDrop;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
@@ -44,6 +45,7 @@ public class Map {
     public static final double SQUARE_SIZE = 45 * MyActivity.TILE_WIDTH / 100;
     private static final int MAX_POWERUPS = 3;
     private static final int MAX_ENEMIES = 2;
+    private static final int MAX_HEALTH = 2;
 
     private int[][] map;
     private int xTiles, yTiles, fillPercent, maxSizeForSusceptible;
@@ -113,6 +115,9 @@ public class Map {
             } else {
                 addExitDoor(addingRandom, MIN_BUTTONS);
                 addEnemies(addingRandom);
+            }
+            if (addingRandom.nextBoolean()) {
+                addHealth(addingRandom);
             }
         }
         addPowerUps(addingRandom);
@@ -1024,7 +1029,7 @@ public class Map {
     }
 
     public void addPowerUps(Random random) {
-        int N = getNPowerUps(random);
+        int N = random.nextInt(MAX_POWERUPS);
         for (int i = 0; i < N; i++) {
             MathVector position;
             if (susceptibleRooms.size() > 0) {
@@ -1045,8 +1050,17 @@ public class Map {
         }
     }
 
-    private int getNPowerUps(Random random) {
-        return random.nextInt(MAX_POWERUPS);
+    public void addHealth(Random random) {
+        int N = random.nextInt(MAX_HEALTH);
+        for (int i = 0; i < N; i++) {
+            MathVector position;
+            if (susceptibleRooms.size() > 0) {
+                position = getPositionFromSusceptibleRooms(random);
+            } else {
+                position = getRandomPointInRooms(roomRegions, 0, random);
+            }
+            new HealthDrop(position.x, position.y, true, false);
+        }
     }
 
     private MathVector getPositionFromSusceptibleRooms(Random random) {
