@@ -32,7 +32,7 @@ public class MainMenu implements Execution {
         HUDText newGame = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 3, true, "NEW GAME", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
             @Override
             public double execute() {
-                MyActivity.gameEffects.add( new FadeEffect(new LaunchGame(), new Execution() {
+                MyActivity.gameEffects.add( new FadeEffect(Color.BLACK, new LaunchGame(), new Execution() {
                     @Override
                     public double execute() {
                         MyActivity.advices.add(new HUDNewGameAdvice((int) (MyActivity.TILE_WIDTH * 0.3)));
@@ -50,7 +50,7 @@ public class MainMenu implements Execution {
                 @Override
                 public double execute() {
                     Coord entrance = new Coord(Integer.parseInt(MyActivity.canvas.myActivity.entranceString.split(" ")[0]), Integer.parseInt(MyActivity.canvas.myActivity.entranceString.split(" ")[1]));
-                    MyActivity.gameEffects.add(new FadeEffect(new LaunchGame(entrance, MyActivity.canvas.myActivity.portals, MyActivity.canvas.myActivity.compass, MyActivity.canvas.myActivity.bombs, MyActivity.canvas.myActivity.jumps, MyActivity.canvas.myActivity.explosionsUsed, MyActivity.canvas.myActivity.health)));
+                    MyActivity.gameEffects.add(new FadeEffect(Color.BLACK, new LaunchGame(entrance, MyActivity.canvas.myActivity.portals, MyActivity.canvas.myActivity.compass, MyActivity.canvas.myActivity.bombs, MyActivity.canvas.myActivity.jumps, MyActivity.canvas.myActivity.explosionsUsed, MyActivity.canvas.myActivity.health)));
                     return 0;
                 }
             });

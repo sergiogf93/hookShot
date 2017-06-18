@@ -5,6 +5,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Shader;
 
+import com.htss.hookshot.effect.FadeEffect;
+import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
 import com.htss.hookshot.game.hud.HUDBar;
@@ -186,7 +188,9 @@ public class MainCharacter extends GameCharacter {
             setState(STATE_REST);
         }
         manageFacingDirection();
-        manageEnemyCollision();
+        if (getHealth() > 0) {
+            manageEnemyCollision();
+        }
     }
 
     private void manageEnemyCollision() {
@@ -481,7 +485,13 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public void die() {
-        this.setHealth(this.getMaxHealth());
+        if (isHooked()) {
+            removeHook();
+        }
+        MyActivity.hideControls();
+        MyActivity.paused = true;
+        MyActivity.gameEffects.add(new FadeEffect(Color.WHITE, new MainMenu()));
+        this.destroy();
     }
 
     @Override

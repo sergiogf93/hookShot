@@ -11,19 +11,18 @@ import com.htss.hookshot.interfaces.Execution;
  */
 public class FadeEffect extends GameEffect {
 
-    private int frame = 0;
     private Execution execMiddle, execEnd;
     private FadeInEffect fadeIn;
 
-    public FadeEffect(Execution exec) {
+    public FadeEffect(int color, Execution exec) {
        this.execMiddle = exec;
-       fadeIn = new FadeInEffect();
+       fadeIn = new FadeInEffect(color);
     }
 
-    public FadeEffect(Execution execMiddle, Execution execEnd) {
+    public FadeEffect(int color, Execution execMiddle, Execution execEnd) {
         this.execMiddle = execMiddle;
         this.execEnd = execEnd;
-        fadeIn = new FadeInEffect();
+        fadeIn = new FadeInEffect(color);
     }
 
     @Override
