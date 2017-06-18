@@ -66,7 +66,7 @@ public class CompassObject extends GameDynamicObject {
         points[2] = vector.rescaled(size).applyTo(parent.getPositionInScreen()).toPoint();
         points[3] = vector.getNormal().rescaled(-1 * getWidth() / 10).applyTo(vector.rescaled(getWidth() / 1.75).applyTo(parent.getPositionInScreen())).toPoint();
         DrawUtil.drawVoidPolygon(points, canvas, Color.WHITE, getWidth() / 8, true);
-        DrawUtil.drawPolygon(points,canvas, Color.YELLOW);
+        DrawUtil.drawPolygon(points, canvas, Color.YELLOW, Paint.Style.FILL, true, paint);
     }
 
     public void findInterests() {

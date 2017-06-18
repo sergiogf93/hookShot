@@ -51,7 +51,7 @@ public class Door extends GameDynamicObject {
 
     @Override
     public void draw(Canvas canvas) {
-        DrawUtil.drawPolygon(getCorners(), canvas, Color.GRAY);
+        DrawUtil.drawPolygon(getCorners(), canvas, Color.GRAY, Paint.Style.FILL, true, paint);
         drawButtons(canvas, getVector().scaled(-1 * (getWidth() / 2 - buttons.get(0).getRadius())).applyTo(getPositionInScreen()));
     }
 

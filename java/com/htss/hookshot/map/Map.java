@@ -11,6 +11,7 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 
+import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
 import com.htss.hookshot.game.object.enemies.EnemyTerraWorm;
@@ -107,6 +108,7 @@ public class Map {
         }
         if (MyActivity.canvas.myActivity.level > 0) {
             double r = addingRandom.nextDouble();
+            r = 0.8;
             if (r < 0.4) {
                 addPassageDoor(2);
                 addExitDoor(addingRandom, MAX_BUTTONS);
@@ -1094,7 +1096,8 @@ public class Map {
     }
 
     public void addEnemies (Random random) {
-        if (random.nextBoolean()) {
+//        if (random.nextBoolean()) {
+        if (false) {
             int N = getNEnemies(random);
             for (int i = 0; i < N; i++) {
                 MathVector p = getRandomEmptyPoint(0, random);
@@ -1345,7 +1348,7 @@ public class Map {
             points[0] = vertices.get(triangles.get(i));
             points[1] = vertices.get(triangles.get(i+1));
             points[2] = vertices.get(triangles.get(i+2));
-            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 120, 0, 0));
+            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 120, 0, 0), Paint.Style.FILL, true, GameBoard.paint);
         }
         for (Point[] crack : cracks) {
             DrawUtil.drawVoidPolygon(crack, canvas, Color.BLACK, MyActivity.TILE_WIDTH / 50, false);
@@ -1379,7 +1382,7 @@ public class Map {
             points[0] = vertices.get(triangles.get(i));
             points[1] = vertices.get(triangles.get(i+1));
             points[2] = vertices.get(triangles.get(i+2));
-            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 60, 0, 0));
+            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 60, 0, 0), Paint.Style.FILL, true, GameBoard.paint);
             DrawUtil.drawVoidPolygon(points, canvas, Color.BLACK, (float) (SQUARE_SIZE / 3), false);
         }
         drawOutlines(canvas);

@@ -1,7 +1,6 @@
 package com.htss.hookshot.game.object.enemies;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.math.MathVector;
@@ -43,7 +42,7 @@ public class EnemyTerraWorm extends GameEnemy {
                 for (int i = 0; i < bodyParts.size() - 1; i++) {
                     TerraWormBody terraWormBody = bodyParts.get(i);
                     TerraWormBody nextTerraWormBody = bodyParts.get(i + 1);
-                    if (terraWormBody.distanceTo(nextTerraWormBody) > terraWormBody.getRadius() + nextTerraWormBody.getRadius()) {
+                    if (terraWormBody.distanceTo(nextTerraWormBody) > (terraWormBody.getRadius() + nextTerraWormBody.getRadius()) * 0.7) {
                         MathVector buttPosition = nextTerraWormBody.getP().rescaled(-nextTerraWormBody.getRadius()).applyTo(nextTerraWormBody.getPositionInRoom());
                         MathVector direction = new MathVector(terraWormBody.getPositionInRoom(), buttPosition);
                         terraWormBody.setP(direction.rescaled(getMaxVelocity()));

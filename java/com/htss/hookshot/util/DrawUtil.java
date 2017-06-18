@@ -16,18 +16,22 @@ import com.htss.hookshot.game.MyActivity;
  */
 public class DrawUtil {
 
-    public static void drawPolygon (Point[] points, Canvas canvas, int color){
+    public static void drawPolygon (Point[] points, Canvas canvas, int color, Paint.Style style, boolean close, Paint paint){
         Path path = new Path();
+        paint.setShader(null);
+        paint.setColor(color);
+        paint.setStyle(style);
 
         path.setFillType(Path.FillType.EVEN_ODD);
         path.moveTo(points[0].x,points[0].y);
         for (int i = 1; i < points.length;i++){
             path.lineTo(points[i].x, points[i].y);
         }
-        path.close();
+        if (close) {
+            path.close();
+        }
 
-        GameBoard.paint.setColor(color);
-        canvas.drawPath(path, GameBoard.paint);
+        canvas.drawPath(path, paint);
     }
 
     public static void drawVoidPolygon (Object[] points, Canvas canvas, int color, float width, boolean close){
