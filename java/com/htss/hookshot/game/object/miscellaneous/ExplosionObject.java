@@ -44,11 +44,12 @@ public class ExplosionObject extends GameDynamicObject {
     }
 
     public float getRadius() {
-        double radius = GameMath.linealValue(0, 0, DURATION, maxRadius, getFrame());
+        double radius = GameMath.linealValue(0, 1, DURATION, maxRadius, getFrame());
         double radiusDown = (MyActivity.screenHeight - getyPosInScreen()) * 0.8;
         double radiusRight = (MyActivity.screenWidth - getxPosInScreen()) * 0.8;
         double radiusLeft = getxPosInScreen() * 0.8;
-        return (float) Math.min(Math.min(Math.min(radius, radiusDown), radiusLeft), radiusRight);
+        double r =  Math.min(Math.min(Math.min(radius, radiusDown), radiusLeft), radiusRight);
+        return (float) Math.max(r, 1);
     }
 
     @Override

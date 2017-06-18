@@ -197,6 +197,26 @@ public class Map {
     }
 
     private void manageBorders() {
+        if (getEntrance().tileX == 0) {
+            for (int y = 0; y < yTiles; y++) {
+                if (Math.abs(y - getEntrance().tileY) > PASSAGE_RADIUS * 1.5) {
+                    map[0][y] = 1;
+                }
+            }
+        } else if (getEntrance().tileX == xTiles - 1) {
+            for (int y = 0; y < yTiles; y++) {
+                if (Math.abs(y - getEntrance().tileY) > PASSAGE_RADIUS * 1.5) {
+                    map[xTiles - 1][y] = 1;
+                }
+            }
+        }
+        if (getExit().tileY == yTiles - 1) {
+            for (int x = 0; x < xTiles; x++) {
+                if (Math.abs(x - getExit().tileX) > PASSAGE_RADIUS * 1.5) {
+                    map[x][yTiles - 1] = 1;
+                }
+            }
+        }
         borderUp(getEntrance().tileY != 0, getExit().tileY != yTiles - 1, getEntrance().tileX != 0 && getExit().tileX != 0, getEntrance().tileX != xTiles - 1 && getExit().tileX != xTiles - 1);
     }
 
@@ -693,7 +713,7 @@ public class Map {
                 if (x*x + y*y <= r*r){
                     int drawX = c.tileX+x;
                     int drawY = c.tileY+y;
-                    if (isInMapRange(drawX,drawY)){
+                    if (isInMapRange(drawX,drawY)) {
                         map[drawX][drawY] = 0;
                     }
                 }
@@ -827,23 +847,23 @@ public class Map {
 
     public void addBallObstacles(int maxObstacles){
         int[][] structure = {{-1,0,0,0,0,0,0,0,-1},
-                            {-1,0,0,0,0,0,0,0,-1},
-                            {-1,-1,0,0,0,0,0,-1,-1},
-                            {-1,-1,0,0,0,0,0,-1,-1},
-                            {-1,-1,0,0,0,0,0,-1,-1},
-                            {-1,-1,1,0,0,0,1,-1,-1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1}};
+                {-1,0,0,0,0,0,0,0,-1},
+                {-1,-1,0,0,0,0,0,-1,-1},
+                {-1,-1,0,0,0,0,0,-1,-1},
+                {-1,-1,0,0,0,0,0,-1,-1},
+                {-1,-1,1,0,0,0,1,-1,-1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1}};
         int[][] subsStructure = {{1,1,1,1,0,1,1,1,1},
-                                {1,1,1,0,0,0,1,1,1},
-                                {1,0,0,0,0,0,0,0,1},
-                                {1,0,0,0,0,0,0,0,1},
-                                {1,0,0,0,0,0,0,0,1},
-                                {1,1,1,0,0,0,1,1,1}};
+                {1,1,1,0,0,0,1,1,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,1,1,0,0,0,1,1,1}};
         int xStart = 0;
         int yStart = 0;
         int added = 0;
@@ -1422,4 +1442,3 @@ public class Map {
         canvas.drawRect(rect,paint);
     }
 }
-
