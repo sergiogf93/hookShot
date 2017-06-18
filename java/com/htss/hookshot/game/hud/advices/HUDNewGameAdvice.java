@@ -12,8 +12,8 @@ public class HUDNewGameAdvice extends HUDAdvice {
 
     private HUDButton yesButton, noButton;
 
-    public HUDNewGameAdvice(int xCenter, int yCenter, int width, int size) {
-        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getNewGameStringAdvice(), (int) (MyActivity.TILE_WIDTH * 0.3));
+    public HUDNewGameAdvice(int size) {
+        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getNewGameStringAdvice(), (int) (MyActivity.TILE_WIDTH * 0.3),0);
         yesButton = new HUDButton(getxCenter() - getWidth()/2, getyCenter() + getHeight(), getWidth() / 4, size * 2, "YES", new Execution() {
             @Override
             public double execute() {
@@ -26,10 +26,10 @@ public class HUDNewGameAdvice extends HUDAdvice {
             @Override
             public double execute() {
                 MyActivity.advices.add(new HUDBasicControlsAdvice());
-                MyActivity.advices.add(new HUDPortalsAdvice());
-                MyActivity.advices.add(new HUDCompassAdvice());
-                MyActivity.advices.add(new HUDBombsAdvice());
-                MyActivity.advices.add(new HUDJumpsAdvice());
+                MyActivity.advices.add(new HUDPortalsAdvice(0));
+                MyActivity.advices.add(new HUDCompassAdvice(0));
+                MyActivity.advices.add(new HUDBombsAdvice(0));
+                MyActivity.advices.add(new HUDJumpsAdvice(0));
                 finish();
                 resume();
                 return 0;

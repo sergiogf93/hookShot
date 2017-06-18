@@ -35,7 +35,7 @@ public class MainMenu implements Execution {
                 MyActivity.gameEffects.add( new FadeEffect(new LaunchGame(), new Execution() {
                     @Override
                     public double execute() {
-                        MyActivity.advices.add(new HUDNewGameAdvice(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), (int) (MyActivity.TILE_WIDTH * 0.3)));
+                        MyActivity.advices.add(new HUDNewGameAdvice((int) (MyActivity.TILE_WIDTH * 0.3)));
                         return 0;
                     }
                 }));

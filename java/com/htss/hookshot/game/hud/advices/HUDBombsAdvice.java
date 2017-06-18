@@ -9,9 +9,16 @@ import com.htss.hookshot.persistence.GameStrings;
  */
 public class HUDBombsAdvice extends HUDAdvice {
 
-    public HUDBombsAdvice() {
-        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getBombsAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3));
-        MyActivity.canvas.myActivity.bombAdvice = true;
+    public HUDBombsAdvice(int state) {
+        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getBombsAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3),state);
+        MyActivity.canvas.myActivity.bombAdvice = getState();
+    }
+
+    @Override
+    public void setState(int state) {
+        super.setState(state);
+        MyActivity.canvas.myActivity.bombAdvice = getState();
+        MyActivity.canvas.myActivity.saveAdvices();
     }
 
     @Override
@@ -31,7 +38,6 @@ public class HUDBombsAdvice extends HUDAdvice {
                     break;
                 case 2:
                     finish();
-                    MyActivity.canvas.myActivity.bombAdvice = true;
                     break;
             }
         }

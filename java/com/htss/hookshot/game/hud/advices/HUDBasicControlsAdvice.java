@@ -9,7 +9,7 @@ import com.htss.hookshot.persistence.GameStrings;
 public class HUDBasicControlsAdvice extends HUDAdvice {
 
     public HUDBasicControlsAdvice() {
-        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getBasicControlsAdvice(), (int) (MyActivity.TILE_WIDTH * 0.3));
+        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getBasicControlsAdvice(), (int) (MyActivity.TILE_WIDTH * 0.3),0);
     }
 
     @Override

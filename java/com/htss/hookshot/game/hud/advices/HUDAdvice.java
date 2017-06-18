@@ -25,10 +25,11 @@ public abstract class HUDAdvice extends HUDElement implements Clickable{
     private int touchId = -1, touchIndex = -1, size;
     private int state = 0;
 
-    public HUDAdvice(int xCenter, int yCenter, int width, String text, int size) {
+    public HUDAdvice(int xCenter, int yCenter, int width, String text, int size, int state) {
         super(xCenter, yCenter, width, 0);
         this.text = text;
         this.size = size;
+        this.state = state;
         getPaint().setTypeface(MyActivity.canvas.joystickMonospace);
         getPaint().setTextSize(size);
         generateLinesAndPrepareBackground(text);
@@ -93,7 +94,7 @@ public abstract class HUDAdvice extends HUDElement implements Clickable{
         MyActivity.addControls();
         MyActivity.pauseButton.setClickable(true);
         MyActivity.paused = false;
-        this.state += 1;
+        setState(getState() + 1);
     }
 
     @Override
@@ -115,6 +116,10 @@ public abstract class HUDAdvice extends HUDElement implements Clickable{
 
     public int getState() {
         return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
     }
 
     public boolean isClickable() {

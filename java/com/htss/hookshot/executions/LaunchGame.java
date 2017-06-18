@@ -76,19 +76,13 @@ public class LaunchGame implements Execution {
         MyActivity.character.setExplosionsUsed(explosionsUsed);
         MyActivity.character.setHealth(health);
 
-        if (MyActivity.canvas.myActivity.portalsAdvice) {
-            MyActivity.advices.add(new HUDPortalsAdvice());
-        }
-        if (MyActivity.canvas.myActivity.compassAdvice) {
-            MyActivity.advices.add(new HUDCompassAdvice());
-        }
-        if (MyActivity.canvas.myActivity.bombAdvice) {
-            MyActivity.advices.add(new HUDBombsAdvice());
-        }
-        if (MyActivity.canvas.myActivity.jumpsAdvice) {
-            MyActivity.advices.add(new HUDJumpsAdvice());
-        }
+        MyActivity.advices.add(new HUDPortalsAdvice(MyActivity.canvas.myActivity.portalsAdvice));
+        MyActivity.advices.add(new HUDCompassAdvice(MyActivity.canvas.myActivity.compassAdvice));
+        MyActivity.advices.add(new HUDBombsAdvice(MyActivity.canvas.myActivity.bombAdvice));
+        MyActivity.advices.add(new HUDJumpsAdvice(MyActivity.canvas.myActivity.jumpsAdvice));
         //////////////////
+
+        MyActivity.canvas.myActivity.save();
 
         return 0;
     }

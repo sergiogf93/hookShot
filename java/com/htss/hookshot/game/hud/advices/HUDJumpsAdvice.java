@@ -9,10 +9,18 @@ import com.htss.hookshot.persistence.GameStrings;
  */
 public class HUDJumpsAdvice extends HUDAdvice {
 
-    public HUDJumpsAdvice() {
-        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getInfiniteJumpsAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3));
-        MyActivity.canvas.myActivity.jumpsAdvice = true;
+    public HUDJumpsAdvice(int state) {
+        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getInfiniteJumpsAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3),state);
+        MyActivity.canvas.myActivity.jumpsAdvice = getState();
     }
+
+    @Override
+    public void setState(int state) {
+        super.setState(state);
+        MyActivity.canvas.myActivity.jumpsAdvice = getState();
+        MyActivity.canvas.myActivity.saveAdvices();
+    }
+
 
     @Override
     public void check() {
@@ -25,7 +33,6 @@ public class HUDJumpsAdvice extends HUDAdvice {
                     break;
                 case 1:
                     finish();
-                    MyActivity.canvas.myActivity.jumpsAdvice = true;
                     break;
             }
         }

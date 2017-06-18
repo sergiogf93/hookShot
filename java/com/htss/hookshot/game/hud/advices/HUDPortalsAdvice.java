@@ -9,9 +9,16 @@ import com.htss.hookshot.persistence.GameStrings;
  */
 public class HUDPortalsAdvice extends HUDAdvice {
 
-    public HUDPortalsAdvice() {
-        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getPortalAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3));
-        MyActivity.canvas.myActivity.portalsAdvice = true;
+    public HUDPortalsAdvice(int state) {
+        super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getPortalAdvice1(), (int) (MyActivity.TILE_WIDTH * 0.3), state);
+        MyActivity.canvas.myActivity.portalsAdvice = getState();
+    }
+
+    @Override
+    public void setState(int state) {
+        super.setState(state);
+        MyActivity.canvas.myActivity.portalsAdvice = getState();
+        MyActivity.canvas.myActivity.saveAdvices();
     }
 
     @Override
@@ -37,7 +44,6 @@ public class HUDPortalsAdvice extends HUDAdvice {
                     break;
                 case 3:
                     finish();
-                    MyActivity.canvas.myActivity.portalsAdvice = false;
                     break;
             }
         }
