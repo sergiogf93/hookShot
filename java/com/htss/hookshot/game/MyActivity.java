@@ -416,7 +416,7 @@ public class MyActivity extends Activity {
 
     private void decideBetweenFastReloadOrShoot(MathVector objective) {
         if (character.isHooked()) {
-            if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5) || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
+            if (character.getHook().getNodesNumber() > Hook.MIN_RELOADING_NODES && !character.getHook().isFastReloading() && System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5) || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
                 character.getHook().setFastReloading(true);
             } else {
                 character.shootHook(objective.x, objective.y);

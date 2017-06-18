@@ -20,7 +20,7 @@ public class Hook extends Chain {
 
     public static final int RADIUS = 10 * MyActivity.TILE_WIDTH / 100, SEPARATION = 40 * MyActivity.TILE_WIDTH / 100;
 
-    private static final int MIN_RELOADING_NODES = 2;
+    public static final int MIN_RELOADING_NODES = 2;
 
     private boolean hooked = false, reloading = false, extending = false, fastReloading = false;
     private MathVector hookedPoint;
