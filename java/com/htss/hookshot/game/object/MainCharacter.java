@@ -453,10 +453,8 @@ public class MainCharacter extends GameCharacter {
         MathVector initP = new MathVector(getPositionInScreen(),downPoint);
         int nNodes = (int) (initP.magnitude()/Hook.SEPARATION) + 2;
         nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
-        initP.scale(0.5);
-//        initP.rescale(GameMath.linealValue(1,getHookVelocity()/1000,15,getHookVelocity(),nNodes));
-        setHook(new Hook(getxPosInRoom(),getyPosInRoom(), nNodes, Color.GRAY,this,initP));
-//        setP(new MathVector(0,0));
+        setHook(new Hook(getxPosInRoom(), getyPosInRoom(), nNodes, Color.GRAY, this, new MathVector(0, 0)));
+        getHook().hook(downPoint.screenToRoom());
         MyActivity.canvas.debugText = getP().toString();
     }
 
@@ -490,7 +488,15 @@ public class MainCharacter extends GameCharacter {
         }
         MyActivity.hideControls();
         MyActivity.paused = true;
-        MyActivity.gameEffects.add(new FadeEffect(Color.WHITE, new MainMenu()));
+        MyActivity.gameEffects.add(new FadeEffect(Color.WHITE, new Execution() {
+            @Override
+            public double execute() {
+                setHealth(getMaxHealth());
+                MyActivity.canvas.myActivity.saveHealth();
+                (new MainMenu()).execute();
+                return 0;
+            }
+        }));
         this.destroy();
     }
 

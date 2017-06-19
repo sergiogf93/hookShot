@@ -635,6 +635,13 @@ public class MyActivity extends Activity {
         editor.putInt("Bombs", character.getPowerUps().get(GamePowerUp.BOMB));
         editor.putInt("Jumps", character.getPowerUps().get(GamePowerUp.INFINITE_JUMPS));
         editor.putInt("ExplosionsUsed", character.getExplosionsUsed());
+        saveHealth();
+        editor.commit();
+    }
+
+    public void saveHealth() {
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
         editor.putFloat("Health", (float) character.getHealth());
         editor.commit();
     }
