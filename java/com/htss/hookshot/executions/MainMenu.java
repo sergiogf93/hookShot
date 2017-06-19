@@ -29,6 +29,7 @@ public class MainMenu implements Execution {
         MyActivity.dynamicObjects.clear();
         MyActivity.enemies.clear();
         MyActivity.advices.clear();
+        MyActivity.canvas.myActivity.load();
         HUDText newGame = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 3, true, "NEW GAME", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
             @Override
             public double execute() {

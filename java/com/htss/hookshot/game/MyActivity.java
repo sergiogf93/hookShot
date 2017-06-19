@@ -93,7 +93,6 @@ public class MyActivity extends Activity {
 
     @Override
     protected void onStart() {
-        load();
         super.onStart();
     }
 

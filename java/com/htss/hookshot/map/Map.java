@@ -108,7 +108,6 @@ public class Map {
         }
         if (MyActivity.canvas.myActivity.level > 0) {
             double r = addingRandom.nextDouble();
-            r = 0.8;
             if (r < 0.4) {
                 addPassageDoor(2);
                 addExitDoor(addingRandom, MAX_BUTTONS);
@@ -1096,8 +1095,7 @@ public class Map {
     }
 
     public void addEnemies (Random random) {
-//        if (random.nextBoolean()) {
-        if (false) {
+        if (random.nextBoolean()) {
             int N = getNEnemies(random);
             for (int i = 0; i < N; i++) {
                 MathVector p = getRandomEmptyPoint(0, random);

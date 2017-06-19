@@ -85,7 +85,6 @@ public class HUDMenu extends HUDElement {
         buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 3*buttonSeparation + 5* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "MAIN MENU", new Execution() {
             @Override
             public double execute() {
-                MyActivity.canvas.myActivity.load();
                 (new MainMenu()).execute();
                 return 0;
             }
