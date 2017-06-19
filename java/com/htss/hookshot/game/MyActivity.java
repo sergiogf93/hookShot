@@ -464,12 +464,10 @@ public class MyActivity extends Activity {
             if (element instanceof Clickable) {
                 Clickable clickable = (Clickable) element;
                 if (clickable.isClickable()) {
-//                    if (!clickable.isOn()) {
-                        if (clickable.pressed(xDown, yDown)) {
-                            clickable.press(xDown, yDown, id, pointerIndex);
-                            nothingPressed = false;
-                        }
-//                    }
+                    if (clickable.pressed(xDown, yDown)) {
+                        clickable.press(xDown, yDown, id, pointerIndex);
+                        nothingPressed = false;
+                    }
                 }
             }
         }
