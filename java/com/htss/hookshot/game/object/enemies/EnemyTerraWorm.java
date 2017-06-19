@@ -18,14 +18,14 @@ public class EnemyTerraWorm extends GameEnemy {
     private static final float MAX_RADIUS = (float) (MyActivity.TILE_WIDTH * 0.8);
     private static final double DISTANCE_TO_ATTACK = MyActivity.TILE_WIDTH * 60;
 
-    private int nParts, frameWhenChangedDirection = 0, currentRotation = 0;
+    private int frameWhenChangedDirection = 0;
+    private int currentRotation = 0;
     private boolean attacking = false;
     private double maxDurationToChangeDirection = TimeUtil.convertSecondToGameSecond(3);
     private Vector<TerraWormBody> bodyParts = new Vector<TerraWormBody>();
 
     public EnemyTerraWorm(double xPos, double yPos, int nParts, boolean addToLists, boolean addToEnemyList) {
         super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, nParts, addToLists, addToEnemyList);
-        this.nParts = nParts;
         for (int i = 0; i < nParts; i++) {
             bodyParts.add(new TerraWormBody(xPos, yPos, MAX_RADIUS * ((i + 1f) / nParts), this, false, addToEnemyList));
         }

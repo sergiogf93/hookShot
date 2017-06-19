@@ -74,6 +74,7 @@ public abstract class GameEnemy extends GameCharacter {
 
     public void die() {
         this.destroy();
+        MyActivity.character.checkIfRemoveInterest(this);
         MyActivity.dynamicObjects.remove(this);
         MyActivity.enemies.remove(this);
     }
