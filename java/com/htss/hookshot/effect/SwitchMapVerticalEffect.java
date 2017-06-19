@@ -12,7 +12,7 @@ import com.htss.hookshot.util.TimeUtil;
 /**
  * Created by Sergio on 28/08/2016.
  */
-public class SwitchMapEffect extends GameEffect {
+public class SwitchMapVerticalEffect extends GameEffect {
 
     private static final double DURATION = TimeUtil.convertSecondToGameSecond(1);
 
@@ -20,7 +20,7 @@ public class SwitchMapEffect extends GameEffect {
     private int frame = 0, direction;
     private double characterVerticalDistanceToEdge;
 
-    public SwitchMapEffect(Bitmap currentMapScreenBitmap, Bitmap nextMapScreenBitmap, int direction) {
+    public SwitchMapVerticalEffect(Bitmap currentMapScreenBitmap, Bitmap nextMapScreenBitmap, int direction) {
         this.currentMapScreenBitmap = currentMapScreenBitmap;
         this.nextMapScreenBitmap = nextMapScreenBitmap;
         this.direction = direction;
@@ -48,5 +48,11 @@ public class SwitchMapEffect extends GameEffect {
     @Override
     public boolean isFinished (){
         return frame >= DURATION;
+    }
+
+    @Override
+    public void recycle() {
+        currentMapScreenBitmap.recycle();
+        nextMapScreenBitmap.recycle();
     }
 }

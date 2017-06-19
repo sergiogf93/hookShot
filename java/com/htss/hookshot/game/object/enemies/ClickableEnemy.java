@@ -1,7 +1,12 @@
 package com.htss.hookshot.game.object.enemies;
 
+import android.graphics.Paint;
+
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
+import com.htss.hookshot.math.MathVector;
+
+import java.util.Random;
 
 /**
  * Created by Sergio on 31/05/2017.
@@ -66,4 +71,5 @@ public abstract class ClickableEnemy extends GameEnemy implements Clickable {
     public void setOn(boolean on) {
         this.on = on;
     }
+
 }

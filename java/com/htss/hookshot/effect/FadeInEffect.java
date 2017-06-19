@@ -15,16 +15,17 @@ public class FadeInEffect extends GameEffect {
     public final static int END_FRAME = 500;
     private final Rect rectangle = new Rect(0, 0, MyActivity.screenWidth, MyActivity.screenHeight);
     private Paint paint;
-    private int frame = 0;
+    private int frame = 0, color;
     private int direction = 1;
 
-    public FadeInEffect() {
+    public FadeInEffect(int color) {
         this.paint = new Paint();
+        this.color = color;
     }
 
     @Override
     public void drawEffectAndUpdate(Canvas canvas) {
-        paint.setColor(Color.BLACK);
+        paint.setColor(this.color);
         int alpha;
         if(frame <= 0) {
             alpha = 0;
@@ -42,6 +43,11 @@ public class FadeInEffect extends GameEffect {
     @Override
     public boolean isFinished() {
         return frame > END_FRAME || frame < 0;
+    }
+
+    @Override
+    public void recycle() {
+
     }
 
     public int getDirection() {
@@ -66,5 +72,13 @@ public class FadeInEffect extends GameEffect {
 
     public void setPaint(Paint paint) {
         this.paint = paint;
+    }
+
+    public int getColor() {
+        return color;
+    }
+
+    public void setColor(int color) {
+        this.color = color;
     }
 }

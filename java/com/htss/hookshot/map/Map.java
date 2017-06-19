@@ -11,9 +11,11 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 
+import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.object.interactables.CoinBag;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
+import com.htss.hookshot.game.object.enemies.EnemyTerraWorm;
+import com.htss.hookshot.game.object.interactables.HealthDrop;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
@@ -34,89 +36,224 @@ import java.util.Vector;
 
 public class Map {
 
-    private final int SMOOTH_ITERATIONS = 5,
+    private static final int MAX_BUTTONS = 7, MIN_BUTTONS = 2;
+    private static final int SMOOTH_ITERATIONS = 2,  //5, 4, 3, 5, 5, 3
             WALL_COUNT_SMOOTH_THRESHOLD = 4,
             BORDER_SIZE = 3,
-            WALL_COUNT_SIZE_THRESHOLD = 5,
-            ROOM_COUNT_SIZE_THRESHOLD = 5,
-            PASSAGE_RADIUS = 3,
-            MAX_SIZE_FOR_SUSCEPTIBLE = 40;
-    public static final double SQUARE_SIZE = 45;
+            WALL_COUNT_SIZE_THRESHOLD = 2,
+            ROOM_COUNT_SIZE_THRESHOLD = 2,
+            PASSAGE_RADIUS = 3;
+    public static final double SQUARE_SIZE = 45 * MyActivity.TILE_WIDTH / 100;
+    private static final int MAX_POWERUPS = 3;
+    private static final int MAX_ENEMIES = 2;
+    private static final int MAX_HEALTH = 2;
 
     private int[][] map;
-    private int xTiles, yTiles, fillPercent, upCenter, downCenter;
-    private long seed;
-    private Random random;
+    private int xTiles, yTiles, fillPercent, maxSizeForSusceptible;
+    private Coord entrance, exit;
     private SquareGrid squareGrid;
     private Vector<Point> vertices;
     private Vector<Integer> triangles;
     private HashMap<Integer,Vector<Triangle>> triangleDictionary = new HashMap<Integer, Vector<Triangle>>();
     private Vector<Vector<Integer>> outlines = new Vector<Vector<Integer>>();
     private HashSet<Integer> checkedVertices = new HashSet<Integer>();
+    private Room entranceRoom, exitRoom;
     private Vector<Point[]> cracks = new Vector<Point[]>();
     private Vector<Room> roomRegions = new Vector<Room>();
     private Vector<Room> susceptibleRooms = new Vector<Room>();
+    private Vector<Room> roomsWithInterest = new Vector<Room>();
 
     private Vector<Passage> passages = new Vector<Passage>();
 
-    public Map (int xTiles, int yTiles, int fillPercent, boolean useRandomSeed, long seed){
+    public Map (int xTiles, int yTiles, int fillPercent, Coord entrance){
         this.map = new int[xTiles][yTiles];
         this.xTiles = xTiles;
         this.yTiles = yTiles;
         this.fillPercent = fillPercent;
-        if (useRandomSeed){
-            this.seed = System.currentTimeMillis();
-        } else {
-            this.seed = seed;
+        this.maxSizeForSusceptible = (int) ((xTiles*yTiles*(100-fillPercent)/100) * 0.005);
+
+        this.entrance = entrance;
+
+        createMap();
+
+        manageAddingFunctions();
+
+        generateMesh();
+    }
+
+    public void extend(){
+        int[] lineToCopy = getLineToCopy();
+
+        MyActivity.canvas.myActivity.level += 1;
+
+        entrance = getEntranceFromExit(exit);
+
+        createMap();
+
+        copyLine(lineToCopy, 3);
+
+        manageAddingFunctions();
+
+        generateMesh();
+    }
+
+    private void manageAddingFunctions() {
+        Random addingRandom = new Random();
+        addingRandom.setSeed(MyActivity.canvas.myActivity.seed * MyActivity.canvas.myActivity.level);
+        susceptibleRooms.remove(entranceRoom);
+        susceptibleRooms.remove(exitRoom);
+        if (roomRegions.size() > 2) {
+            roomRegions.remove(entranceRoom);
+            roomRegions.remove(exitRoom);
         }
-        this.random = new Random();
-        this.random.setSeed(this.seed);
-        randomFillMap(false,this.fillPercent);
+        if (MyActivity.canvas.myActivity.level > 0) {
+            double r = addingRandom.nextDouble();
+            if (r < 0.4) {
+                addPassageDoor(2);
+                addExitDoor(addingRandom, MAX_BUTTONS);
+            } else if (r < 0.8) {
+                addEnemies(addingRandom);
+            } else {
+                addExitDoor(addingRandom, MIN_BUTTONS);
+                addEnemies(addingRandom);
+            }
+            if (addingRandom.nextBoolean()) {
+                addHealth(addingRandom);
+            }
+        }
+        addPowerUps(addingRandom);
+    }
+
+    private void createMap() {
+        Random random = new Random();
+        random.setSeed(MyActivity.canvas.myActivity.seed + MyActivity.canvas.myActivity.level);
+        randomFillMap(this.fillPercent, random);
+
         for (int i=0; i < SMOOTH_ITERATIONS; i++){
             smoothMap();
         }
 
-        manageRoomDownAndUp();
+        manageEntranceAndExit(random);
 
-        manageRoomRemovingAndConnection();
+        manageRooms();
 
-//        addBallObstacles(1);
-//        addCoins();
-//        addDownDoor(4);
-//        addPassageDoor(2);
-        addPowerUps(2);
-//        addEnemies(1);
+        manageRoomConnection();
 
-        generateMesh();
+        manageBorders();
 
     }
 
-    private void randomFillMap(boolean resetRandom, int fillPercent){
-        if (resetRandom) {
-            Random pseudoRandom = new Random();
-            pseudoRandom.setSeed(this.seed);
-            this.random = pseudoRandom;
-            for (int i = 0; i < MyActivity.level; i++) {
-                for (int x = 0; x < xTiles; x++) {
-                    for (int y = 0; y < yTiles; y++) {
-                        if (!(x <= BORDER_SIZE || x >= xTiles - BORDER_SIZE - 1 || y <= BORDER_SIZE || y >= yTiles - BORDER_SIZE - 1)) {
-                            this.random.nextInt(100);
-                        }
-                    }
+    private Coord getEntranceFromExit(Coord exit) {
+        if (exit.tileX == 0) {
+            return new Coord(xTiles - 1, exit.tileY);
+        } else if (exit.tileX == xTiles - 1) {
+            return new Coord(0, exit.tileY);
+        } else {
+            return new Coord(exit.tileX, 0);
+        }
+    }
+
+    private int[] getLineToCopy() {
+        if (exit.tileX == 0) {
+            int[] lineToCopy = new int[yTiles];
+            for (int y = 0 ; y < yTiles ; y++){
+                lineToCopy[y] = map[0][y];
+            }
+            return lineToCopy;
+        } else if (exit.tileX == xTiles - 1) {
+            int[] lineToCopy = new int[yTiles];
+            for (int y = 0 ; y < yTiles ; y++) {
+                lineToCopy[y] = map[xTiles - 1][y];
+            }
+            return lineToCopy;
+        } else {
+            int[] lineToCopy = new int[xTiles];
+            for (int x = 0 ; x < xTiles ; x++){
+                lineToCopy[x] = map[x][yTiles-1];
+            }
+            return lineToCopy;
+        }
+    }
+
+    private void copyLine(int[] lineToCopy, int copies) {
+        if (entrance.tileX == 0) {
+            for (int y = 0; y < yTiles; y++) {
+                for (int i = 0; i < copies; i++) {
+                    map[i][y] = lineToCopy[y];
                 }
-                upCenter = this.random.nextInt(xTiles);
+            }
+        } else if (entrance.tileX == xTiles - 1) {
+            for (int y = 0; y < yTiles; y++) {
+                for (int i = 0; i < copies; i++) {
+                    map[xTiles - 1 - i][y] = lineToCopy[y];
+                }
+            }
+        } else {
+            for (int x = 0; x < xTiles; x++) {
+                for (int i = 0; i < copies; i++) {
+                    map[x][i] = lineToCopy[x];
+                }
             }
         }
+    }
+
+    private void manageBorders() {
+        if (getEntrance().tileX == 0) {
+            for (int y = 0; y < yTiles; y++) {
+                if (Math.abs(y - getEntrance().tileY) > PASSAGE_RADIUS * 1.5) {
+                    map[0][y] = 1;
+                }
+            }
+        } else if (getEntrance().tileX == xTiles - 1) {
+            for (int y = 0; y < yTiles; y++) {
+                if (Math.abs(y - getEntrance().tileY) > PASSAGE_RADIUS * 1.5) {
+                    map[xTiles - 1][y] = 1;
+                }
+            }
+        }
+        if (getExit().tileY == yTiles - 1) {
+            for (int x = 0; x < xTiles; x++) {
+                if (Math.abs(x - getExit().tileX) > PASSAGE_RADIUS * 1.5) {
+                    map[x][yTiles - 1] = 1;
+                }
+            }
+        }
+        borderUp(getEntrance().tileY != 0, getExit().tileY != yTiles - 1, getEntrance().tileX != 0 && getExit().tileX != 0, getEntrance().tileX != xTiles - 1 && getExit().tileX != xTiles - 1);
+    }
+
+    private void borderUp(boolean top, boolean bottom, boolean left, boolean right) {
+        if (top) {
+            for (int x = 0; x < xTiles; x++) {
+                map[x][0] = 1;
+            }
+        }
+        if (bottom) {
+            for (int x = 0; x < xTiles; x++) {
+                map[x][yTiles - 1] = 1;
+            }
+        }
+        if (left) {
+            for (int y = 0; y < yTiles; y++) {
+                map[0][y] = 1;
+            }
+        }
+        if (right) {
+            for (int y = 0; y < yTiles; y++) {
+                map[xTiles - 1][y] = 1;
+            }
+        }
+    }
+
+    private void randomFillMap(int fillPercent, Random random){
         for (int x = 0; x < xTiles; x++){
             for (int y = 0; y < yTiles; y++){
                 if (x <= BORDER_SIZE || x >= xTiles-BORDER_SIZE-1 || y <= BORDER_SIZE || y >= yTiles-BORDER_SIZE-1){
                     map[x][y] = 1;
                 } else {
-                    map[x][y] = (this.random.nextInt(100) < fillPercent) ? 1 : 0;
+                    map[x][y] = (random.nextInt(100) < fillPercent) ? 1 : 0;
                 }
             }
         }
-        downCenter = this.random.nextInt(xTiles);
     }
 
     private void smoothMap (){
@@ -399,16 +536,17 @@ public class Map {
         return regions;
     }
 
-    public void manageRoomRemovingAndConnection() {
+    public void manageRooms() {
         passages.clear();
         roomRegions.clear();
         susceptibleRooms.clear();
+        roomsWithInterest.clear();
 
         Vector<Vector<Coord>> wallRegions = getRegions(1);
 
         for (Vector<Coord> wallRegion : wallRegions){
             if (wallRegion.size() < WALL_COUNT_SIZE_THRESHOLD){
-                for (Coord tile : wallRegion){
+                for (Coord tile : wallRegion) {
                     map[tile.tileX][tile.tileY] = 0;
                 }
             }
@@ -430,12 +568,19 @@ public class Map {
         roomRegions.firstElement().isMainRoom = true;
         roomRegions.firstElement().isAccessibleFromMainRoom = true;
 
-        for (Room room : roomRegions){
-            if (room.roomSize < MAX_SIZE_FOR_SUSCEPTIBLE && !room.isUpOrDown()){
-                susceptibleRooms.add(room);
-            }
+        exitRoom = exit.getRoom(roomRegions);
+        if (MyActivity.canvas.myActivity.level > 0) {
+            entranceRoom = entrance.getRoom(roomRegions);
         }
 
+        for (Room room : roomRegions){
+            if (room.roomSize < maxSizeForSusceptible && !room.isUpOrDown()){
+                addSusceptibleRoom(room);
+            }
+        }
+    }
+
+    public void manageRoomConnection() {
         connectClosestRooms(roomRegions, false);
     }
 
@@ -569,57 +714,110 @@ public class Map {
                 if (x*x + y*y <= r*r){
                     int drawX = c.tileX+x;
                     int drawY = c.tileY+y;
-                    if (isInMapRange(drawX,drawY)){
-                        if (drawX != 0 && drawX != xTiles-1) {
-                            map[drawX][drawY] = 0;
-                        }
+                    if (isInMapRange(drawX,drawY)) {
+                        map[drawX][drawY] = 0;
                     }
                 }
             }
         }
     }
 
-    public MathVector startPosition (){
-        for (int yTile = 0 ; yTile < yTiles ; yTile++){
-            for (int xTile = 0 ; xTile < xTiles ; xTile++){
-                if (map[xTile][yTile] == 0){
-                    if (MyActivity.level == 0) {
-                        if (getSurroundingCount(xTile, yTile) == 0) {
-                            if (isInMapRange(xTile, yTile + 2)) {
-                                if (map[xTile][yTile + 2] == 1) {
-                                    return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
+    public MathVector startPosition () {
+        if (MyActivity.canvas.myActivity.level == 0) {
+            for (int yTile = 0; yTile < yTiles; yTile++) {
+                for (int xTile = 0; xTile < xTiles; xTile++) {
+                    if (map[xTile][yTile] == 0) {
+                        if (MyActivity.canvas.myActivity.level == 0) {
+                            if (getSurroundingCount(xTile, yTile) == 0) {
+                                if (isInMapRange(xTile, yTile + 2)) {
+                                    if (map[xTile][yTile + 2] == 1) {
+                                        return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
+                                    }
                                 }
                             }
+                        } else {
+                            return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
                         }
-                    } else {
-                        return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
                     }
                 }
             }
+        } else {
+            return new MathVector(getEntrance().tileX * SQUARE_SIZE, getEntrance().tileY * SQUARE_SIZE);
         }
-        return new MathVector(0,0);
+        return new MathVector(0, 0);
     }
 
-    private void manageRoomDownAndUp(){
-        drawCircle(new Coord(downCenter,yTiles-1), (int) (PASSAGE_RADIUS*1.5));
-        for (int x = 0 ; x < xTiles ; x++){
-            for (int i = 0 ; i < 3 ; i++) {
-                map[x][yTiles-1-i] = map[x][yTiles-1];
+    private void manageEntranceAndExit(Random random) {
+        // Decide where the exit will be
+        boolean exitOnSides = random.nextBoolean();
+        if (MyActivity.canvas.myActivity.level == 0) {
+            exitOnSides = false;
+        }
+        if (exitOnSides) {
+            // Exit on the side
+            if (entrance.tileX == 0) {
+                exit = new Coord(xTiles - 1, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));
+                manageRightExit(3);
+            } else if (entrance.tileX == xTiles - 1) {
+                exit = new Coord(0, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));
+                manageLeftExit(3);
+            } else {
+                if (random.nextBoolean()) {
+                    exit = new Coord(xTiles - 1, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));
+                    manageRightExit(3);
+                } else {
+                    exit = new Coord(0, Math.min(random.nextInt(yTiles) + 1, yTiles - 2));
+                    manageLeftExit(3);
+                }
+            }
+        } else {
+            exit = new Coord(Math.min(random.nextInt(xTiles) + 1, xTiles - 2), yTiles - 1);
+            manageDownExit(3);
+        }
+        if (MyActivity.canvas.myActivity.level > 0) {
+            drawCircle(entrance, (int) (PASSAGE_RADIUS * 1.5));
+        }
+    }
+
+    private void manageDownExit(int copies) {
+        drawCircle(exit, (int) (PASSAGE_RADIUS * 1.5));
+        for (int x = 0; x < xTiles; x++) {
+            for (int i = 1; i < copies; i++) {
+                map[x][yTiles - 1 - i] = map[x][yTiles - 1];
             }
         }
-        if (MyActivity.level > 0){
-            drawCircle(new Coord(upCenter,0), (int) (PASSAGE_RADIUS*1.5));
+    }
+
+    private void manageLeftExit(int copies) {
+        drawCircle(exit, (int) (PASSAGE_RADIUS * 1.5));
+        for (int y = 0; y < yTiles; y++) {
+            for (int i = 1; i < copies; i++) {
+                map[i][y] = map[0][y];
+            }
+        }
+    }
+
+    private void manageRightExit(int copies) {
+        drawCircle(exit, (int) (PASSAGE_RADIUS * 1.5));
+        for (int y = 0; y < yTiles; y++) {
+            for (int i = 1; i < copies; i++) {
+                map[xTiles - 1 - i][y] = map[xTiles - 1][y];
+            }
         }
     }
 
     public MathVector getRandomPointInRooms(Vector<Room> rooms, int maxWallCount, Random r) {
         Coord coord;
         int n = 0;
+        Room room;
         do {
-            Room room = rooms.get(r.nextInt(rooms.size()));
+            do {
+                room = rooms.get(r.nextInt(rooms.size()));
+            } while (roomsWithInterest.contains(room) && rooms.size() > roomsWithInterest.size());
             coord = room.tiles.get(r.nextInt(room.roomSize));
             n++;
         } while ((map[coord.tileX][coord.tileY] == 1 || getSurroundingCount(coord.tileX,coord.tileY) > maxWallCount || isUpOrDown(coord)) && n < 1000);
+        roomsWithInterest.add(room);
         return new MathVector(coord.tileX * SQUARE_SIZE, coord.tileY * SQUARE_SIZE);
     }
 
@@ -648,60 +846,25 @@ public class Map {
         return new MathVector(x*SQUARE_SIZE,y*SQUARE_SIZE);
     }
 
-    public void extend(int direction){
-        int[] lineToCopy = new int[xTiles];
-        int factor = (direction > 0) ? 0 : 1;
-        for (int x = 0 ; x < xTiles ; x++){
-            lineToCopy[x] = map[x][(1-factor)*(yTiles-1)];
-        }
-
-        MyActivity.level += direction;
-
-        upCenter = downCenter;
-        randomFillMap(direction < 0,this.fillPercent);
-
-        for (int x = 0 ; x < xTiles ; x++){
-            for (int y = 0 ; y < 5 ; y++) {
-                map[x][factor*(yTiles-1) + y] = lineToCopy[x];
-            }
-        }
-
-        for (int i=0; i < SMOOTH_ITERATIONS; i++){
-            smoothMap();
-        }
-
-        manageRoomDownAndUp();
-
-        manageRoomRemovingAndConnection();
-
-//        addBallObstacles(1);
-        addDownDoor(4);
-        addPassageDoor(2);
-        addPowerUps(1);
-//        addEnemies(1);
-
-        generateMesh();
-    }
-
     public void addBallObstacles(int maxObstacles){
         int[][] structure = {{-1,0,0,0,0,0,0,0,-1},
-                            {-1,0,0,0,0,0,0,0,-1},
-                            {-1,-1,0,0,0,0,0,-1,-1},
-                            {-1,-1,0,0,0,0,0,-1,-1},
-                            {-1,-1,0,0,0,0,0,-1,-1},
-                            {-1,-1,1,0,0,0,1,-1,-1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1},
-                            {1,1,1,1,1,1,1,1,1}};
+                {-1,0,0,0,0,0,0,0,-1},
+                {-1,-1,0,0,0,0,0,-1,-1},
+                {-1,-1,0,0,0,0,0,-1,-1},
+                {-1,-1,0,0,0,0,0,-1,-1},
+                {-1,-1,1,0,0,0,1,-1,-1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1},
+                {1,1,1,1,1,1,1,1,1}};
         int[][] subsStructure = {{1,1,1,1,0,1,1,1,1},
-                                {1,1,1,0,0,0,1,1,1},
-                                {1,0,0,0,0,0,0,0,1},
-                                {1,0,0,0,0,0,0,0,1},
-                                {1,0,0,0,0,0,0,0,1},
-                                {1,1,1,0,0,0,1,1,1}};
+                {1,1,1,0,0,0,1,1,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,0,0,0,0,0,0,0,1},
+                {1,1,1,0,0,0,1,1,1}};
         int xStart = 0;
         int yStart = 0;
         int added = 0;
@@ -757,63 +920,95 @@ public class Map {
         }
     }
 
-    private void addDownDoor(int nButtons) {
-        Random obstacleRandom = new Random();
-        obstacleRandom.setSeed(seed + nButtons + MyActivity.level);
-//        Calculate the position for the door
-        int leftX = 0, rightX = 0;
-        double yPos = (yTiles-2)*SQUARE_SIZE;
-        boolean  foundLeft = false;
-        for (int x = 1 ; x < xTiles ; x++){
-            if (!foundLeft) {
-                if (map[x][yTiles - 1] == 0) {
-                    leftX = x - 1;
-                    foundLeft = true;
+    private void addSusceptibleRoom(Room room) {
+        if (!susceptibleRooms.contains(room)) {
+            susceptibleRooms.add(room);
+        } else {
+            susceptibleRooms.remove(room);
+            susceptibleRooms.add(room);
+        }
+    }
+
+    private void addExitDoor(Random random, int maxButtons) {
+        int nButtons = getNButtons(random, maxButtons);
+//        Calculate the width for the door
+        MathVector vector = new MathVector(1, 0);
+        int start = -1;
+        int end = yTiles;
+        if (getExit().tileX == 0 || getExit().tileX == xTiles - 1) {
+            vector = new MathVector(0, 1);
+            for (int y = 0; y < yTiles; y++) {
+                if (start == -1) {
+                    if (map[getExit().tileX][y] == 0) {
+                        start = y;
+                    }
+                } else {
+                    if (map[getExit().tileX][y] == 1) {
+                        end = y;
+                        break;
+                    }
                 }
-            } else {
-                if (map[x][yTiles - 1] == 1) {
-                    rightX = x;
-                    break;
+            }
+        } else {
+            for (int x = 0; x < xTiles; x++) {
+                if (start == -1) {
+                    if (map[x][yTiles - 1] == 0) {
+                        start = x;
+                    }
+                } else {
+                    if (map[x][yTiles - 1] == 1) {
+                        end = x;
+                        break;
+                    }
                 }
             }
         }
-        double xPos = (rightX - leftX)*SQUARE_SIZE/2 + leftX*SQUARE_SIZE;
 
 //      Set the WallButtons
-        Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, obstacleRandom, true);
-        addDoor(xPos, yPos, (int) ((rightX - leftX + 1) * SQUARE_SIZE), (int) (1.5*SQUARE_SIZE), new MathVector(1, 0), buttons);
+        Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, random, true);
+        addDoor(getExit().tileX * SQUARE_SIZE, getExit().tileY * SQUARE_SIZE, (int) ((end - start + 2) * SQUARE_SIZE), (int) (1.5 * SQUARE_SIZE), vector, buttons);
+    }
+
+    private int getNButtons(Random random, int maxButtons) {
+        int n = random.nextInt(maxButtons);
+        return Math.max(MIN_BUTTONS,n);
     }
 
     public void addDoor(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons) {
-        Door door = new Door(xPos, yPos, width, height, vector, buttons, true);
+        new Door(xPos, yPos, width, height, vector, buttons, true);
     }
 
     public void addPassageDoor(int nButtons) {
         Random obstacleRandom = new Random();
-        obstacleRandom.setSeed(seed + nButtons + MyActivity.level);
-        MathVector start = startPosition();
-        Coord startCoord = new Coord((int)(start.x/SQUARE_SIZE),(int)(start.y/SQUARE_SIZE));
-        Room startRoom = startCoord.getRoom(roomRegions);
-        if (startRoom == null || passages.size() == 0) {
+        obstacleRandom.setSeed(MyActivity.canvas.myActivity.seed + nButtons + MyActivity.canvas.myActivity.level);
+
+        if (entranceRoom == null || passages.size() == 0) {
             return;
         }
-        Passage passage = passages.get(obstacleRandom.nextInt(passages.size()));
+        Passage passage;
+        do {
+            passage = passages.get(obstacleRandom.nextInt(passages.size()));
+        } while ((passage.roomA == entranceRoom || passage.roomA == exitRoom || passage.roomB == entranceRoom || passage.roomB == exitRoom) && passages.size() > 1);
 //      Separate rooms by accessibility
         Vector<Room> roomsA = getRoomsConnectedWithException(passage.roomA, passage.roomB);
         Vector<Room> roomsB = new Vector<Room>(roomRegions);
         roomsB.removeAll(roomsA);
         Vector<Room> accessibleRegions = new Vector<Room>();
         for (Room room : roomsA) {
-            if (room == startRoom) {
+            if (room == entranceRoom) {
                 accessibleRegions = roomsA;
                 Collections.sort(roomsB);
-                susceptibleRooms.addAll(0, roomsB);
+                for (Room roomb : roomsB) {
+                    addSusceptibleRoom(roomb);
+                }
             }
         }
         if (accessibleRegions.size() == 0) {
             accessibleRegions = roomsB;
             Collections.sort(roomsA);
-            susceptibleRooms.addAll(0, roomsA);
+            for (Room rooma : roomsA) {
+                addSusceptibleRoom(rooma);
+            }
         }
 //      Set the WallButtons
         Vector<WallButton> buttons = createWallButtons(accessibleRegions, nButtons, obstacleRandom, false);
@@ -844,8 +1039,7 @@ public class Map {
         for (int i = 0; i < nButtons; i++) {
             MathVector position;
             if (useSusceptibleRooms && susceptibleRooms.size() > 0) {
-                position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, random);
-                susceptibleRooms.remove(susceptibleRooms.lastElement());
+                position = getPositionFromSusceptibleRooms(random);
             } else {
                 position = getRandomPointInRooms(rooms, 0, random);
             }
@@ -855,18 +1049,16 @@ public class Map {
         return buttons;
     }
 
-    public void addPowerUps(int N) {
-        Random powerUpRandom = new Random();
-        powerUpRandom.setSeed(seed + N + MyActivity.level);
+    public void addPowerUps(Random random) {
+        int N = random.nextInt(MAX_POWERUPS);
         for (int i = 0; i < N; i++) {
             MathVector position;
             if (susceptibleRooms.size() > 0) {
-                position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, powerUpRandom);
-                susceptibleRooms.remove(susceptibleRooms.lastElement());
+                position = getPositionFromSusceptibleRooms(random);
             } else {
-                position = getRandomPointInRooms(roomRegions, 0, powerUpRandom);
+                position = getRandomPointInRooms(roomRegions, 0, random);
             }
-            int powerUpType = powerUpRandom.nextInt(4);
+            int powerUpType = random.nextInt(4);
             if (powerUpType == 0) {
                 new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2, true, false);
             } else if (powerUpType == 1) {
@@ -879,13 +1071,44 @@ public class Map {
         }
     }
 
-    public void addEnemies (int N){
-        Random enemyRandom = new Random();
-        enemyRandom.setSeed(this.seed + MyActivity.level + N);
-        for (int i = 0;i < N;i++) {
-            MathVector p = getRandomEmptyPoint(0, enemyRandom);
-            EnemyStalker stalker = new EnemyStalker(p.x, p.y, true);
+    public void addHealth(Random random) {
+        int N = random.nextInt(MAX_HEALTH);
+        for (int i = 0; i < N; i++) {
+            MathVector position;
+            if (susceptibleRooms.size() > 0) {
+                position = getPositionFromSusceptibleRooms(random);
+            } else {
+                position = getRandomPointInRooms(roomRegions, 0, random);
+            }
+            new HealthDrop(position.x, position.y, true, false);
         }
+    }
+
+    private MathVector getPositionFromSusceptibleRooms(Random random) {
+        if (susceptibleRooms.size() > roomsWithInterest.size()) {
+            susceptibleRooms.removeAll(roomsWithInterest);
+        }
+        MathVector position = getRandomPointInRoom(susceptibleRooms.lastElement(), 0, random);
+        roomsWithInterest.add(susceptibleRooms.lastElement());
+        susceptibleRooms.remove(susceptibleRooms.lastElement());
+        return position;
+    }
+
+    public void addEnemies (Random random) {
+        if (random.nextBoolean()) {
+            int N = getNEnemies(random);
+            for (int i = 0; i < N; i++) {
+                MathVector p = getRandomEmptyPoint(0, random);
+                new EnemyStalker(p.x, p.y, true);
+            }
+        } else {
+            MathVector p = getRandomEmptyPoint(0, random);
+            new EnemyTerraWorm(p.x, p.y, 5, true, true);
+        }
+    }
+
+    private int getNEnemies(Random random) {
+        return random.nextInt(MAX_ENEMIES) + 1;
     }
 
     private boolean isInMapRange (int x, int y){
@@ -902,6 +1125,14 @@ public class Map {
 
     public void setMap(int[][] map) {
         this.map = map;
+    }
+
+    public Coord getExit() {
+        return exit;
+    }
+
+    public Coord getEntrance() {
+        return entrance;
     }
 
     public int getWidth() {
@@ -1115,7 +1346,7 @@ public class Map {
             points[0] = vertices.get(triangles.get(i));
             points[1] = vertices.get(triangles.get(i+1));
             points[2] = vertices.get(triangles.get(i+2));
-            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 120, 0, 0));
+            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 120, 0, 0), Paint.Style.FILL, true, GameBoard.paint);
         }
         for (Point[] crack : cracks) {
             DrawUtil.drawVoidPolygon(crack, canvas, Color.BLACK, MyActivity.TILE_WIDTH / 50, false);
@@ -1149,7 +1380,7 @@ public class Map {
             points[0] = vertices.get(triangles.get(i));
             points[1] = vertices.get(triangles.get(i+1));
             points[2] = vertices.get(triangles.get(i+2));
-            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 60, 0, 0));
+            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 60, 0, 0), Paint.Style.FILL, true, GameBoard.paint);
             DrawUtil.drawVoidPolygon(points, canvas, Color.BLACK, (float) (SQUARE_SIZE / 3), false);
         }
         drawOutlines(canvas);
@@ -1212,4 +1443,3 @@ public class Map {
         canvas.drawRect(rect,paint);
     }
 }
-

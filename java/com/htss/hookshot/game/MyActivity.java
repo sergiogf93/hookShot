@@ -1,6 +1,7 @@
 package com.htss.hookshot.game;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -15,32 +16,36 @@ import android.view.Window;
 import android.widget.LinearLayout;
 
 import com.htss.hookshot.R;
-import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
-import com.htss.hookshot.effect.SwitchMapEffect;
-import com.htss.hookshot.executions.LaunchGame;
+import com.htss.hookshot.effect.SwitchMapHorizontalEffect;
+import com.htss.hookshot.effect.SwitchMapVerticalEffect;
+import com.htss.hookshot.executions.MainMenu;
+import com.htss.hookshot.game.hud.HUDNotification;
+import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.hud.HUDCircleButton;
 import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.HUDMenu;
 import com.htss.hookshot.game.hud.HUDPauseButton;
 import com.htss.hookshot.game.hud.HUDPowerUpButton;
-import com.htss.hookshot.game.hud.HUDText;
 import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
 import com.htss.hookshot.game.object.miscellaneous.PortalObject;
+import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.TimeUtil;
 
 import java.util.LinkedList;
 import java.util.Vector;
@@ -50,20 +55,17 @@ public class MyActivity extends Activity {
 
     public static int FILL_PERCENT = 52; //Default 52 for screen size 30
     public static int mapXTiles = 110, mapYTiles = 80; //Default 110 80, for screen size 30 20
-//    public static int FILL_PERCENT = 30;
+//    public static int FILL_PERCENT = 20;
 //    public static int mapXTiles = 30, mapYTiles = 20;
 
-    public static final int FRAME_RATE = 10, TILE_WIDTH = 100;
-    public static int HORIZONTAL_MARGIN, VERTICAL_MARGIN;
-    private static final int BUTTON_A_BOTTOM_PADDING = 70,
-            BUTTON_A_RIGHT_PADDING = 50,
-            BUTTON_B_BOTTOM_PADDING = 50,
-            BUTTON_B_RIGHT_PADDING = 250;
+    public static final int FRAME_RATE = 10;
+    public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
+    private static int BUTTON_A_BOTTOM_PADDING,BUTTON_A_RIGHT_PADDING,BUTTON_B_BOTTOM_PADDING,BUTTON_B_RIGHT_PADDING;
 
     public static GameBoard canvas;
     public static GameEffect roomSwitchEffect;
     private Handler handler = new Handler();
-    public static int screenHeight, screenWidth, level = 0; //Default 110 80, for screen size 30 20
+    public static int screenHeight, screenWidth; //Default 110 80, for screen size 30 20
     public static int frame = 0;
     public static MainCharacter character;
     public static Joystick joystick;
@@ -71,14 +73,45 @@ public class MyActivity extends Activity {
     public static HUDPauseButton pauseButton;
     public static HUDMenu menu;
     public static LinkedList<HUDPowerUpButton> powerUpButtons = new LinkedList<HUDPowerUpButton>();
-    public static boolean paused = false, handleTouch = true;
+    public static boolean paused = false, handleTouch = true, debugging = false;
+    public static long lastTap = 0;
+    public Long seed;
+    public int level = 0;
+    public String entranceString = "";
+    public int portals = 0, bombs = 0, compass = 0, jumps = 0, explosionsUsed = 0;
+    public double health = MainCharacter.MAX_HEALTH;
+    public int portalsAdvice = 0, compassAdvice = 0, bombAdvice = 0, jumpsAdvice = 0;
 
-    public static Vector<HUDElement> hudElements = new Vector<HUDElement>();
-    public static Vector<GameDynamicObject> dynamicObjects = new Vector<GameDynamicObject>();
-    public static Vector<GameEffect> gameEffects = new Vector<GameEffect>();
-    public static Vector<GameEnemy> enemies = new Vector<GameEnemy>();
+    public static LinkedList<HUDElement> hudElements = new LinkedList<HUDElement>();
+    public static LinkedList<GameDynamicObject> dynamicObjects = new LinkedList<GameDynamicObject>();
+    public static LinkedList<GameEffect> gameEffects = new LinkedList<GameEffect>();
+    public static LinkedList<GameEnemy> enemies = new LinkedList<GameEnemy>();
+    public static LinkedList<HUDAdvice> advices = new LinkedList<HUDAdvice>();
+    public static LinkedList<HUDNotification> notifications = new LinkedList<HUDNotification>();
 
     public static Map currentMap;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    public void load() {
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        seed = preferences.getLong("Seed", -1);
+        level = preferences.getInt("Level", 0);
+        entranceString = preferences.getString("Entrance", mapXTiles / 2 + " " + mapYTiles / 2);
+        portals = preferences.getInt("Portals", 0);
+        compass = preferences.getInt("Compass", 0);
+        bombs = preferences.getInt("Bombs", 0);
+        jumps = preferences.getInt("Jumps", 0);
+        explosionsUsed = preferences.getInt("ExplosionsUsed", 0);
+        health = preferences.getFloat("Health", MainCharacter.MAX_HEALTH);
+        portalsAdvice = preferences.getInt("PortalsAdvice", 0);
+        compassAdvice = preferences.getInt("CompassAdvice", 0);
+        bombAdvice = preferences.getInt("BombAdvice", 0);
+        jumpsAdvice = preferences.getInt("JumpsAdvice", 0);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,10 +121,15 @@ public class MyActivity extends Activity {
 
         DisplayMetrics displaymetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
-        screenHeight = displaymetrics.heightPixels;
-        screenWidth = displaymetrics.widthPixels;
+        screenHeight = displaymetrics.heightPixels; //720
+        screenWidth = displaymetrics.widthPixels; //1280
+        TILE_WIDTH = 100 * screenHeight / 720;
         HORIZONTAL_MARGIN = screenWidth / 2 - TILE_WIDTH * 2;
         VERTICAL_MARGIN = screenHeight / 2;
+        BUTTON_A_BOTTOM_PADDING = 70 * TILE_WIDTH / 100;
+        BUTTON_A_RIGHT_PADDING = 50 * TILE_WIDTH / 100;
+        BUTTON_B_BOTTOM_PADDING = 50 * TILE_WIDTH / 100;
+        BUTTON_B_RIGHT_PADDING = 250 * TILE_WIDTH / 100;
 
         joystick = new Joystick(2 * TILE_WIDTH, screenHeight - TILE_WIDTH / 2 - TILE_WIDTH, TILE_WIDTH * 2, TILE_WIDTH * 2);
 
@@ -101,7 +139,7 @@ public class MyActivity extends Activity {
             @Override
             public double execute() {
                 if (MyActivity.character.isOnFloor()) {
-                    MyActivity.character.jump();
+                    MyActivity.character.jump( -1 * MyActivity.TILE_WIDTH);
                 } else if (MyActivity.character.getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
                     MyActivity.character.usePowerUp();
                 }
@@ -116,7 +154,13 @@ public class MyActivity extends Activity {
             @Override
             public double execute() {
                 if (MyActivity.character.getHook() != null) {
-                    MyActivity.character.removeHook();
+                    if (MyActivity.character.getHook().isFastReloading()){
+                        if (!MyActivity.character.inContactWithMap(MyActivity.character.getMargin())) {
+                            MyActivity.character.removeHook();
+                        }
+                    } else {
+                        MyActivity.character.removeHook();
+                    }
                 } else {
                     boolean portalUsed = false;
                     if (MyActivity.character.getPortals().size() > 0) {
@@ -141,17 +185,20 @@ public class MyActivity extends Activity {
 
         pauseButton = new HUDPauseButton(screenWidth / 2, screenHeight - TILE_WIDTH / 2, TILE_WIDTH, (int) (TILE_WIDTH * 0.5));
 
-        int nMenuButton = 2;
+        canvas = (GameBoard) findViewById(R.id.the_canvas);
+        canvas.myActivity = this;
+        canvas.DEFAULT_FONT_SIZE = 48*MyActivity.TILE_WIDTH /100;
+        canvas.SMALL_FONT_SIZE = 27*MyActivity.TILE_WIDTH /100;
+        canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");
+        canvas.joystickMonospace = Typeface.createFromAsset(getAssets(),"fonts/joystix_monospace.ttf");
+        canvas.setFont(GameBoard.ARCADECLASSIC_FONT_KEY, GameBoard.DEFAULT_FONT_SIZE);
+
+        int nMenuButton = 4;
         int menuButtonHeight = TILE_WIDTH;
         int menuButtonSeparation = TILE_WIDTH / 5;
         int menuWidth = 5*TILE_WIDTH;
         int menuHeight = menuButtonHeight*nMenuButton + (nMenuButton+1)*menuButtonSeparation;
         menu = new HUDMenu(screenWidth / 2, screenHeight / 2, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
-
-        canvas = (GameBoard) findViewById(R.id.the_canvas);
-        canvas.arcadeClassicFont = Typeface.createFromAsset(getAssets(), "fonts/arcadeclassic.ttf");
-        canvas.joystickMonospace = Typeface.createFromAsset(getAssets(),"fonts/joystix_monospace.ttf");
-        canvas.setFont(GameBoard.ARCADECLASSIC_FONT_KEY, GameBoard.DEFAULT_FONT_SIZE);
 
         LinearLayout myLayout = (LinearLayout) findViewById(R.id.layout);
         myLayout.setOnTouchListener(
@@ -178,16 +225,7 @@ public class MyActivity extends Activity {
     private void initGfx() {
         handler.removeCallbacks(frameUpdate);
 
-        final FadeEffect fadeEffect = new FadeEffect(new LaunchGame());
-
-        HUDText newGame = new HUDText(screenWidth/2,screenHeight/2 - canvas.fontSize * 3, true, "NEW GAME", TILE_WIDTH *8/10, new Execution() {
-            @Override
-            public double execute() {
-                gameEffects.add(fadeEffect);
-                return 0;
-            }
-        });
-        hudElements.add(newGame);
+        (new MainMenu()).execute();
 
         canvas.invalidate();
 
@@ -304,35 +342,39 @@ public class MyActivity extends Activity {
                     }
                     case MotionEvent.ACTION_MOVE: {
                         nothingPressed = false;
-                        for (int k = 0; k < hudElements.size(); k++) {
-                            HUDElement element = hudElements.get(k);
-                            if (element instanceof Clickable) {
-                                if (element instanceof Joystick) {
-                                    if (joystick.isOn() && joystick.getTouchId() == id && joystick.getTouchIndex() == ev.findPointerIndex(id)) {
-                                        joystick.moveJoystick(xDown, yDown);
-                                    }
-                                } else {
-                                    Clickable clickable = (Clickable) element;
-                                    if (clickable.isClickable()) {
-                                        if (!clickable.isOn()) {
-                                            if (clickable.pressed(xDown, yDown)) {
+                        if (MyActivity.currentMap != null) {
+                            for (int k = 0; k < hudElements.size(); k++) {
+                                HUDElement element = hudElements.get(k);
+                                if (element instanceof Clickable) {
+                                    if (element instanceof Joystick) {
+                                        if (joystick.isClickable() && joystick.isOn() && joystick.getTouchId() == id && joystick.getTouchIndex() == ev.findPointerIndex(id)) {
+                                            joystick.moveJoystick(xDown, yDown);
+                                        }
+                                    } else {
+                                        Clickable clickable = (Clickable) element;
+                                        if (clickable.isClickable()) {
+                                            if (!clickable.isOn()) {
+                                                if (clickable.pressed(xDown, yDown)) {
 //                                                clickable.press(xDown, yDown, id, ev.findPointerIndex(id));
-                                            }
-                                        } else if (clickable.getTouchId() == id) {
-                                            if (!clickable.pressed(xDown, yDown)) {
+                                                }
+                                            } else if (clickable.getTouchId() == id) {
+                                                if (!clickable.pressed(xDown, yDown)) {
 //                                                clickable.reset();
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                        } else {
+                            MyActivity.character.setPositionInRoom(xDown,yDown);
                         }
                         break;
                     }
                 }
             }
             if (!paused) {
-                if (character != null) {
+                if (currentMap != null) {
                     if (nothingPressed) {
                         manageHooking(xHook, yHook);
                     }
@@ -354,17 +396,32 @@ public class MyActivity extends Activity {
         }
         if (!hookableFound) {
             MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
-            if (isInScreen(objective.x, objective.y)) {
-                MathVector objectiveInRoom = objective.screenToRoom();
+            MathVector objectiveInRoom = objective.screenToRoom();
+            if (character.distanceTo(objectiveInRoom) <= (character.getMaxHookNodes() - 1) * Hook.SEPARATION) {
                 int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
-                if (Color.alpha(pixel) == 255) {
-                    if (character.isHooked() && character.getHook().getHookedPoint().distanceTo(objectiveInRoom) < TILE_WIDTH) {
-                        character.getHook().setFastReloading(true);
-                    } else {
-                        character.shootHook(objective.x, objective.y);
+                if (Color.alpha(pixel) == 255 || checkIfDoorsContain(objectiveInRoom)) {
+                    decideBetweenFastReloadOrShoot(objective);
+                } else {
+                    if (character.isHooked()) {
+                        if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
+                            character.getHook().setFastReloading(true);
+                        }
                     }
                 }
             }
+        }
+        lastTap = System.currentTimeMillis();
+    }
+
+    private void decideBetweenFastReloadOrShoot(MathVector objective) {
+        if (character.isHooked()) {
+            if (character.getHook().getNodesNumber() > Hook.MIN_RELOADING_NODES && !character.getHook().isFastReloading() && System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5) || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
+                character.getHook().setFastReloading(true);
+            } else {
+                character.shootHook(objective.x, objective.y);
+            }
+        } else {
+            character.shootHook(objective.x, objective.y);
         }
     }
 
@@ -389,10 +446,14 @@ public class MyActivity extends Activity {
                 }
             }
         }
+        if (currentMap == null) {
+            MyActivity.character.setPositionInRoom(MyActivity.character.getHook().getLastNode().getPositionInRoom());
+        }
     }
 
     private boolean manageDownTouch(double xDown, double yDown, int id, int pointerIndex) {
         boolean nothingPressed = true;
+
         Vector joined = new Vector();
         joined.addAll(hudElements);
         if (!paused) {
@@ -404,7 +465,7 @@ public class MyActivity extends Activity {
                 Clickable clickable = (Clickable) element;
                 if (clickable.isClickable()) {
                     if (!clickable.isOn()) {
-                        if (clickable.pressed(xDown,yDown)) {
+                        if (clickable.pressed(xDown, yDown)) {
                             clickable.press(xDown, yDown, id, pointerIndex);
                             nothingPressed = false;
                         }
@@ -412,26 +473,42 @@ public class MyActivity extends Activity {
                 }
             }
         }
+        if (currentMap == null) {
+            MyActivity.character.setPositionInRoom(xDown,yDown);
+        }
         return nothingPressed;
+    }
+
+    private boolean checkIfDoorsContain(MathVector point) {
+        for (GameDynamicObject dynamicObject : dynamicObjects) {
+            if (dynamicObject instanceof Door) {
+                if (dynamicObject.getBounds().contains(point)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private MathVector checkIfSomethingInTheWay(double xDown, double yDown) {
         MathVector vector = new MathVector(character.getPositionInScreen(),new MathVector(xDown,yDown));
         int i = 0;
-        while (true){
+        while (vector.magnitude() <= (character.getMaxHookNodes() - 1) * Hook.SEPARATION){
             i++;
-            vector.normalize();
-            vector.scale(i);
+            vector.rescale(i);
             MathVector point = vector.applyTo(character.getPositionInRoom());
-            if (isInRoom(point.x,point.y)) {
+            if (checkIfDoorsContain(point)) {
+                return (new MathVector(point.x, point.y)).roomToScreen();
+            }
+            if (isInRoom(point.x, point.y)) {
                 int pixel = canvas.mapBitmap.getPixel((int) point.x, (int) point.y);
                 if (Color.alpha(pixel) == 255) {
                     return (new MathVector(point.x, point.y)).roomToScreen();
                 }
-                canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
             } else {
-                break;
+                return new MathVector(xDown, yDown);
             }
+            canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
         }
         return new MathVector(xDown, yDown);
     }
@@ -482,22 +559,28 @@ public class MyActivity extends Activity {
         dynamicObjects.add(character);
     }
 
-    public static void switchMap(int direction) {
+    public static void switchMap() {
         if (roomSwitchEffect == null) {
             setHUDUnclickable();
 
             resetObjectsLists();
 
             Bitmap currentMapInScreen = canvas.getMapInScreen();
-            currentMap.extend(direction);
+            currentMap.extend();
             canvas.generateMap();
-            if (direction > 0) {
+            if (currentMap.getEntrance().tileX == 0) {
+                canvas.dx = 0;
+                Bitmap nextMapInScreen = canvas.getMapInScreen();
+                roomSwitchEffect = new SwitchMapHorizontalEffect(currentMapInScreen, nextMapInScreen, 1);
+            } else if (currentMap.getEntrance().tileX == mapXTiles - 1) {
+                canvas.dx = MyActivity.screenWidth - MyActivity.currentMap.getWidth();
+                Bitmap nextMapInScreen = canvas.getMapInScreen();
+                roomSwitchEffect = new SwitchMapHorizontalEffect(currentMapInScreen, nextMapInScreen, -1);
+            } else {
                 canvas.dy = 0;
-            } else if (direction < 0){
-                canvas.dy = MyActivity.screenHeight - MyActivity.currentMap.getHeight();
+                Bitmap nextMapInScreen = canvas.getMapInScreen();
+                roomSwitchEffect = new SwitchMapVerticalEffect(currentMapInScreen, nextMapInScreen, 1);
             }
-            Bitmap nextMapInScreen = canvas.getMapInScreen();
-            roomSwitchEffect = new SwitchMapEffect(currentMapInScreen, nextMapInScreen, direction);
         }
     }
 
@@ -512,20 +595,20 @@ public class MyActivity extends Activity {
             if (character.getPowerUps().get(i) > 0) {
                 switch (i) {
                     case GamePowerUp.PORTAL:
-                        PortalPowerUp portalPowerUp = new PortalPowerUp(screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, TILE_WIDTH / 2, false, false);
-                        powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2, true, portalPowerUp, character.getPowerUps().get(i)));
+                        PortalPowerUp portalPowerUp = new PortalPowerUp(screenWidth / 6 - canvas.dx, 3 * screenHeight / 4 - canvas.dy, TILE_WIDTH / 2, false, false);
+                        powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, 3 * screenHeight / 4, TILE_WIDTH * 2, true, portalPowerUp, character.getPowerUps().get(i)));
                         break;
                     case GamePowerUp.COMPASS:
-                        CompassPowerUp compassPowerUp = new CompassPowerUp(screenWidth / 6 - canvas.dx, 3 * screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.8), false, false);
-                        powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, 3 * screenHeight / 4, TILE_WIDTH * 2, MyActivity.character.getCompass() == null, compassPowerUp, character.getPowerUps().get(i)));
+                        CompassPowerUp compassPowerUp = new CompassPowerUp(screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.8), false, false);
+                        powerUpButtons.add(new HUDPowerUpButton(screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2, MyActivity.character.getCompass() == null, compassPowerUp, character.getPowerUps().get(i)));
                         break;
                     case GamePowerUp.BOMB:
-                        BombPowerUp bombPowerUp = new BombPowerUp( 5 * screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.8), false, false);
-                        powerUpButtons.add(new HUDPowerUpButton( 5 * screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2, true, bombPowerUp, character.getPowerUps().get(i)));
+                        BombPowerUp bombPowerUp = new BombPowerUp( 5 * screenWidth / 6 - canvas.dx, 3 * screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.8), false, false);
+                        powerUpButtons.add(new HUDPowerUpButton( 5 * screenWidth / 6, 3 * screenHeight / 4, TILE_WIDTH * 2, true, bombPowerUp, character.getPowerUps().get(i)));
                         break;
                     case GamePowerUp.INFINITE_JUMPS:
-                        InfiniteJumpsPowerUp infiniteJumpsPowerUp = new InfiniteJumpsPowerUp( 5 * screenWidth / 6 - canvas.dx, 3 * screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.9), (int) (TILE_WIDTH * 0.8), false, false);
-                        powerUpButtons.add(new HUDPowerUpButton( 5 * screenWidth / 6, 3 * screenHeight / 4, TILE_WIDTH * 2, character.getInfiniteJumpsTimer() == null, infiniteJumpsPowerUp, character.getPowerUps().get(i)));
+                        InfiniteJumpsPowerUp infiniteJumpsPowerUp = new InfiniteJumpsPowerUp( 5 * screenWidth / 6 - canvas.dx, screenHeight / 4 - canvas.dy, (int) (TILE_WIDTH * 0.9), (int) (TILE_WIDTH * 0.8), false, false);
+                        powerUpButtons.add(new HUDPowerUpButton( 5 * screenWidth / 6, screenHeight / 4, TILE_WIDTH * 2, character.getInfiniteJumpsTimer() == null, infiniteJumpsPowerUp, character.getPowerUps().get(i)));
                         break;
                 }
             }
@@ -540,4 +623,37 @@ public class MyActivity extends Activity {
         hudElements.remove(menu);
         hudElements.removeAll(powerUpButtons);
     }
+
+    public void save () {
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putLong("Seed", seed);
+        editor.putInt("Level", level);
+        editor.putString("Entrance", currentMap.getEntrance().toString());
+        editor.putInt("Portals", character.getPowerUps().get(GamePowerUp.PORTAL));
+        editor.putInt("Compass", character.getPowerUps().get(GamePowerUp.COMPASS));
+        editor.putInt("Bombs", character.getPowerUps().get(GamePowerUp.BOMB));
+        editor.putInt("Jumps", character.getPowerUps().get(GamePowerUp.INFINITE_JUMPS));
+        editor.putInt("ExplosionsUsed", character.getExplosionsUsed());
+        saveHealth();
+        editor.commit();
+    }
+
+    public void saveHealth() {
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putFloat("Health", (float) character.getHealth());
+        editor.commit();
+    }
+
+    public void saveAdvices() {
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt("PortalsAdvice", portalsAdvice);
+        editor.putInt("CompassAdvice", compassAdvice);
+        editor.putInt("BombAdvice", bombAdvice);
+        editor.putInt("JumpsAdvice", jumpsAdvice);
+        editor.commit();
+    }
+
 }

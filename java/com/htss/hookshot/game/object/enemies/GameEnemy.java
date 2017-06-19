@@ -1,22 +1,38 @@
 package com.htss.hookshot.game.object.enemies;
 
 import android.graphics.Color;
+import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameCharacter;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.math.MathVector;
 
+import java.util.Random;
+
 /**
  * Created by Sergio on 31/08/2016.
  */
 public abstract class GameEnemy extends GameCharacter {
+
+    private Paint paint = new Paint();
+    private MathVector targetPositionInRoom, currentDirection;
 
     public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth, boolean addToLists, boolean addToEnemyList) {
         super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth, addToLists, addToLists);
         if (addToEnemyList) {
             MyActivity.enemies.add(this);
         }
+    }
+
+    public void randomNewDirection () {
+        Random random = new Random();
+        MathVector v = new MathVector(1,0);
+        setCurrentDirection(v.rotatedDeg(random.nextInt(360)));
+    }
+
+    public void rotate(double deg){
+        setCurrentDirection(getCurrentDirection().rotatedDeg(deg));
     }
 
     protected MathVector firstInSight(GameObject object) {
@@ -60,6 +76,26 @@ public abstract class GameEnemy extends GameCharacter {
         this.destroy();
         MyActivity.dynamicObjects.remove(this);
         MyActivity.enemies.remove(this);
+    }
+
+    public MathVector getCurrentDirection() {
+        return currentDirection;
+    }
+
+    public void setCurrentDirection(MathVector currentDirection) {
+        this.currentDirection = currentDirection;
+    }
+
+    public MathVector getTargetPositionInRoom() {
+        return targetPositionInRoom;
+    }
+
+    public void setTargetPositionInRoom(MathVector targetPosition) {
+        this.targetPositionInRoom = targetPosition;
+    }
+
+    public Paint getPaint() {
+        return paint;
     }
 
     public abstract double getHurtDistance();

@@ -40,6 +40,8 @@ public class PortalObject extends GameDynamicObject {
         if (getTwinPortal() != null) {
             MyActivity.handleTouch = false;
             MyActivity.canvas.gameObjects.remove(MyActivity.character);
+            MyActivity.canvas.gameObjects.remove(MyActivity.character.getCompass());
+            MyActivity.canvas.gameObjects.remove(MyActivity.character.getInfiniteJumpsTimer());
             MyActivity.character.setPositionInRoom(getTwinPortal().getxPortal(), getTwinPortal().getyPortal());
             state = STATE_MOVING;
         }
@@ -64,6 +66,12 @@ public class PortalObject extends GameDynamicObject {
             MyActivity.handleTouch = true;
             MyActivity.addControls();
             MyActivity.canvas.gameObjects.add(MyActivity.canvas.gameObjects.size(),MyActivity.character);
+            if (MyActivity.character.getCompass() != null) {
+                MyActivity.canvas.gameObjects.add(MyActivity.character.getCompass());
+            }
+            if (MyActivity.character.getInfiniteJumpsTimer() != null) {
+                MyActivity.canvas.gameObjects.add(MyActivity.character.getInfiniteJumpsTimer());
+            }
             MyActivity.character.setPositionInRoom(getTwinPortal().getxPortal(), getTwinPortal().getyPortal());
             MyActivity.character.update();
             MyActivity.canvas.dx = getTwinPortal().getDx();

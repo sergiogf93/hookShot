@@ -3,9 +3,12 @@ package com.htss.hookshot.game.object.debug;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 
+import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
+import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
+import com.htss.hookshot.math.MathVector;
 
 /**
  * Created by Sergio on 28/07/2016.
@@ -18,6 +21,22 @@ public class Circle extends GameDynamicObject {
         super(xPos, yPos, mass, collisionPriority, 500, addToLists, addToLists);
         this.radius = radius;
         this.color = color;
+    }
+
+    @Override
+    protected boolean checkCollisionWithOtherObjects(double x, double y) {
+        if (getCollisionPriority() != 0) {
+            for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects) {
+                GameShape bounds = dynamicObject.getBounds();
+                MathVector point = new MathVector(x,y);
+                if (!dynamicObject.equals(this) && dynamicObject.distanceTo(point) < bounds.getIntersectMagnitude() && !dynamicObject.isGhost() && !(dynamicObject instanceof Circle) && !(dynamicObject instanceof MainCharacter)) {
+                    if (bounds.contains(point)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @Override

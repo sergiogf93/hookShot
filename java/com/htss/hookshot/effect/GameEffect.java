@@ -10,4 +10,6 @@ public abstract class GameEffect {
     public abstract void drawEffectAndUpdate(Canvas canvas);
 
     public abstract boolean isFinished();
+
+    public abstract void recycle();
 }

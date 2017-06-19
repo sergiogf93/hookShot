@@ -95,12 +95,16 @@ public class RectShape extends GameShape{
         if (getVector().x == 1.0 && getVector().y == 0.0) {
             Rect r1 = new Rect((int) getxPosInRoom() - getWidth() / 2, (int) getyPosInRoom() - getHeight() / 2, (int) getxPosInRoom() + getWidth() / 2, (int) getyPosInRoom() + getHeight() / 2);
             contained = r1.contains((int) p.x, (int) p.y);
+        }
+         else if (getVector().x == 0.0 && getVector().y == 1.0) {
+            Rect r1 = new Rect((int) getxPosInRoom() - getHeight() / 2, (int) getyPosInRoom() - getWidth() / 2, (int) getxPosInRoom() + getHeight() / 2, (int) getyPosInRoom() + getWidth() / 2);
+            contained = r1.contains((int) p.x, (int) p.y);
         } else {
             Point[] points = getCorners();
             double areaRectangle = GameMath.areaRectangle(points);
             double addedAreas = 0;
             for (int i = 0; i < 4; i++) {
-                addedAreas += GameMath.areaTriangle(points[i],points[(i+1)%4],p.toPoint());
+                addedAreas += GameMath.areaTriangle(points[i], points[(i + 1) % 4], p.toPoint());
             }
             contained = Math.abs(addedAreas - areaRectangle) < 4;
         }

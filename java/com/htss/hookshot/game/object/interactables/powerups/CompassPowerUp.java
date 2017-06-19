@@ -33,9 +33,9 @@ public class CompassPowerUp extends GamePowerUp {
         points[1] = vector.getNormal().rescaled(getWidth() / 5).applyTo(getPositionInScreen()).toPoint();
         points[2] = vector.rescaled(getWidth() / 2).applyTo(getPositionInScreen()).toPoint();
         points[3] = vector.getNormal().rescaled(-1 * getWidth() / 5).applyTo(getPositionInScreen()).toPoint();
-        DrawUtil.drawPolygon(points, canvas, Color.RED);
+        DrawUtil.drawPolygon(points, canvas, Color.RED, Paint.Style.FILL, true, getPaint());
         points[2] = vector.rescaled(-1 * getWidth() / 2).applyTo(getPositionInScreen()).toPoint();
-        DrawUtil.drawPolygon(points, canvas, Color.BLUE);
+        DrawUtil.drawPolygon(points, canvas, Color.BLUE, Paint.Style.FILL, true, getPaint());
     }
 
     private MathVector getVector() {

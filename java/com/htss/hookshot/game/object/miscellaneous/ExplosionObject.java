@@ -16,7 +16,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class ExplosionObject extends GameDynamicObject {
 
-    private static double DURATION = TimeUtil.convertSecondToGameSecond(0.1);
+    private static double DURATION = TimeUtil.convertSecondToGameSecond(0.05);
 
     private float maxRadius;
     private Paint paint = new Paint();
@@ -32,6 +32,7 @@ public class ExplosionObject extends GameDynamicObject {
         updateFrame();
         if (getFrame() > DURATION) {
             this.destroy();
+            MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
         }
     }
 
@@ -39,15 +40,16 @@ public class ExplosionObject extends GameDynamicObject {
     public void draw(Canvas canvas) {
         paint.setAlpha((int) GameMath.linealValue(0,255,DURATION,50,getFrame()));
         DrawUtil.drawRadialGradient(canvas, paint, (float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), Color.YELLOW, Color.RED, Shader.TileMode.MIRROR);
-        MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
+//        MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
     }
 
     public float getRadius() {
-        double radius = GameMath.linealValue(0, 0, DURATION, maxRadius, getFrame());
+        double radius = GameMath.linealValue(0, 1, DURATION, maxRadius, getFrame());
         double radiusDown = (MyActivity.screenHeight - getyPosInScreen()) * 0.8;
         double radiusRight = (MyActivity.screenWidth - getxPosInScreen()) * 0.8;
         double radiusLeft = getxPosInScreen() * 0.8;
-        return (float) Math.min(Math.min(Math.min(radius, radiusDown), radiusLeft), radiusRight);
+        double r =  Math.min(Math.min(Math.min(radius, radiusDown), radiusLeft), radiusRight);
+        return (float) Math.max(r, 1);
     }
 
     @Override

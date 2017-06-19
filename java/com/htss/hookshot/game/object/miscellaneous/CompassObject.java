@@ -8,6 +8,8 @@ import android.graphics.Point;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
+import com.htss.hookshot.game.object.enemies.GameEnemy;
+import com.htss.hookshot.game.object.interactables.HealthDrop;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.obstacles.WallButton;
 import com.htss.hookshot.interfaces.Execution;
@@ -33,7 +35,7 @@ public class CompassObject extends GameDynamicObject {
         this.parent = parent;
         findInterests();
         paint.setStrokeWidth(getWidth() / 500);
-        this.timer = new TimerObject(parent, (int) (getWidth() / 1.75), TimeUtil.convertSecondToGameSecond(10), Color.YELLOW, addToGameObjectsList, addToDynamicObjectsList, new Execution() {
+        this.timer = new TimerObject(parent, (int) (getWidth() / 1.75), TimeUtil.convertSecondToGameSecond(10), Color.YELLOW, false, addToDynamicObjectsList, new Execution() {
             @Override
             public double execute() {
                 MyActivity.character.getCompass().destroy();
@@ -47,25 +49,30 @@ public class CompassObject extends GameDynamicObject {
     @Override
     public void update() {
         updateFrame();
+        timer.update();
     }
 
     @Override
     public void draw(Canvas canvas) {
         timer.draw(canvas);
         for (GameObject object : interests) {
-            drawArrow(canvas, parent.vectorTo(object));
+            int color = Color.YELLOW;
+            if (object instanceof GameEnemy) {
+                color = Color.RED;
+            }
+            drawArrow(canvas, parent.vectorTo(object),color);
         }
     }
 
-    private void drawArrow(Canvas canvas, MathVector vector) {
+    private void drawArrow(Canvas canvas, MathVector vector, int color) {
         Point[] points = new Point[4];
-        double size = GameMath.linealValue(MyActivity.TILE_WIDTH, getWidth() * 0.8, MyActivity.TILE_WIDTH * MyActivity.mapXTiles / 2, getWidth(), vector.magnitude());
+        double size = getWidth() * 0.8;
         points[0] = vector.rescaled(getWidth() / 2).applyTo(parent.getPositionInScreen()).toPoint();
         points[1] = vector.getNormal().rescaled(getWidth() / 10).applyTo(vector.rescaled(getWidth() / 1.75).applyTo(parent.getPositionInScreen())).toPoint();
         points[2] = vector.rescaled(size).applyTo(parent.getPositionInScreen()).toPoint();
         points[3] = vector.getNormal().rescaled(-1 * getWidth() / 10).applyTo(vector.rescaled(getWidth() / 1.75).applyTo(parent.getPositionInScreen())).toPoint();
         DrawUtil.drawVoidPolygon(points, canvas, Color.WHITE, getWidth() / 8, true);
-        DrawUtil.drawPolygon(points,canvas, Color.YELLOW);
+        DrawUtil.drawPolygon(points, canvas, color, Paint.Style.FILL, true, paint);
     }
 
     public void findInterests() {
@@ -76,6 +83,10 @@ public class CompassObject extends GameDynamicObject {
                     interests.add(object);
                 }
             } else if (object instanceof GamePowerUp) {
+                interests.add(object);
+            } else if (object instanceof HealthDrop) {
+                interests.add(object);
+            } else if (object instanceof GameEnemy) {
                 interests.add(object);
             }
         }

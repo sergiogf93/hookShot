@@ -21,4 +21,13 @@ public class StringUtil {
         return size;
     }
 
+    public static String shortenUntilSpace(String string) {
+        String shortened = string;
+        while(!Character.isWhitespace(shortened.charAt(shortened.length()-1))){
+            shortened = shortened.substring(0,shortened.length()-1);
+        }
+
+        return shortened;
+    }
+
 }

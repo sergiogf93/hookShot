@@ -18,7 +18,7 @@ public class BiCircleShape extends GameShape {
     private MathVector direction;
 
     public BiCircleShape(double xPos, double yPos, double separation, MathVector direction, double radius, int color) {
-        super(xPos, yPos, color, true);
+        super(xPos, yPos, color, false);
         this.separation = separation;
         this.direction = direction.getUnitVector();
         this.radius = radius;
@@ -49,7 +49,7 @@ public class BiCircleShape extends GameShape {
             points[1] = getDirection().getNormal().scaled(-getRadius()).applyTo(getCenter1()).toPoint();
             points[2] = getDirection().getNormal().scaled(getRadius()).applyTo(getCenter2()).toPoint();
             points[3] = getDirection().getNormal().scaled(-getRadius()).applyTo(getCenter2()).toPoint();
-            DrawUtil.drawPolygon(points,canvas,getColor());
+            DrawUtil.drawPolygon(points, canvas, getColor(), Paint.Style.FILL, true, paint);
         }
         canvas.drawCircle((float)getCenter1().x,(float)getCenter1().y,(float)getRadius(),paint);
         canvas.drawCircle((float)getCenter2().x,(float)getCenter2().y,(float)getRadius(),paint);

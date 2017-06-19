@@ -46,6 +46,10 @@ public abstract class GameCharacter extends GameDynamicObject {
         this.health = health;
     }
 
+    public void addHealth(double health) {
+        this.health = Math.min(this.health + health, getMaxHealth());
+    }
+
     public double getMaxHealth() {
         return maxHealth;
     }

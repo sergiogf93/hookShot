@@ -7,6 +7,7 @@ import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.MainCharacter;
+import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Clickable;
@@ -70,6 +71,11 @@ public class Joystick extends HUDElement implements Clickable {
 
     private void moveCharacter(int dx, int dy) {
         MathVector newP;
+        if (MyActivity.character.getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
+            if (MyActivity.character.getP().y < -15 * MyActivity.TILE_WIDTH / 100) {
+                dy = 0;
+            }
+        }
         if (MyActivity.character.isHooked() && MyActivity.character.getHook().getNodes().size() <= MainCharacter.MIN_HOOSKSHOT_NODES) {
             newP = new MathVector(dx, dy);
         } else {

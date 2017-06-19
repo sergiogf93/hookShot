@@ -5,6 +5,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Shader;
 
+import com.htss.hookshot.effect.FadeEffect;
+import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
 import com.htss.hookshot.game.hud.HUDBar;
@@ -28,14 +30,12 @@ import com.htss.hookshot.util.TimeUtil;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import toxi.math.MathUtils;
-
 /**
  * Created by Sergio on 03/08/2016.
  */
 public class MainCharacter extends GameCharacter {
 
-    private static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
+    public static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
     private static final int MAX_EXPLOSIONS = 5;
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
 
@@ -58,7 +58,7 @@ public class MainCharacter extends GameCharacter {
     private TimerObject infiniteJumpsTimer;
 
     public MainCharacter(double xPos, double yPos) {
-        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, true, true);
+        super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, false, false);
         makeSureNotUnderground = true;
         body = new CircleShape(xPos, yPos, BODY_RADIUS, Color.BLACK, false);
         rightHand = new CircleShape(xPos,yPos,FIST_RADIUS,Color.WHITE, false);
@@ -75,6 +75,8 @@ public class MainCharacter extends GameCharacter {
             }
         });
         this.healthBar.setAlpha(0);
+        MyActivity.canvas.gameObjects.add(this);
+        MyActivity.dynamicObjects.add(this);
     }
 
     @Override
@@ -106,6 +108,17 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public void updatePosition() {
+        if (MyActivity.currentMap != null) {
+            managePositionRelativeToMap();
+            this.healthBar.setxCenter((int) this.getxPosInScreen());
+            int yDirection = (getyPosInScreen() < MyActivity.VERTICAL_MARGIN) ? -1 : 1;
+            this.healthBar.setyCenter((int) (getyPosInScreen() + yDirection * getHeight()));
+        } else {
+            super.updatePosition();
+        }
+    }
+
+    private void managePositionRelativeToMap() {
         MathVector futurePosition = getFuturePositionInScreen();
         if (getP().x > 0){
             if (futurePosition.x > MyActivity.screenWidth - MyActivity.HORIZONTAL_MARGIN && MyActivity.canvas.dx > - (MyActivity.currentMap.getWidth() - MyActivity.screenWidth)){
@@ -133,26 +146,27 @@ public class MainCharacter extends GameCharacter {
                 this.yPos = (int) (getyPosInScreen() + getP().y);
             }
         }
-        if (getyPosInScreen() > MyActivity.screenHeight + getHeight()) {
-            MyActivity.switchMap(1);
-            for (PortalObject portal : getPortals()) {
-                portal.destroy();
-            }
-            getPortals().clear();
-            if (getCurrentPowerUp() == GamePowerUp.PORTAL){
-                equipPowerUp(GamePowerUp.PORTAL);
-            }
-            getPortals().clear();
-            if (isHooked()) {
-                removeHook();
-            }
-            if (compass != null) {
-                compass.clearInterests();
-            }
+        if (getyPosInScreen() > MyActivity.screenHeight + getHeight() || getxPosInScreen() < 0 || getxPosInScreen() > MyActivity.screenWidth) {
+            manageExitMap();
         }
-        this.healthBar.setxCenter((int) this.getxPosInScreen());
-        int yDirection = (getyPosInScreen() < MyActivity.VERTICAL_MARGIN) ? -1 : 1;
-        this.healthBar.setyCenter((int) (getyPosInScreen() + yDirection*getHeight()));
+    }
+
+    private void manageExitMap() {
+        MyActivity.switchMap();
+        for (PortalObject portal : getPortals()) {
+            portal.destroy();
+        }
+        getPortals().clear();
+        if (getCurrentPowerUp() == GamePowerUp.PORTAL){
+            equipPowerUp(GamePowerUp.PORTAL);
+        }
+        getPortals().clear();
+        if (isHooked()) {
+            removeHook();
+        }
+        if (compass != null) {
+            compass.clearInterests();
+        }
     }
 
     @Override
@@ -160,6 +174,11 @@ public class MainCharacter extends GameCharacter {
         if (getHook() != null){
             if (getHook().isHooked()){
                 manageHookUpdate();
+            }
+            if (getHook().isFastReloading()) {
+                if (distanceTo(rightHand) > BODY_RADIUS * 5) {
+                    removeHook();
+                }
             }
         }
         super.update();
@@ -169,7 +188,9 @@ public class MainCharacter extends GameCharacter {
             setState(STATE_REST);
         }
         manageFacingDirection();
-        manageEnemyCollision();
+        if (getHealth() > 0) {
+            manageEnemyCollision();
+        }
     }
 
     private void manageEnemyCollision() {
@@ -190,7 +211,11 @@ public class MainCharacter extends GameCharacter {
         if (getHook().isFastReloading()) {
             setMaxVelocity(MAX_VELOCITY*5);
         } else {
-            setMaxVelocity(MAX_VELOCITY);
+            if (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
+                setMaxVelocity(MAX_VELOCITY * 2);
+            } else {
+                setMaxVelocity(MAX_VELOCITY);
+            }
         }
         if (getHook().isReloading()){
             MathVector vectorToLastNode = new MathVector(getPositionInRoom(),getHook().getLastNode().getPositionInRoom());
@@ -222,7 +247,7 @@ public class MainCharacter extends GameCharacter {
             separationFoot = new MathVector(getFacing() * BODY_RADIUS / 3, BODY_RADIUS + FOOT_RADIUS / 3);
             axisForFeet = new MathVector(0,-1);
             if (!isOnFloor()){
-                axisForFeet = new MathVector(getHook().getLastNode().getPositionInRoom(), getPositionInRoom());
+                axisForFeet = new MathVector(getHook().getFirstNode().getPositionInRoom(), getPositionInRoom());
                 axisForFeet.normalize();
                 double angle = separationFoot.angleDeg(new MathVector(0, 1));
                 separationFoot = axisForFeet.rotatedDeg(angle).rescaled(separationFoot.magnitude());
@@ -308,8 +333,8 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
-    public void jump() {
-        MathVector jumpForce = new MathVector(0, -1 * MyActivity.TILE_WIDTH * getMass());
+    public void jump(double jump) {
+        MathVector jumpForce = new MathVector(0, jump);
         addP(jumpForce);
     }
 
@@ -347,6 +372,14 @@ public class MainCharacter extends GameCharacter {
 
     public void setHook(Hook hook) {
         this.hook = hook;
+    }
+
+    public int getExplosionsUsed() {
+        return explosionsUsed;
+    }
+
+    public void setExplosionsUsed(int explosionsUsed) {
+        this.explosionsUsed = explosionsUsed;
     }
 
     public boolean isHooked(){
@@ -403,7 +436,7 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public int getMargin(){
-        return getWidth()/10;
+        return 1;
     }
 
     public void checkIfRemoveInterest(GameObject interest) {
@@ -418,18 +451,17 @@ public class MainCharacter extends GameCharacter {
         }
         MathVector downPoint = new MathVector(xDown,yDown);
         MathVector initP = new MathVector(getPositionInScreen(),downPoint);
-        int radius = 10;
-        int separation = 40;
-        int nNodes = Math.min((int) (initP.magnitude()/separation) + 2, maxHookNodes);
+        int nNodes = (int) (initP.magnitude()/Hook.SEPARATION) + 2;
         nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
-        initP.scale(0.5);
-//        initP.rescale(GameMath.linealValue(1,getHookVelocity()/1000,15,getHookVelocity(),nNodes));
-        setHook(new Hook(getxPosInRoom(),getyPosInRoom(), 1, 0, nNodes, radius, Color.GRAY, separation,this,initP));
-//        setP(new MathVector(0,0));
+        setHook(new Hook(getxPosInRoom(), getyPosInRoom(), nNodes, Color.GRAY, this, new MathVector(0, 0)));
+        getHook().hook(downPoint.screenToRoom());
         MyActivity.canvas.debugText = getP().toString();
     }
 
     public void removeHook() {
+        if (getHook().isFastReloading()) {
+            setMass(MASS);
+        }
         MyActivity.canvas.gameObjects.remove(hook);
         MyActivity.dynamicObjects.removeAll(hook.getNodes());
         if (hook.getHookedObject() != null){
@@ -441,13 +473,31 @@ public class MainCharacter extends GameCharacter {
         MyActivity.hudElements.remove(MyActivity.extendButton);
         MyActivity.reloadButton = null;
         MyActivity.extendButton = null;
-        setMaxVelocity(MAX_VELOCITY);
+        if (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
+            setMaxVelocity(MAX_VELOCITY * 2);
+        } else {
+            setMaxVelocity(MAX_VELOCITY);
+        }
         setState(STATE_MOVING);
     }
 
     @Override
     public void die() {
-        this.setHealth(this.getMaxHealth());
+        if (isHooked()) {
+            removeHook();
+        }
+        MyActivity.hideControls();
+        MyActivity.paused = true;
+        MyActivity.gameEffects.add(new FadeEffect(Color.WHITE, new Execution() {
+            @Override
+            public double execute() {
+                setHealth(getMaxHealth());
+                MyActivity.canvas.myActivity.saveHealth();
+                (new MainMenu()).execute();
+                return 0;
+            }
+        }));
+        this.destroy();
     }
 
     @Override
@@ -472,6 +522,10 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
+    public void setPowerUp (int type, int quantity) {
+        powerUps.put(type, quantity);
+    }
+
     public void addPowerUp(int type) {
         if (powerUps.containsKey(type)) {
             powerUps.put(type, powerUps.get(type) + 1);
@@ -482,6 +536,7 @@ public class MainCharacter extends GameCharacter {
 
     public void equipPowerUp(int type) {
         setCurrentPowerUp(type);
+        setMaxVelocity(MAX_VELOCITY);
         switch (type) {
             case GamePowerUp.PORTAL:
                 if (portals.size() % 2 == 1){
@@ -505,11 +560,13 @@ public class MainCharacter extends GameCharacter {
                 }
                 break;
             case GamePowerUp.INFINITE_JUMPS:
+                setMaxVelocity(MAX_VELOCITY * 2);
                 setColors(Color.CYAN, Color.BLACK, Color.WHITE, Color.WHITE, Color.BLUE, Color.BLUE);
                 powerUps.put(GamePowerUp.INFINITE_JUMPS, powerUps.get(GamePowerUp.INFINITE_JUMPS) - 1);
                 setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.convertSecondToGameSecond(5),Color.BLUE,true,true, new Execution() {
                     @Override
                     public double execute() {
+                        setMaxVelocity(MAX_VELOCITY);
                         equipPowerUp(-1);
                         setInfiniteJumpsTimer(null);
                         return 0;
@@ -518,10 +575,6 @@ public class MainCharacter extends GameCharacter {
                 break;
             default:
                 setColors(Color.BLACK, Color.YELLOW, Color.WHITE, Color.WHITE, Color.RED, Color.RED);
-                if (portals.size() % 2 == 1){
-                    portals.get(portals.size() - 1).destroy();
-                    portals.remove(portals.size() - 1);
-                }
         }
     }
 
@@ -550,6 +603,9 @@ public class MainCharacter extends GameCharacter {
                 break;
             case GamePowerUp.COMPASS:
                 setCompass(new CompassObject(this, true, true));
+                if (prevPowerUp == GamePowerUp.INFINITE_JUMPS) {
+                    setMaxVelocity(MAX_VELOCITY * 2);
+                }
                 setCurrentPowerUp(prevPowerUp);
                 powerUps.put(GamePowerUp.COMPASS, powerUps.get(GamePowerUp.COMPASS) - 1);
                 break;
@@ -562,7 +618,7 @@ public class MainCharacter extends GameCharacter {
                 }
                 break;
             case GamePowerUp.INFINITE_JUMPS:
-                jump();
+                jump( -1 * MyActivity.TILE_WIDTH * 2);
                 new JumpEffect(getxPosInRoom(), getyPosInRoom() + getHeight() / 2, MyActivity.TILE_WIDTH, (int) (MyActivity.TILE_WIDTH * 0.25), true, true);
         }
     }
