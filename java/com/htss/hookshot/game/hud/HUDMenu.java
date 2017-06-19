@@ -73,23 +73,14 @@ public class HUDMenu extends HUDElement {
 
     public void addMenuButtons() {
         buttons.clear();
-        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + buttonSeparation + buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "RESET", new LaunchGame()));
-        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 2*buttonSeparation + 3* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "DEBUGGER " + MyActivity.debugging, new Execution() {
-            @Override
-            public double execute() {
-                MyActivity.debugging = !MyActivity.debugging;
-                MyActivity.unpause();
-                return 0;
-            }
-        }));
-        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 3*buttonSeparation + 5* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "MAIN MENU", new Execution() {
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + buttonSeparation + buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "MAIN MENU", new Execution() {
             @Override
             public double execute() {
                 (new MainMenu()).execute();
                 return 0;
             }
         }));
-        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 4*buttonSeparation + 7* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "EXIT GAME", new Execution() {
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 2*buttonSeparation + 3* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "EXIT GAME", new Execution() {
             @Override
             public double execute() {
                 System.exit(0);

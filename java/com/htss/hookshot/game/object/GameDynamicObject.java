@@ -122,7 +122,7 @@ public abstract class GameDynamicObject extends GameObject {
             for (double y = getyPosInRoom() - getHeight()/2 ; y > getyPosInRoom() - getHeight()/2 + p.y ; y--) {
                 if(MyActivity.isInRoom(x, y)) {
                     if (checkCollisionWithOtherObjects(x,y)) {
-                        return 0f;
+                        return y - (getyPosInRoom() - getHeight() / 2);
                     } else if (!isIgnoringMap()) {
                         int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
                         if (Color.alpha(pixel) == 255) {
@@ -137,37 +137,13 @@ public abstract class GameDynamicObject extends GameObject {
         return 1f;
     }
 
-    private boolean manageUpCollision(int margin){
-        if(p.y < 0){
-            double checkup = checkUpCollision(margin);
-            if (checkup <= 0) p.y = checkup;
-            return true;
-        }
-        return false;
-    }
-
-    public boolean onFloor(int margin){
-        for (double x = getxPosInRoom()-margin;x < getxPosInRoom() + margin;x++){
-            double y = getyPosInRoom() + getHeight()/2 + 3;
-            if(MyActivity.isInRoom(x, y)) {
-                int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                if (Color.alpha(pixel) == 255) {
-                    onFloor = true;
-                    return true;
-                }
-            }
-        }
-        onFloor = false;
-        return false;
-    }
-
     private double checkDownCollision(int margin){
         for (double x = getxPosInRoom()-margin;x < getxPosInRoom() + margin;x++){
             for (double y = getyPosInRoom() + getHeight()/2 ; y < getyPosInRoom() + getHeight()/2 + p.y ; y++) {
                 if(MyActivity.isInRoom(x, y)) {
                     if (checkCollisionWithOtherObjects(x,y)){
                         setOnFloor(true);
-                        return 0f;
+                        return y - getyPosInRoom() - getHeight() / 2;
                     } else if (!isIgnoringMap()) {
                         int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
                         if (Color.alpha(pixel) == 255) {
@@ -178,6 +154,59 @@ public abstract class GameDynamicObject extends GameObject {
             }
         }
         return -1;
+    }
+
+    private double checkRightCollision(int margin){
+        for (double y = getyPosInRoom()-margin;y < getyPosInRoom() + margin;y++){
+            for (double x = getxPosInRoom()+getWidth()/2 ; x < getxPosInRoom() + getWidth()/2 + p.x ; x++) {
+                if(MyActivity.isInRoom(x, y)) {
+                    if (checkCollisionWithOtherObjects(x,y)){
+                        return x - getxPosInRoom() - getWidth() / 2;
+                    } else if (!isIgnoringMap()) {
+                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
+                        if (Color.alpha(pixel) == 255) {
+                            return x - getxPosInRoom() - getWidth() / 2;
+                        }
+                    }
+                } else {
+                    if (MyActivity.currentMap.getEntrance().tileX == MyActivity.mapXTiles - 1) {
+                        return 0f;
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private double checkLeftCollision(int margin){
+        for (double y = getyPosInRoom()-margin;y < getyPosInRoom() + margin;y++){
+            for (double x = getxPosInRoom()-getWidth()/2 ; x > getxPosInRoom() - getWidth()/2 + p.x ; x--) {
+                if(MyActivity.isInRoom(x, y)) {
+                    if (checkCollisionWithOtherObjects(x,y)){
+                        return x - getxPosInRoom() + getWidth() / 2;
+                    } else if (!isIgnoringMap()) {
+                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
+                        if (Color.alpha(pixel) == 255) {
+                            return x - getxPosInRoom() + getWidth() / 2;
+                        }
+                    }
+                } else {
+                    if (MyActivity.currentMap.getEntrance().tileX == 0) {
+                        return 0f;
+                    }
+                }
+            }
+        }
+        return 1;
+    }
+
+    private boolean manageUpCollision(int margin){
+        if(p.y < 0){
+            double checkup = checkUpCollision(margin);
+            if (checkup <= 0) p.y = checkup;
+            return true;
+        }
+        return false;
     }
 
     private boolean manageDownCollision(int margin){
@@ -199,6 +228,43 @@ public abstract class GameDynamicObject extends GameObject {
         if (p.y > maximumVerticalMomentum){
             p.y = maximumVerticalMomentum;
         }
+        return false;
+    }
+
+    private boolean manageRightCollision(int margin){
+        if(p.x > 0){
+            double checkRight = checkRightCollision(margin);
+            if (checkRight >= 0){
+                p.x = checkRight;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean manageLeftCollision(int margin){
+        if(p.x < 0){
+            double checkLeft = checkLeftCollision(margin);
+            if (checkLeft <= 0){
+                p.x = checkLeft;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean onFloor(int margin){
+        for (double x = getxPosInRoom()-margin;x < getxPosInRoom() + margin;x++){
+            double y = getyPosInRoom() + getHeight()/2 + 3;
+            if(MyActivity.isInRoom(x, y)) {
+                int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
+                if (Color.alpha(pixel) == 255) {
+                    onFloor = true;
+                    return true;
+                }
+            }
+        }
+        onFloor = false;
         return false;
     }
 
@@ -339,72 +405,6 @@ public abstract class GameDynamicObject extends GameObject {
         if (p.y > 0) {
             p.y = 0;
         }
-    }
-
-    private double checkRightCollision(int margin){
-        for (double y = getyPosInRoom()-margin;y < getyPosInRoom() + margin;y++){
-            for (double x = getxPosInRoom()+getWidth()/2 ; x < getxPosInRoom() + getWidth()/2 + p.x ; x++) {
-                if(MyActivity.isInRoom(x, y)) {
-                    if (checkCollisionWithOtherObjects(x,y)){
-                        return 0f;
-                    } else if (!isIgnoringMap()) {
-                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                        if (Color.alpha(pixel) == 255) {
-                            return x - getxPosInRoom() - getWidth() / 2;
-                        }
-                    }
-                } else {
-                    if (MyActivity.currentMap.getEntrance().tileX == MyActivity.mapXTiles - 1) {
-                        return 0f;
-                    }
-                }
-            }
-        }
-        return -1;
-    }
-
-    private boolean manageRightCollision(int margin){
-        if(p.x > 0){
-            double checkRight = checkRightCollision(margin);
-            if (checkRight >= 0){
-                p.x = checkRight;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private double checkLeftCollision(int margin){
-        for (double y = getyPosInRoom()-margin;y < getyPosInRoom() + margin;y++){
-            for (double x = getxPosInRoom()-getWidth()/2 ; x > getxPosInRoom() - getWidth()/2 + p.x ; x--) {
-                if(MyActivity.isInRoom(x, y)) {
-                    if (checkCollisionWithOtherObjects(x,y)){
-                        return 0f;
-                    } else if (!isIgnoringMap()) {
-                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                        if (Color.alpha(pixel) == 255) {
-                            return x - getxPosInRoom() + getWidth() / 2;
-                        }
-                    }
-                } else {
-                    if (MyActivity.currentMap.getEntrance().tileX == 0) {
-                        return 0f;
-                    }
-                }
-            }
-        }
-        return 1;
-    }
-
-    private boolean manageLeftCollision(int margin){
-        if(p.x < 0){
-            double checkLeft = checkLeftCollision(margin);
-            if (checkLeft <= 0){
-                p.x = checkLeft;
-                return true;
-            }
-        }
-        return false;
     }
 
     public boolean inContactWith(GameDynamicObject object){

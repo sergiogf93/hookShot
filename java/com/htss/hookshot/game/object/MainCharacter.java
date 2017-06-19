@@ -455,7 +455,6 @@ public class MainCharacter extends GameCharacter {
         nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
         setHook(new Hook(getxPosInRoom(), getyPosInRoom(), nNodes, Color.GRAY, this, new MathVector(0, 0)));
         getHook().hook(downPoint.screenToRoom());
-        MyActivity.canvas.debugText = getP().toString();
     }
 
     public void removeHook() {

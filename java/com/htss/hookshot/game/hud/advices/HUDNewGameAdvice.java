@@ -30,6 +30,7 @@ public class HUDNewGameAdvice extends HUDAdvice {
                 MyActivity.advices.add(new HUDCompassAdvice(0));
                 MyActivity.advices.add(new HUDBombsAdvice(0));
                 MyActivity.advices.add(new HUDJumpsAdvice(0));
+                MyActivity.canvas.myActivity.saveAdvices();
                 finish();
                 resume();
                 return 0;
