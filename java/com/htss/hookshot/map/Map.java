@@ -108,7 +108,6 @@ public class Map {
         }
         if (MyActivity.canvas.myActivity.level > 0) {
             double r = addingRandom.nextDouble();
-            r = 0.2;
             if (r < 0.4) {
                 addPassageDoor(2);
                 addExitDoor(addingRandom, MAX_BUTTONS);
