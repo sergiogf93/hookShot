@@ -1095,13 +1095,14 @@ public class Map {
     }
 
     public void addEnemies (Random random) {
-        if (random.nextBoolean()) {
-            int N = getNEnemies(random);
-            for (int i = 0; i < N; i++) {
-                MathVector p = getRandomEmptyPoint(0, random);
-                new EnemyStalker(p.x, p.y, true);
-            }
-        } else {
+//        if (random.nextBoolean()) {
+        if (false) {
+        int N = getNEnemies(random);
+        for (int i = 0; i < N; i++) {
+            MathVector p = getRandomEmptyPoint(0, random);
+            new EnemyStalker(p.x, p.y, true);
+        }
+    } else {
             MathVector p = getRandomEmptyPoint(0, random);
             new EnemyTerraWorm(p.x, p.y, 5, true, true);
         }
