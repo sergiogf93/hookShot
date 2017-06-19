@@ -193,7 +193,7 @@ public class MyActivity extends Activity {
         canvas.joystickMonospace = Typeface.createFromAsset(getAssets(),"fonts/joystix_monospace.ttf");
         canvas.setFont(GameBoard.ARCADECLASSIC_FONT_KEY, GameBoard.DEFAULT_FONT_SIZE);
 
-        int nMenuButton = 4;
+        int nMenuButton = 2;
         int menuButtonHeight = TILE_WIDTH;
         int menuButtonSeparation = TILE_WIDTH / 5;
         int menuWidth = 5*TILE_WIDTH;
@@ -508,7 +508,6 @@ public class MyActivity extends Activity {
             } else {
                 return new MathVector(xDown, yDown);
             }
-            canvas.debugObjects.add(new Circle(point.x, point.y, 0, 0, 1, Color.YELLOW, false));
         }
         return new MathVector(xDown, yDown);
     }

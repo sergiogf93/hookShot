@@ -22,11 +22,11 @@ public class GameStrings {
     }
 
     public static String getHookAdvice2(){
-        return "Once you are hooked, press the button (E) to extend the chain or press the button (R) to reload the chain. Use the (B) button to unhook yourself.";
+        return "Once you are hooked, press the button ( E ) to extend the chain or press the button ( R ) to reload the chain. Use the ( B ) button to unhook yourself.";
     }
 
     public static String getHookAdvice3() {
-        return "If you tap twice on the screen or press the (R) button twice you will perform a fast reload. Fast reloading is helpful when you want to move faster.";
+        return "If you tap twice on the screen or press the ( R ) button twice you will perform a fast reload. Fast reloading is helpful when you want to move faster.";
     }
 
     public static String getPortalAdvice1() {
@@ -34,11 +34,11 @@ public class GameStrings {
     }
 
     public static String getPortalAdvice2() {
-        return "Use the (B) button to place a portal. You need to place two portals in order to travel between them.";
+        return "Use the ( B ) button to place a portal. You need to place two portals in order to travel between them.";
     }
 
     public static String getPortalAdvice3() {
-        return "Now that two portals have been place, you can travel between them by standing in front of one of them and pressing (B).";
+        return "Now that two portals have been place, you can travel between them by standing in front of one of them and pressing ( B ).";
     }
 
     public static String getCompassAdvice1() {
@@ -50,7 +50,7 @@ public class GameStrings {
     }
 
     public static String getBombsAdvice2() {
-        return "Use the (B) button to create an explosion. You have up to five explosions for each power up.";
+        return "Use the ( B ) button to create an explosion. You have up to five explosions for each power up.";
     }
 
     public static String getInfiniteJumpsAdvice1() {
