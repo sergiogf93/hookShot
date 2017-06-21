@@ -1095,8 +1095,7 @@ public class Map {
     }
 
     public void addEnemies (Random random) {
-//        if (random.nextBoolean()) {
-        if (false) {
+        if (random.nextBoolean()) {
         int N = getNEnemies(random);
         for (int i = 0; i < N; i++) {
             MathVector p = getRandomEmptyPoint(0, random);
