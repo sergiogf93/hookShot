@@ -8,11 +8,13 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
+import android.view.Choreographer;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 
 import com.htss.hookshot.R;
@@ -45,6 +47,7 @@ import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.FramePacer;
 import com.htss.hookshot.util.TimeUtil;
 
 import java.util.LinkedList;
@@ -59,12 +62,15 @@ public class MyActivity extends Activity {
 //    public static int mapXTiles = 30, mapYTiles = 20;
 
     public static final int FRAME_RATE = 10;
+    // The game logic runs once per redraw and was tuned on 60 Hz phones, so redraws are capped to this
+    // rate. Otherwise it plays faster on 90 and 120 Hz screens
+    public static final int UPDATES_PER_SECOND = 60;
     public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
     private static int BUTTON_A_BOTTOM_PADDING,BUTTON_A_RIGHT_PADDING,BUTTON_B_BOTTOM_PADDING,BUTTON_B_RIGHT_PADDING;
 
     public static GameBoard canvas;
     public static GameEffect roomSwitchEffect;
-    private Handler handler = new Handler();
+    private final FramePacer framePacer = new FramePacer(UPDATES_PER_SECOND);
     public static int screenHeight, screenWidth; //Default 110 80, for screen size 30 20
     public static int frame = 0;
     public static MainCharacter character;
@@ -117,6 +123,10 @@ public class MyActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        // Ask screens that can change refresh rate to match the update rate, so no frame is repeated
+        WindowManager.LayoutParams windowAttributes = getWindow().getAttributes();
+        windowAttributes.preferredRefreshRate = UPDATES_PER_SECOND;
+        getWindow().setAttributes(windowAttributes);
         setContentView(R.layout.activity_my);
 
         DisplayMetrics displaymetrics = new DisplayMetrics();
@@ -223,24 +233,45 @@ public class MyActivity extends Activity {
     }
 
     private void initGfx() {
-        handler.removeCallbacks(frameUpdate);
+        stopFrameUpdates();
 
         (new MainMenu()).execute();
 
         canvas.invalidate();
 
-        handler.postDelayed(frameUpdate, FRAME_RATE);
+        startFrameUpdates();
     }
 
-    private Runnable frameUpdate = new Runnable() {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        startFrameUpdates();
+    }
+
+    @Override
+    protected void onPause() {
+        stopFrameUpdates();
+        super.onPause();
+    }
+
+    private void startFrameUpdates() {
+        framePacer.reset();
+        Choreographer.getInstance().removeFrameCallback(frameUpdate);
+        Choreographer.getInstance().postFrameCallback(frameUpdate);
+    }
+
+    private void stopFrameUpdates() {
+        Choreographer.getInstance().removeFrameCallback(frameUpdate);
+    }
+
+    private Choreographer.FrameCallback frameUpdate = new Choreographer.FrameCallback() {
         @Override
-        synchronized public void run() {
-            handler.removeCallbacks(frameUpdate);
-
-            frame += FRAME_RATE;
-
-            canvas.invalidate();
-            handler.postDelayed(frameUpdate, FRAME_RATE);
+        public void doFrame(long frameTimeNanos) {
+            if (framePacer.shouldUpdate(frameTimeNanos)) {
+                frame += FRAME_RATE;
+                canvas.invalidate();
+            }
+            Choreographer.getInstance().postFrameCallback(this);
         }
     };
 
