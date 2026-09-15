@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The game sizes itself from the display metrics and doesn't handle system bar insets, so keep
+         the pre Android 15 layout instead of being forced edge-to-edge. -->
+    <style name="GameTheme" parent="android:Theme.Holo.NoActionBar.Fullscreen">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>
