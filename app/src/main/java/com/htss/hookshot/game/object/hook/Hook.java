@@ -200,7 +200,7 @@ public class Hook extends Chain {
                     }
                 }
             }
-            if (getFrame() > TimeUtil.convertSecondToGameSecond(0.2)){
+            if (getFrame() > TimeUtil.secondsToFrameTime(0.333)){
                 MyActivity.character.removeHook();
             }
         } else {

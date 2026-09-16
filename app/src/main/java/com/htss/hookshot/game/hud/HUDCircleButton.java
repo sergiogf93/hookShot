@@ -87,7 +87,7 @@ public class HUDCircleButton extends HUDElement implements Clickable {
         setTouchId(id);
         setOn(true);
         if (getExecDoubleOn() != null) {
-            if(System.currentTimeMillis() - getTimeWhenOn() < 500) {
+            if(System.currentTimeMillis() - getTimeWhenOn() < MyActivity.DOUBLE_TAP_MILLIS) {
                 setTimeWhenOn(0);
                 getExecDoubleOn().execute();
             } else {

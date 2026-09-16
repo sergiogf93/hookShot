@@ -57,7 +57,7 @@ public class TerraWormBody extends ClickableEnemy {
 
     private void drawFangs(Canvas canvas) {
         Point[] points = new Point[5];
-        int angle = (terraWorm.getFrame() % TimeUtil.convertSecondToGameSecond(0.5) < TimeUtil.convertSecondToGameSecond(0.25)) ? 35 : 40;
+        int angle = (terraWorm.getFrame() % TimeUtil.secondsToFrameTime(0.833) < TimeUtil.secondsToFrameTime(0.417)) ? 35 : 40;
         points[0] = getP().rotatedDeg(angle).rescaled(getRadius()).applyTo(getPositionInScreen()).toPoint();
         points[1] = getP().rotatedDeg(angle - 5).rescaled(getRadius() * 1.5).applyTo(getPositionInScreen()).toPoint();
         points[2] = getP().rotatedDeg(angle - 10).rescaled(getRadius() * 1.9).applyTo(getPositionInScreen()).toPoint();

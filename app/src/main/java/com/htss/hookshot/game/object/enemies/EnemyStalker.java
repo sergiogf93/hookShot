@@ -17,7 +17,7 @@ public class EnemyStalker extends ClickableEnemy {
     private static final int COLLISION_PRIORITY = 0, MASS = 0, MAX_HEALTH = 5, MAX_VELOCITY = 10 * MyActivity.TILE_WIDTH / 100;
 
     private static final double THRESHOLD_DISTANCE = MyActivity.TILE_WIDTH * 6, SEARCHING_DISTANCE = MyActivity.TILE_WIDTH * 20;
-    private static final int MAX_SEARCHING_TIME = (int) TimeUtil.convertSecondToGameSecond(10);
+    private static final int MAX_SEARCHING_TIME = (int) TimeUtil.secondsToFrameTime(16.667);
     private static final double MAX_RADIUS = MyActivity.TILE_WIDTH / 2, MIN_RADIUS = MyActivity.TILE_WIDTH / 10, MARGIN = MyActivity.TILE_WIDTH*0.8;
 
     private int frameWhenLost = 0, bodyColor = Color.BLACK;

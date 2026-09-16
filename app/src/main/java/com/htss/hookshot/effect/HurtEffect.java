@@ -13,7 +13,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class HurtEffect extends GameEffect {
 
-    private static int DURATION = (int) TimeUtil.convertSecondToGameSecond(0.5);
+    private static int DURATION = (int) TimeUtil.secondsToFrameTime(0.833);
     private int frame = 0;
 
     @Override

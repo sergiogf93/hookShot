@@ -41,7 +41,7 @@ public class MainCharacter extends GameCharacter {
     private static final int MAX_EXPLOSIONS = 5;
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
     // As long as the red flash of the HurtEffect
-    private static final double INVULNERABLE_DURATION = TimeUtil.convertSecondToGameSecond(0.5);
+    private static final double INVULNERABLE_DURATION = TimeUtil.secondsToFrameTime(0.833);
 
     public static final int BODY_RADIUS = 10*MyActivity.TILE_WIDTH /50, FIST_RADIUS = MyActivity.TILE_WIDTH /8,
                             FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
@@ -282,12 +282,12 @@ public class MainCharacter extends GameCharacter {
         rightHand.setPositionInRoom(separationHand.applyTo(positionFromHands));
         if (getCurrentPowerUp() == GamePowerUp.PORTAL) {
             paint.setStrokeWidth(rightHand.getWidth()/4);
-            int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.convertSecondToGameSecond(1)) + 25);
+            int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.secondsToFrameTime(1.667)) + 25);
             DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.RED, startAngle, 180);
             DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.BLUE, startAngle + 180, 180);
         }
         if (getCurrentPowerUp() == GamePowerUp.BOMB) {
-            rightHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.convertSecondToGameSecond(0.2), FIST_RADIUS, getFrame() % TimeUtil.convertSecondToGameSecond(0.2)));
+            rightHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.secondsToFrameTime(0.333), FIST_RADIUS, getFrame() % TimeUtil.secondsToFrameTime(0.333)));
         } else {
             rightHand.setRadius(FIST_RADIUS);
         }
@@ -313,12 +313,12 @@ public class MainCharacter extends GameCharacter {
         separationFoot.reflect(axisForFeet);
         leftHand.setPositionInRoom(separationHand.applyTo(positionFromHands));
         if (getCurrentPowerUp() == GamePowerUp.PORTAL && portals.size() % 2 == 0) {
-            int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.convertSecondToGameSecond(1)) + 25);
+            int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.secondsToFrameTime(1.667)) + 25);
             DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.RED, startAngle, 180);
             DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.BLUE, startAngle + 180, 180);
         }
         if (getCurrentPowerUp() == GamePowerUp.BOMB) {
-            leftHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.convertSecondToGameSecond(0.2), FIST_RADIUS, getFrame() % TimeUtil.convertSecondToGameSecond(0.2)));
+            leftHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.secondsToFrameTime(0.333), FIST_RADIUS, getFrame() % TimeUtil.secondsToFrameTime(0.333)));
         } else {
             leftHand.setRadius(FIST_RADIUS);
         }
@@ -579,7 +579,7 @@ public class MainCharacter extends GameCharacter {
                 setMaxVelocity(MAX_VELOCITY * 2);
                 setColors(Color.CYAN, Color.BLACK, Color.WHITE, Color.WHITE, Color.BLUE, Color.BLUE);
                 powerUps.put(GamePowerUp.INFINITE_JUMPS, powerUps.get(GamePowerUp.INFINITE_JUMPS) - 1);
-                setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.convertSecondToGameSecond(5),Color.BLUE,true,true, new Execution() {
+                setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.secondsToFrameTime(8.333),Color.BLUE,true,true, new Execution() {
                     @Override
                     public double execute() {
                         setMaxVelocity(MAX_VELOCITY);

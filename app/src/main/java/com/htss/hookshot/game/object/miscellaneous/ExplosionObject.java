@@ -16,7 +16,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class ExplosionObject extends GameDynamicObject {
 
-    private static double DURATION = TimeUtil.convertSecondToGameSecond(0.05);
+    private static double DURATION = TimeUtil.secondsToFrameTime(0.083);
 
     private float maxRadius;
     private Paint paint = new Paint();

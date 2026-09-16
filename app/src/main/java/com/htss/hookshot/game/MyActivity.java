@@ -50,7 +50,6 @@ import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.map.Map;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.FramePacer;
-import com.htss.hookshot.util.TimeUtil;
 
 import java.util.LinkedList;
 import java.util.Vector;
@@ -67,6 +66,8 @@ public class MyActivity extends Activity {
     // The game logic runs once per redraw and was tuned on 60 Hz phones, so redraws are capped to this
     // rate. Otherwise it plays faster on 90 and 120 Hz screens
     public static final int UPDATES_PER_SECOND = 60;
+    // Most time between two taps, or two presses of a button, for them to count as a double tap
+    public static final long DOUBLE_TAP_MILLIS = 500;
     public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
     // About the biggest tile a phone gets, 7.2 tiles over a 430 dp short side
     private static final int MAX_TILE_WIDTH_DP = 60;
@@ -506,7 +507,7 @@ public class MyActivity extends Activity {
                     decideBetweenFastReloadOrShoot(objective);
                 } else {
                     if (character.isHooked()) {
-                        if (System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5)) {
+                        if (System.currentTimeMillis() - lastTap < DOUBLE_TAP_MILLIS) {
                             character.getHook().setFastReloading(true);
                         }
                     }
@@ -518,7 +519,7 @@ public class MyActivity extends Activity {
 
     private void decideBetweenFastReloadOrShoot(MathVector objective) {
         if (character.isHooked()) {
-            if (character.getHook().getNodesNumber() > Hook.MIN_RELOADING_NODES && !character.getHook().isFastReloading() && System.currentTimeMillis() - lastTap < TimeUtil.convertSecondToGameSecond(0.5) || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
+            if (character.getHook().getNodesNumber() > Hook.MIN_RELOADING_NODES && !character.getHook().isFastReloading() && System.currentTimeMillis() - lastTap < DOUBLE_TAP_MILLIS || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
                 character.getHook().setFastReloading(true);
             } else {
                 character.shootHook(objective.x, objective.y);

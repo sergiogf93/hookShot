@@ -39,7 +39,7 @@ public class CompassPowerUp extends GamePowerUp {
     }
 
     private MathVector getVector() {
-        double angle = (Math.PI/4)*Math.sin(2*Math.PI*getFrame()/ TimeUtil.convertSecondToGameSecond(1));
+        double angle = (Math.PI/4)*Math.sin(2*Math.PI*getFrame()/ TimeUtil.secondsToFrameTime(1.667));
         return new MathVector(Math.cos(angle), Math.sin(angle));
     }
 }

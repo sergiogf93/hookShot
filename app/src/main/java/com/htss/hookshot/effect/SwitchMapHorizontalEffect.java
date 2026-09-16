@@ -12,7 +12,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class SwitchMapHorizontalEffect extends GameEffect {
 
-    private static final double DURATION = TimeUtil.convertSecondToGameSecond(1);
+    private static final double DURATION = TimeUtil.secondsToFrameTime(1.667);
 
     private Bitmap currentMapScreenBitmap, nextMapScreenBitmap;
     private int frame = 0, direction;
