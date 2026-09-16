@@ -25,6 +25,8 @@ public abstract class GameDynamicObject extends GameObject {
     protected double friction = 0.75;
     private int mass, collisionPriority, frame = 0;
     private Vector<Constraint> constraints;
+    // How far the object is lifted out of the ground this update, on top of its speed
+    private double lift = 0;
 
     public GameDynamicObject(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, boolean addToGameObjectsList, boolean addToDynamicObjectsList) {
         super(xPos, yPos, addToGameObjectsList);
@@ -57,7 +59,12 @@ public abstract class GameDynamicObject extends GameObject {
             }
         }
         manageConstraints();
+        // The lift only moves the object, whatever its top speed, and isn't kept as speed, which would make it keep
+        // rising once out of the ground
+        p.y += lift;
         updatePosition();
+        p.y -= lift;
+        lift = 0;
         updateFrame();
         if (isOnFloor()){
             p.x *= friction;
@@ -90,8 +97,8 @@ public abstract class GameDynamicObject extends GameObject {
 
     public void updatePosition() {
         if (!Double.isNaN(p.x) && !Double.isNaN(p.y)) {
-            setxPosInRoom((int) (getxPosInRoom() + p.x));
-            setyPosInRoom((int) (getyPosInRoom() + p.y));
+            setxPosInRoom(getxPosInRoom() + p.x);
+            setyPosInRoom(getyPosInRoom() + p.y);
         }
     }
 
@@ -110,7 +117,8 @@ public abstract class GameDynamicObject extends GameObject {
         if (up && down){
             getOutUpDown();
         } else if (up && !down){
-            p.y += MyActivity.TILE_WIDTH / 100;
+            // Bumped into a ceiling, so start falling
+            p.y += GRAVITY;
         } else if (!up && down){
             if (makeSureNotUnderground){
                 raiseAboveGround(margin);
@@ -202,11 +210,15 @@ public abstract class GameDynamicObject extends GameObject {
         return 1;
     }
 
+    // Tells whether a ceiling stopped the object. Rising without hitting one isn't a collision, or everything rising
+    // would be pushed down on top of gravity, which made jumps depend on the screen and swings die out
     private boolean manageUpCollision(int margin){
         if(p.y < 0){
             double checkup = checkUpCollision(margin);
-            if (checkup <= 0) p.y = checkup;
-            return true;
+            if (checkup <= 0) {
+                p.y = checkup;
+                return true;
+            }
         }
         return false;
     }
@@ -288,7 +300,7 @@ public abstract class GameDynamicObject extends GameObject {
             }
         }
         if (raised){
-            p.y = y - getHeight()/2 - getyPosInRoom();
+            lift = y - getHeight()/2 - getyPosInRoom();
         }
     }
 

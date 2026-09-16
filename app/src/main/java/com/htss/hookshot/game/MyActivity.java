@@ -75,6 +75,8 @@ public class MyActivity extends Activity {
     // Most time between two taps, or two presses of a button, for them to count as a double tap. Measured with
     // SystemClock.uptimeMillis, which doesn't jump when the phone's clock is changed
     public static final long DOUBLE_TAP_MILLIS = 500;
+    // Least time a finger stays on the screen to reel the chain in. A quicker one is a tap
+    private static final long HOLD_MILLIS = 200;
     public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
     // About the biggest tile a phone gets, 7.2 tiles over a 430 dp short side
     private static final int MAX_TILE_WIDTH_DP = 60;
@@ -87,13 +89,16 @@ public class MyActivity extends Activity {
     private static int pendingScreenWidth, pendingScreenHeight;
     public static MainCharacter character;
     public static Joystick joystick;
-    public static HUDCircleButton reloadButton, extendButton, buttonB, buttonA;
+    public static HUDCircleButton extendButton, buttonB, buttonA;
     public static HUDPauseButton pauseButton;
     public static HUDMenu menu;
     public static HUDStatus status;
     public static LinkedList<HUDPowerUpButton> powerUpButtons = new LinkedList<HUDPowerUpButton>();
     public static boolean paused = false, handleTouch = true, debugging = false;
     public static long lastTap = 0;
+    // The finger held on the screen, outside the controls, and when it went down
+    private static int holdTouchId = -1;
+    private static long holdDownTime = 0;
     public Long seed;
     public int level = 0;
     public String entranceString = "";
@@ -273,10 +278,6 @@ public class MyActivity extends Activity {
         buttonB.setCenter(screenWidth - buttonRadius - BUTTON_B_RIGHT_PADDING, screenHeight - buttonRadius - BUTTON_B_BOTTOM_PADDING);
         pauseButton.setCenter(screenWidth / 2, screenHeight - TILE_WIDTH / 2);
         menu.setCenter(screenWidth / 2, screenHeight / 2);
-        if (reloadButton != null) {
-            // Where Hook.addHookButtons puts it
-            reloadButton.setCenter(9 * screenWidth / 10, screenHeight / 2);
-        }
     }
 
     public static void setPendingScreenSize(int width, int height) {
@@ -468,13 +469,21 @@ public class MyActivity extends Activity {
                     double yDown = ev.getY(index);
                     boolean nothingPressed = manageDownTouch(xDown, yDown, ev.getPointerId(index), index);
                     if (nothingPressed && !paused && currentMap != null) {
-                        manageHooking(xDown, yDown);
+                        touchScreen(xDown, yDown, ev.getPointerId(index));
                     }
                     break;
                 }
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_POINTER_UP: {
                     manageUpTouch(ev.getPointerId(ev.getActionIndex()));
+                    break;
+                }
+                case MotionEvent.ACTION_CANCEL: {
+                    // The system took the gesture, so the fingers are gone without being lifted, and the chain stays
+                    stopHold();
+                    for (int i = 0; i < ev.getPointerCount(); i++) {
+                        manageUpTouch(ev.getPointerId(i));
+                    }
                     break;
                 }
                 case MotionEvent.ACTION_MOVE: {
@@ -511,8 +520,7 @@ public class MyActivity extends Activity {
             ClickableEnemy enemyInTheWay = getEnemyInTheWay(objectiveInRoom);
             if (enemyInTheWay != null) {
                 // The chain hits the enemy instead of going past it, so the hook never pulls you towards one
-                new HookStrike(enemyInTheWay);
-                enemyInTheWay.hit();
+                strikeAt(enemyInTheWay);
             } else if (character.distanceTo(objectiveInRoom) <= getHookReach()) {
                 int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
                 if (Color.alpha(pixel) == 255 || checkIfDoorsContain(objectiveInRoom)) {
@@ -529,8 +537,79 @@ public class MyActivity extends Activity {
         lastTap = SystemClock.uptimeMillis();
     }
 
+    // A finger on the screen, outside the controls, throws the hook. Held, it also reels the chain in, and lets go of
+    // the chain when it's lifted, so the character flies on. Only one finger holds at a time
+    private void touchScreen(double x, double y, int id) {
+        manageHooking(x, y);
+        if (holdTouchId < 0) {
+            holdTouchId = id;
+            holdDownTime = SystemClock.uptimeMillis();
+        }
+    }
+
+    // The held finger was lifted. A tap leaves the chain, but a finger held long enough to reel it in lets go of it
+    private static void releaseHold() {
+        boolean held = SystemClock.uptimeMillis() - holdDownTime >= HOLD_MILLIS;
+        stopHold();
+        if (held && character.getHook() != null) {
+            character.removeHook();
+        }
+    }
+
+    private static void stopHold() {
+        holdTouchId = -1;
+    }
+
+    // Reels the chain in while a finger is held on the screen, whichever chain it is by then
+    public static void updateHold() {
+        boolean reeling = holdTouchId >= 0 && SystemClock.uptimeMillis() - holdDownTime >= HOLD_MILLIS;
+        if (reeling) {
+            // A held finger isn't a tap, so the next tap doesn't count as a double tap
+            lastTap = 0;
+        }
+        if (character != null && character.getHook() != null) {
+            character.getHook().setReloading(reeling && character.getHook().isHooked());
+        }
+    }
+
     private static double getHookReach() {
         return (character.getMaxHookNodes() - 1) * Hook.SEPARATION;
+    }
+
+    // The hook is thrown at an enemy, and hits it when it's within reach. Rock doesn't stop it, as worms dig through
+    // rock and hits shove enemies into it, where they couldn't be hit again
+    public static void strikeAt(ClickableEnemy target) {
+        MathVector start = character.getPositionInRoom();
+        MathVector toTarget = new MathVector(start, target.getPositionInRoom());
+        if (toTarget.magnitude() - target.getBodyRadius() <= getHookReach()) {
+            new HookStrike(target);
+            target.hit(start);
+        } else {
+            new HookStrike(toTarget.rescaled(getHookReach()).applyTo(start));
+        }
+    }
+
+    // The first rock or door on the straight line between two points in the room, if any
+    private static MathVector getObstacle(MathVector from, MathVector to) {
+        MathVector direction = new MathVector(from, to);
+        int length = (int) direction.magnitude();
+        if (length == 0) {
+            return null;
+        }
+        direction.normalize();
+        for (int i = 1; i <= length; i++) {
+            MathVector point = direction.scaled(i).applyTo(from);
+            if (checkIfDoorsContain(point)) {
+                return point;
+            }
+            if (!isInRoom(point.x, point.y)) {
+                return null;
+            }
+            if (Color.alpha(canvas.mapBitmap.getPixel((int) point.x, (int) point.y)) == 255) {
+                return point;
+            }
+        }
+        return null;
     }
 
     private static ClickableEnemy getEnemyInTheWay(MathVector objectiveInRoom) {
@@ -552,9 +631,10 @@ public class MyActivity extends Activity {
         return closest;
     }
 
+    // A double tap reels in at once the chain the first tap threw. Any other tap throws the hook
     private void decideBetweenFastReloadOrShoot(MathVector objective) {
         if (character.isHooked()) {
-            if (character.getHook().getNodesNumber() > Hook.MIN_RELOADING_NODES && !character.getHook().isFastReloading() && SystemClock.uptimeMillis() - lastTap < DOUBLE_TAP_MILLIS || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
+            if (character.getHook().getNodesNumber() > Hook.MIN_RELOADING_NODES && !character.getHook().isFastReloading() && SystemClock.uptimeMillis() - lastTap < DOUBLE_TAP_MILLIS) {
                 character.getHook().setFastReloading(true);
             } else {
                 character.shootHook(objective.x, objective.y);
@@ -565,6 +645,9 @@ public class MyActivity extends Activity {
     }
 
     private void manageUpTouch(int id) {
+        if (id == holdTouchId) {
+            releaseHold();
+        }
         Vector joined = new Vector();
         joined.addAll(hudElements);
         if (!paused) {
@@ -602,8 +685,8 @@ public class MyActivity extends Activity {
             }
         }
         if (nothingPressed && !paused) {
-            // The controls come first. And a tap hits a single enemy, the closest, even when its generous hit area
-            // reaches several, like the segments of a worm
+            // The controls come first. And a tap throws the hook at a single enemy, the closest, even when its generous
+            // hit area reaches several, like the segments of a worm
             ClickableEnemy enemy = getTappedEnemy(xDown, yDown);
             if (enemy != null) {
                 enemy.press(xDown, yDown, id, pointerIndex);
@@ -633,7 +716,7 @@ public class MyActivity extends Activity {
         return closest;
     }
 
-    private boolean checkIfDoorsContain(MathVector point) {
+    private static boolean checkIfDoorsContain(MathVector point) {
         for (GameDynamicObject dynamicObject : dynamicObjects) {
             if (dynamicObject instanceof Door) {
                 if (dynamicObject.getBounds().contains(point)) {
@@ -644,29 +727,21 @@ public class MyActivity extends Activity {
         return false;
     }
 
+    // The first rock or door in the tap's direction, as far as the hook reaches, or the tap itself
     private MathVector checkIfSomethingInTheWay(double xDown, double yDown) {
-        MathVector vector = new MathVector(character.getPositionInScreen(),new MathVector(xDown,yDown));
-        int i = 0;
-        while (vector.magnitude() <= getHookReach()){
-            i++;
-            vector.rescale(i);
-            MathVector point = vector.applyTo(character.getPositionInRoom());
-            if (checkIfDoorsContain(point)) {
-                return (new MathVector(point.x, point.y)).roomToScreen();
-            }
-            if (isInRoom(point.x, point.y)) {
-                int pixel = canvas.mapBitmap.getPixel((int) point.x, (int) point.y);
-                if (Color.alpha(pixel) == 255) {
-                    return (new MathVector(point.x, point.y)).roomToScreen();
-                }
-            } else {
-                return new MathVector(xDown, yDown);
-            }
+        MathVector tap = new MathVector(xDown, yDown);
+        MathVector direction = new MathVector(character.getPositionInScreen(), tap);
+        if (direction.isNull() || direction.magnitude() > getHookReach()) {
+            return tap;
         }
-        return new MathVector(xDown, yDown);
+        MathVector start = character.getPositionInRoom();
+        MathVector obstacle = getObstacle(start, direction.rescaled(getHookReach()).applyTo(start));
+        return (obstacle != null) ? obstacle.roomToScreen() : tap;
     }
 
+    // Also lets go of the held finger, as its lifting may never be handled
     public static void hideControls() {
+        stopHold();
         joystick.reset();
         buttonA.reset();
         buttonB.reset();
@@ -682,6 +757,7 @@ public class MyActivity extends Activity {
     }
 
     public static void setHUDUnclickable(){
+        stopHold();
         joystick.reset();
         buttonA.reset();
         buttonB.reset();
@@ -690,8 +766,6 @@ public class MyActivity extends Activity {
         buttonB.setClickable(false);
         if (extendButton != null)
             extendButton.setClickable(false);
-        if (reloadButton != null)
-            reloadButton.setClickable(false);
     }
 
     public static void setHUDClickable(){
@@ -700,8 +774,6 @@ public class MyActivity extends Activity {
         buttonB.setClickable(true);
         if (extendButton != null)
             extendButton.setClickable(true);
-        if (reloadButton != null)
-            reloadButton.setClickable(true);
     }
 
     public static void resetObjectsLists(){

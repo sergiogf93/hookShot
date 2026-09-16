@@ -7,7 +7,6 @@ import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameCharacter;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.math.MathVector;
-import com.htss.hookshot.util.TimeUtil;
 
 import java.util.Random;
 
@@ -16,16 +15,15 @@ import java.util.Random;
  */
 public abstract class GameEnemy extends GameCharacter {
 
-    // Hit enemies stop for a moment, so they're easier to hit again and to get away from. Once they thaw, they can't
-    // be frozen for a while, so they can't be kept frozen until they die
-    private static final int FREEZE_UPDATES = (int) TimeUtil.secondsToUpdates(0.5),
-            FREEZE_IMMUNITY_UPDATES = (int) TimeUtil.secondsToUpdates(1);
-    // Least time between two hits from taps or the hook, so tapping faster doesn't kill faster
-    private static final int HIT_COOLDOWN_UPDATES = (int) TimeUtil.secondsToUpdates(0.2);
+    // A hit knocks the enemy back, and it slows down to a halt before moving on its own again. Every hit knocks it
+    // back again, so hitting it keeps it away
+    private static final double KNOCKBACK_SPEED = MyActivity.TILE_WIDTH * 0.2, KNOCKBACK_END_SPEED = MyActivity.TILE_WIDTH * 0.01,
+            KNOCKBACK_DECAY = 0.88;
 
     private Paint paint = new Paint();
     private MathVector targetPositionInRoom, currentDirection;
-    private int frozenUpdates = 0, updatesUntilFreezable = 0, updatesUntilHittable = 0;
+    // Its speed while knocked back
+    private MathVector knockback;
 
     public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth, boolean addToLists, boolean addToEnemyList) {
         super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth, addToLists, addToLists);
@@ -34,44 +32,32 @@ public abstract class GameEnemy extends GameCharacter {
         }
     }
 
-    @Override
-    public void getHurt(int damage) {
-        super.getHurt(damage);
-        freeze();
-    }
-
-    public void freeze() {
-        if (updatesUntilFreezable == 0) {
-            frozenUpdates = FREEZE_UPDATES;
-            updatesUntilFreezable = FREEZE_UPDATES + FREEZE_IMMUNITY_UPDATES;
+    // Pushed in the given direction, away from what hit it
+    public void knockBack(MathVector direction) {
+        if (!direction.isNull()) {
+            knockback = direction.rescaled(KNOCKBACK_SPEED);
         }
     }
 
-    public boolean isFrozen() {
-        return frozenUpdates > 0;
+    public boolean isKnockedBack() {
+        return knockback != null;
     }
 
-    public boolean canBeHit() {
-        return updatesUntilHittable == 0;
+    public MathVector getKnockback() {
+        return knockback;
     }
 
-    public void startHitCooldown() {
-        updatesUntilHittable = HIT_COOLDOWN_UPDATES;
-    }
-
-    // Counts the freeze and hit timers down, and tells whether this update is still frozen
-    protected boolean tickTimers() {
-        if (updatesUntilFreezable > 0) {
-            updatesUntilFreezable--;
+    // Slows the knockback. Tells whether the enemy is still knocked back, and so shouldn't move on its own this update
+    protected boolean updateKnockback() {
+        if (knockback == null) {
+            return false;
         }
-        if (updatesUntilHittable > 0) {
-            updatesUntilHittable--;
+        knockback.scale(KNOCKBACK_DECAY);
+        if (knockback.magnitude() < KNOCKBACK_END_SPEED) {
+            knockback = null;
+            return false;
         }
-        if (frozenUpdates > 0) {
-            frozenUpdates--;
-            return true;
-        }
-        return false;
+        return true;
     }
 
     public void randomNewDirection () {

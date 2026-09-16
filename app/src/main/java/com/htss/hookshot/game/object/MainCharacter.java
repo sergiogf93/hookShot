@@ -43,8 +43,15 @@ public class MainCharacter extends GameCharacter {
 
     // Speed tuned on 720 px tall screens, where TILE_WIDTH is 100
     public static final int MAX_HEALTH = 100, MAX_VELOCITY = 15 * MyActivity.TILE_WIDTH / 100;
+    // Reeling the chain in moves half a link per update, so a link is reeled in every two updates
+    private static final double REEL_VELOCITY = Hook.SEPARATION / 2.0;
     private static final int MAX_EXPLOSIONS = 5;
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
+    // How much speed is kept every update on the ground
+    private static final double GROUND_FRICTION = 0.75;
+    // Jumps rise at this share of the top speed, about 0.75 tiles high, and infinite jumps, with twice the top speed,
+    // about 2.9
+    private static final double JUMP_SPEED = 0.79;
     // As long as the red flash of the HurtEffect
     private static final double INVULNERABLE_DURATION = TimeUtil.secondsToUpdates(0.833);
     // Falling faster than this kicks up dust on landing
@@ -91,7 +98,6 @@ public class MainCharacter extends GameCharacter {
         rightFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED, false);
         leftEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         rightEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
-        friction = 1.;
         this.healthBar = new HUDBar((int) getxPosInScreen(),(int) getyPosInScreen(), (int) (MyActivity.TILE_WIDTH *1.5),MyActivity.TILE_WIDTH /10,Color.GREEN,new Execution() {
             @Override
             public double execute() {
@@ -148,26 +154,26 @@ public class MainCharacter extends GameCharacter {
             if (futurePosition.x > MyActivity.screenWidth - MyActivity.HORIZONTAL_MARGIN && MyActivity.canvas.dx > - (MyActivity.currentMap.getWidth() - MyActivity.screenWidth)){
                 MyActivity.canvas.dx -= getP().x;
             } else {
-                this.xPos = (int) (getxPosInScreen() + getP().x);
+                this.xPos = getxPosInScreen() + getP().x;
             }
         } else if (getP().x < 0){
             if (futurePosition.x < MyActivity.HORIZONTAL_MARGIN && MyActivity.canvas.dx < 0){
                 MyActivity.canvas.dx -= getP().x;
             } else {
-                this.xPos = (int) (getxPosInScreen() + getP().x);
+                this.xPos = getxPosInScreen() + getP().x;
             }
         }
         if (getP().y > 0){
             if (futurePosition.y > MyActivity.screenHeight - MyActivity.VERTICAL_MARGIN && MyActivity.canvas.dy > - (MyActivity.currentMap.getHeight() - MyActivity.screenHeight)){
                 MyActivity.canvas.dy -= getP().y;
             } else {
-                this.yPos = (int) (getyPosInScreen() + getP().y);
+                this.yPos = getyPosInScreen() + getP().y;
             }
         } else if (getP().y < 0){
             if (futurePosition.y < MyActivity.VERTICAL_MARGIN && MyActivity.canvas.dy < 0) {
                 MyActivity.canvas.dy -= getP().y;
             } else {
-                this.yPos = (int) (getyPosInScreen() + getP().y);
+                this.yPos = getyPosInScreen() + getP().y;
             }
         }
         if (getyPosInScreen() > MyActivity.screenHeight + getHeight() || getxPosInScreen() < 0 || getxPosInScreen() > MyActivity.screenWidth) {
@@ -197,6 +203,9 @@ public class MainCharacter extends GameCharacter {
     public void update(){
         boolean wasOnFloor = isOnFloor();
         double fallSpeed = getP().y;
+        // Walking keeps its speed while the joystick is held, but the ground slows down any other movement, like
+        // being thrown by the chain
+        friction = MyActivity.joystick.isOn() ? 1 : GROUND_FRICTION;
         if (getHook() != null){
             if (getHook().isHooked()){
                 manageHookUpdate();
@@ -250,6 +259,8 @@ public class MainCharacter extends GameCharacter {
     public void manageHookUpdate () {
         if (getHook().isFastReloading()) {
             setMaxVelocity(MAX_VELOCITY*5);
+        } else if (getHook().isReloading()) {
+            setMaxVelocity(REEL_VELOCITY);
         } else {
             if (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
                 setMaxVelocity(MAX_VELOCITY * 2);
@@ -422,9 +433,10 @@ public class MainCharacter extends GameCharacter {
         canvas.drawCircle((float) limb.getxPosInScreen(), (float) limb.getyPosInScreen(), limb.getRadius(), outlinePaint);
     }
 
-    public void jump(double jump) {
-        MathVector jumpForce = new MathVector(0, jump);
-        addP(jumpForce);
+    // Pushes the character up, or down for a positive push. It never rises faster than a share of its top speed, so
+    // jumps stay as high as when rising was also slowed down by the push meant for ceilings
+    public void jump(double push) {
+        p.y = Math.max(p.y + push, -getMaxVelocity() * JUMP_SPEED);
     }
 
     @Override
@@ -550,9 +562,9 @@ public class MainCharacter extends GameCharacter {
     }
 
     public void removeHook() {
-        if (getHook().isFastReloading()) {
-            setMass(MASS);
-        }
+        // Holding the extend button makes the character heavier, and the button goes with the chain, so letting go of
+        // it would never make the character light again
+        setMass(MASS);
         MyActivity.canvas.gameObjects.remove(hook);
         MyActivity.dynamicObjects.removeAll(hook.getNodes());
         if (hook.getHookedObject() != null){
@@ -560,9 +572,7 @@ public class MainCharacter extends GameCharacter {
         }
         hook.getNodes().clear();
         setHook(null);
-        MyActivity.hudElements.remove(MyActivity.reloadButton);
         MyActivity.hudElements.remove(MyActivity.extendButton);
-        MyActivity.reloadButton = null;
         MyActivity.extendButton = null;
         if (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
             setMaxVelocity(MAX_VELOCITY * 2);

@@ -69,21 +69,20 @@ public class Joystick extends HUDElement implements Clickable {
     }
 
     private void moveCharacter(int dx, int dy) {
-        MathVector newP;
         if (MyActivity.character.getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
             if (MyActivity.character.getP().y < -15 * MyActivity.TILE_WIDTH / 100) {
                 dy = 0;
             }
         }
         if (MyActivity.character.isHooked() && MyActivity.character.getHook().getNodes().size() <= MainCharacter.MIN_HOOSKSHOT_NODES) {
-            newP = new MathVector(dx, dy);
+            // Climbing up to where the chain is hooked
+            MyActivity.character.addP(new MathVector(dx, dy));
         } else {
-            newP = new MathVector(dx, 0);
+            MyActivity.character.addP(new MathVector(dx, 0));
             if (MyActivity.character.isOnFloor()){
-                newP.y += dy;
+                MyActivity.character.jump(dy);
             }
         }
-        MyActivity.character.addP(newP);
     }
 
     @Override

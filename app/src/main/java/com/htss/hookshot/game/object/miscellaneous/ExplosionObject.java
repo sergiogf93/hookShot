@@ -13,6 +13,7 @@ import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.enemies.ClickableEnemy;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.math.GameMath;
+import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.TimeUtil;
 
@@ -62,6 +63,7 @@ public class ExplosionObject extends GameDynamicObject {
             if (enemy instanceof ClickableEnemy) {
                 ClickableEnemy target = (ClickableEnemy) enemy;
                 if (distanceTo(target) < getRadius() + target.getBodyRadius()) {
+                    target.knockBack(new MathVector(getPositionInRoom(), target.getPositionInRoom()));
                     target.getHurt(DAMAGE);
                 }
             }

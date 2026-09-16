@@ -16,7 +16,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class EnemyStalker extends ClickableEnemy {
 
-    private static final int COLLISION_PRIORITY = 0, MASS = 0, MAX_HEALTH = 5, MAX_VELOCITY = 10 * MyActivity.TILE_WIDTH / 100;
+    private static final int COLLISION_PRIORITY = 0, MASS = 0, MAX_HEALTH = 3, MAX_VELOCITY = 10 * MyActivity.TILE_WIDTH / 100;
 
     private static final double THRESHOLD_DISTANCE = MyActivity.TILE_WIDTH * 6, SEARCHING_DISTANCE = MyActivity.TILE_WIDTH * 20;
     private static final int MAX_SEARCHING_TIME = (int) TimeUtil.secondsToUpdates(16.667);
@@ -32,9 +32,12 @@ public class EnemyStalker extends ClickableEnemy {
 
     @Override
     public void update() {
-        if (tickTimers()) {
-            // Stands still, but keeps pulsing, as some points of the animation hide its body
-            updateFrame();
+        if (updateKnockback()) {
+            // Knocked back, slowing down to a halt, and still stopped by walls unless it's going through them
+            setP(new MathVector(getKnockback().x, getKnockback().y));
+            setMaxVelocity(getKnockback().magnitude() + 1);
+            super.update();
+            setMaxVelocity(MAX_VELOCITY);
             return;
         }
         manageActivateDeactivate();
@@ -102,7 +105,7 @@ public class EnemyStalker extends ClickableEnemy {
         int eyeColor = isInState(GameCharacter.STATE_REST) ? Color.YELLOW : Color.RED;
         DrawUtil.drawGlow(canvas, glowPaint, (float) getxPosInScreen(), (float) getyPosInScreen(), (float) (MAX_RADIUS * 1.8), DrawUtil.withAlpha(eyeColor, 70));
         int animatedAlpha = StalkerAnimation.getAlphaAnimated(getFrame());
-        if (animatedAlpha > 245 && !isFrozen()) {
+        if (animatedAlpha > 245 && !isKnockedBack()) {
             setBodyColor(Color.BLACK);
         }
         getPaint().setColor(bodyColor);

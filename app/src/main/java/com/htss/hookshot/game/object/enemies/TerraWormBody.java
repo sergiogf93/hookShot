@@ -18,9 +18,9 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class TerraWormBody extends ClickableEnemy {
 
-    private static final int COLLISION_PRIORITY = 0, MASS = 0, MAX_HEALTH = 5;
+    private static final int COLLISION_PRIORITY = 0, MASS = 0, MAX_HEALTH = 3;
 
-    // A shell lit from the top left, red while hurt, with a plate line and a dark edge. Legs, fangs and glowing eyes
+    // A shell lit from the top left, red while knocked back, with a plate line and a dark edge. Legs, fangs and glowing eyes
     private static final int SHELL_LIGHT = Color.rgb(160, 126, 70), SHELL_DARK = Color.rgb(34, 22, 12),
             HURT_LIGHT = Color.rgb(255, 110, 90), HURT_DARK = Color.rgb(110, 10, 10),
             PLATE = Color.argb(140, 20, 12, 6), EDGE = Color.rgb(18, 11, 6), LEG = Color.rgb(110, 88, 48),
@@ -52,7 +52,7 @@ public class TerraWormBody extends ClickableEnemy {
         } else {
             drawLegs(canvas);
         }
-        drawShell(canvas, x, y, isOn() || isFrozen());
+        drawShell(canvas, x, y, isKnockedBack());
         if (head) {
             drawEyes(canvas, x, y);
         }
@@ -132,24 +132,14 @@ public class TerraWormBody extends ClickableEnemy {
     }
 
     @Override
-    public void freeze() {
-        // The whole worm stops
-        terraWorm.freeze();
+    public void knockBack(MathVector direction) {
+        // The whole worm is pushed
+        terraWorm.knockBack(direction);
     }
 
     @Override
-    public boolean isFrozen() {
-        return terraWorm.isFrozen();
-    }
-
-    @Override
-    public boolean canBeHit() {
-        return terraWorm.canBeHit();
-    }
-
-    @Override
-    public void startHitCooldown() {
-        terraWorm.startHitCooldown();
+    public boolean isKnockedBack() {
+        return terraWorm.isKnockedBack();
     }
 
     @Override

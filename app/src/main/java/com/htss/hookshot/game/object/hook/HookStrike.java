@@ -9,18 +9,26 @@ import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
 
 /**
- * The chain lashing out at an enemy in its way and coming back, instead of hooking.
+ * The chain thrown at an enemy and pulled back, instead of hooking. It ends at the enemy, or where the chain runs out
+ * when the enemy is out of reach.
  */
 public class HookStrike extends GameDynamicObject {
 
-    // Out to the target and back
+    // Out and back
     private static final double DURATION = TimeUtil.secondsToUpdates(0.2);
 
     private GameObject target;
+    private MathVector point;
 
     public HookStrike(GameObject target) {
         super(target.getxPosInRoom(), target.getyPosInRoom(), 0, 0, 0, true, false);
         this.target = target;
+        setGhost(true);
+    }
+
+    public HookStrike(MathVector pointInRoom) {
+        super(pointInRoom.x, pointInRoom.y, 0, 0, 0, true, false);
+        this.point = pointInRoom;
         setGhost(true);
     }
 
@@ -36,15 +44,16 @@ public class HookStrike extends GameDynamicObject {
     public void draw(Canvas canvas) {
         // Drawn from where the character and the target are now, as both keep moving
         MathVector start = MyActivity.character.getPositionInScreen();
-        MathVector toTarget = new MathVector(start, target.getPositionInScreen());
-        if (toTarget.isNull()) {
+        MathVector end = (target != null) ? target.getPositionInScreen() : point.roomToScreen();
+        MathVector toEnd = new MathVector(start, end);
+        if (toEnd.isNull()) {
             return;
         }
         double reached = 1 - Math.abs(2 * getFrame() / DURATION - 1);
-        MathVector tip = toTarget.scaled(reached).applyTo(start);
+        MathVector tip = toEnd.scaled(reached).applyTo(start);
         Chain.drawCable(canvas, (float) start.x, (float) start.y, (float) tip.x, (float) tip.y, Hook.RADIUS);
-        MathVector direction = toTarget.getUnitVector();
-        for (double distance = Hook.SEPARATION; distance < toTarget.magnitude() * reached; distance += Hook.SEPARATION) {
+        MathVector direction = toEnd.getUnitVector();
+        for (double distance = Hook.SEPARATION; distance < toEnd.magnitude() * reached; distance += Hook.SEPARATION) {
             MathVector link = direction.scaled(distance).applyTo(start);
             Chain.drawLink(canvas, (float) link.x, (float) link.y, Hook.RADIUS);
         }

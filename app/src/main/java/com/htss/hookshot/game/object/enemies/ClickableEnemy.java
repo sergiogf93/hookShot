@@ -16,7 +16,7 @@ import java.util.Random;
  */
 public abstract class ClickableEnemy extends GameEnemy implements Clickable {
 
-    // Enemies are small and fast, so a near miss still counts as a hit instead of firing the hook
+    // Enemies are small and fast, so a near miss still throws the hook at the enemy instead of at the rock behind it
     private static final double TAP_MARGIN = MyActivity.TILE_WIDTH * 0.8;
 
     private boolean clickable = true, on = false;
@@ -28,19 +28,15 @@ public abstract class ClickableEnemy extends GameEnemy implements Clickable {
 
     @Override
     public void press(double x, double y, int id, int index) {
-        setTouchIndex(index);
-        setTouchId(id);
-        setOn(true);
-        hit();
+        // Tapping an enemy throws the hook at it
+        MyActivity.strikeAt(this);
     }
 
-    // Hit by a tap or by the hook
-    public void hit() {
-        if (canBeHit()) {
-            startHitCooldown();
-            Particles.burst(getxPosInRoom(), getyPosInRoom(), 6, getParticleColor(), 0.06f, 0.03f, 0.35, 0.003f);
-            getHitTarget().getHurt(1);
-        }
+    // Hit by the hook, thrown from a point in the room. Every hit knocks it back and hurts it, so none is wasted
+    public void hit(MathVector from) {
+        knockBack(new MathVector(from, getPositionInRoom()));
+        Particles.burst(getxPosInRoom(), getyPosInRoom(), 6, getParticleColor(), 0.06f, 0.03f, 0.35, 0.003f);
+        getHitTarget().getHurt(1);
     }
 
     @Override

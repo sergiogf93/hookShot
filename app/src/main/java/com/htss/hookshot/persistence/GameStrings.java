@@ -22,11 +22,11 @@ public class GameStrings {
     }
 
     public static String getHookAdvice2(){
-        return "Once you are hooked, press the button ( E ) to extend the chain or press the button ( R ) to reload the chain. Use the ( B ) button to unhook yourself.";
+        return "Keep your finger on the screen after shooting the chain to reload it, and lift it to unhook yourself. Hold the button ( E ) to extend the chain, or use the ( B ) button to unhook yourself.";
     }
 
     public static String getHookAdvice3() {
-        return "If you tap twice on the screen or press the ( R ) button twice you will perform a fast reload. Fast reloading is helpful when you want to move faster.";
+        return "If you tap twice on the screen you will perform a fast reload. Fast reloading is helpful when you want to move faster.";
     }
 
     public static String getPortalAdvice1() {

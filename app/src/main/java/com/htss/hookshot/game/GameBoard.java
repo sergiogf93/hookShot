@@ -28,6 +28,7 @@ import com.htss.hookshot.map.Map;
 import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.StringUtil;
 
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Vector;
 
@@ -50,6 +51,7 @@ public class GameBoard extends View{
 
     public static Vector<GameObject> gameObjects = new Vector<GameObject>();
     public static Vector<GameObject> debugObjects = new Vector<GameObject>();
+    private final ArrayList<GameObject> objectsThisFrame = new ArrayList<GameObject>();
 
     public static String debugText = "";
 
@@ -207,9 +209,18 @@ public class GameBoard extends View{
     private void drawObjects(Canvas canvas) {
         if (!MyActivity.paused) {
             Particles.update();
+            // Before the character and its chain update, so both see whether the chain is being reeled in
+            MyActivity.updateHold();
         }
-        for (int i = 0; i < gameObjects.size(); i++) {
-            GameObject gameObject = gameObjects.get(i);
+        // Objects leave the list while others update, like picked up coins or enemies killed by a bomb, which shifts
+        // the rest and skipped the next one. So a copy is walked instead, passing over objects that left. Objects that
+        // join start on the next frame
+        objectsThisFrame.clear();
+        objectsThisFrame.addAll(gameObjects);
+        for (GameObject gameObject : objectsThisFrame) {
+            if (!gameObjects.contains(gameObject)) {
+                continue;
+            }
             if (!MyActivity.paused) {
                 if (gameObject instanceof GameDynamicObject) {
                     ((GameDynamicObject) gameObject).update();

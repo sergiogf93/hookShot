@@ -107,7 +107,7 @@ public class Hook extends Chain {
 
     public void hook(MathVector position) {
         if (MyActivity.currentMap != null) {
-            addHookButtons();
+            addExtendButton();
         }
         hookedPoint = position;
 //        getLastNode().addConstraint(new RelativeToPointConstraint(position,0));
@@ -119,28 +119,10 @@ public class Hook extends Chain {
         }
     }
 
-    private void addHookButtons(){
+    // The chain is reeled in by holding a finger on the screen, and let out by holding this button, which follows the
+    // character
+    private void addExtendButton(){
         int buttonRadius = (int) (MyActivity.TILE_WIDTH*0.4);
-        MyActivity.reloadButton = new HUDCircleButton(9 * MyActivity.screenWidth / 10, MyActivity.screenHeight / 2, buttonRadius,"R", true, new Execution() {
-            @Override
-            public double execute() {
-                MyActivity.character.getHook().setReloading(true);
-                return 0;
-            }
-        }, new Execution() {
-            @Override
-            public double execute() {
-                MyActivity.character.getHook().setReloading(false);
-                return 0;
-            }
-        }, new Execution() {
-            @Override
-            public double execute() {
-                setFastReloading(true);
-                return 0;
-            }
-        }
-        );
         MyActivity.extendButton = new HUDCircleButton((int) getPrevNodeOf(getLastNode()).getxPosInScreen(), (int) getPrevNodeOf(getLastNode()).getyPosInScreen(), buttonRadius, "E", true, new Execution() {
             @Override
             public double execute() {
@@ -161,19 +143,17 @@ public class Hook extends Chain {
             }
         });
 
-        MyActivity.hudElements.add(MyActivity.reloadButton);
         MyActivity.hudElements.add(MyActivity.extendButton);
     }
 
+    // The end at the character jumps to the next link, which the character then moves to. Once it's there, the link
+    // goes and the end jumps to the one after in the same update, so the character never stops between links
     private void reload(Circle node, Circle prevNode){
-        if (node.distanceTo(prevNode) <= node.getRadius()){
-            if (getNodes().size() > MIN_RELOADING_NODES) {
-                removeNode(prevNode);
-            }
-        } else {
-            MathVector reloadVector = new MathVector(node.getPositionInRoom(), prevNode.getPositionInRoom());
-            node.setP(reloadVector.scaled(1));
+        if (node.distanceTo(prevNode) <= node.getRadius() && getNodes().size() > MIN_RELOADING_NODES) {
+            removeNode(prevNode);
+            prevNode = getPrevNodeOf(node);
         }
+        node.setP(new MathVector(node.getPositionInRoom(), prevNode.getPositionInRoom()));
     }
 
     private void extend(){

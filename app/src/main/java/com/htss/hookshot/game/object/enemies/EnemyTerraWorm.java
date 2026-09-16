@@ -38,7 +38,13 @@ public class EnemyTerraWorm extends GameEnemy {
     public void update() {
         if (getBodyParts().size() == 0) {
             die();
-        } else if (!tickTimers()) {
+        } else if (updateKnockback()) {
+            // Knocked back as a whole, slowing down to a halt
+            for (TerraWormBody part : bodyParts) {
+                part.setPositionInRoom(getKnockback().applyTo(part.getPositionInRoom()));
+            }
+            setPositionInRoom(bodyParts.lastElement().getPositionInRoom());
+        } else {
             updateFrame();
             if (getBodyParts().size() > 1) {
                 for (int i = 0; i < bodyParts.size() - 1; i++) {

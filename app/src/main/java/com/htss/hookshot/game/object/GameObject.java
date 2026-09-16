@@ -34,7 +34,9 @@ public abstract class GameObject {
         return xPos;
     }
 
-    public void setxPosInRoom(int xPos) {
+    // Positions keep their fractions, so slow movement isn't lost, nor faster to the left and up than to the right and
+    // down, as cutting them to whole pixels did
+    public void setxPosInRoom(double xPos) {
         this.xPos = xPos;
     }
 
@@ -45,18 +47,18 @@ public abstract class GameObject {
         return yPos + MyActivity.canvas.dy;
     }
 
-    public void setyPosInRoom(int yPos) {
+    public void setyPosInRoom(double yPos) {
         this.yPos = yPos;
     }
 
     public void setPositionInRoom(MathVector position){
-        setxPosInRoom((int) position.x);
-        setyPosInRoom((int) position.y);
+        setxPosInRoom(position.x);
+        setyPosInRoom(position.y);
     }
 
     public void setPositionInRoom (double x, double y){
-        setxPosInRoom((int)x);
-        setyPosInRoom((int)y);
+        setxPosInRoom(x);
+        setyPosInRoom(y);
     }
 
     public MathVector getPositionInRoom() {
