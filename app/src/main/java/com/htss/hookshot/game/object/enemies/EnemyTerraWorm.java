@@ -36,7 +36,7 @@ public class EnemyTerraWorm extends GameEnemy {
     public void update() {
         if (getBodyParts().size() == 0) {
             die();
-        } else if (!tickFrozen()) {
+        } else if (!tickTimers()) {
             updateFrame();
             if (getBodyParts().size() > 1) {
                 for (int i = 0; i < bodyParts.size() - 1; i++) {

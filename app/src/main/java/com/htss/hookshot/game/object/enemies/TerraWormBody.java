@@ -73,9 +73,9 @@ public class TerraWormBody extends ClickableEnemy {
     }
 
     @Override
-    public void hit() {
+    protected GameEnemy getHitTarget() {
         // The worm loses its tail first, wherever it's hit
-        terraWorm.getBodyParts().firstElement().getHurt(1);
+        return terraWorm.getBodyParts().firstElement();
     }
 
     @Override
@@ -92,6 +92,16 @@ public class TerraWormBody extends ClickableEnemy {
     @Override
     public boolean isFrozen() {
         return terraWorm.isFrozen();
+    }
+
+    @Override
+    public boolean canBeHit() {
+        return terraWorm.canBeHit();
+    }
+
+    @Override
+    public void startHitCooldown() {
+        terraWorm.startHitCooldown();
     }
 
     @Override

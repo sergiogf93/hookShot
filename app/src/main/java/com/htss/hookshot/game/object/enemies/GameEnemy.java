@@ -16,12 +16,16 @@ import java.util.Random;
  */
 public abstract class GameEnemy extends GameCharacter {
 
-    // Hit enemies stop for a moment, so they're easier to hit again and to get away from
-    private static final int FREEZE_UPDATES = (int) TimeUtil.secondsToUpdates(0.5);
+    // Hit enemies stop for a moment, so they're easier to hit again and to get away from. Once they thaw, they can't
+    // be frozen for a while, so they can't be kept frozen until they die
+    private static final int FREEZE_UPDATES = (int) TimeUtil.secondsToUpdates(0.5),
+            FREEZE_IMMUNITY_UPDATES = (int) TimeUtil.secondsToUpdates(1);
+    // Least time between two hits from taps or the hook, so tapping faster doesn't kill faster
+    private static final int HIT_COOLDOWN_UPDATES = (int) TimeUtil.secondsToUpdates(0.2);
 
     private Paint paint = new Paint();
     private MathVector targetPositionInRoom, currentDirection;
-    private int frozenUpdates = 0;
+    private int frozenUpdates = 0, updatesUntilFreezable = 0, updatesUntilHittable = 0;
 
     public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth, boolean addToLists, boolean addToEnemyList) {
         super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth, addToLists, addToLists);
@@ -37,15 +41,32 @@ public abstract class GameEnemy extends GameCharacter {
     }
 
     public void freeze() {
-        frozenUpdates = FREEZE_UPDATES;
+        if (updatesUntilFreezable == 0) {
+            frozenUpdates = FREEZE_UPDATES;
+            updatesUntilFreezable = FREEZE_UPDATES + FREEZE_IMMUNITY_UPDATES;
+        }
     }
 
     public boolean isFrozen() {
         return frozenUpdates > 0;
     }
 
-    // Counts the freeze down, and tells whether this update is still frozen
-    protected boolean tickFrozen() {
+    public boolean canBeHit() {
+        return updatesUntilHittable == 0;
+    }
+
+    public void startHitCooldown() {
+        updatesUntilHittable = HIT_COOLDOWN_UPDATES;
+    }
+
+    // Counts the freeze and hit timers down, and tells whether this update is still frozen
+    protected boolean tickTimers() {
+        if (updatesUntilFreezable > 0) {
+            updatesUntilFreezable--;
+        }
+        if (updatesUntilHittable > 0) {
+            updatesUntilHittable--;
+        }
         if (frozenUpdates > 0) {
             frozenUpdates--;
             return true;

@@ -33,7 +33,15 @@ public abstract class ClickableEnemy extends GameEnemy implements Clickable {
 
     // Hit by a tap or by the hook
     public void hit() {
-        this.getHurt(1);
+        if (canBeHit()) {
+            startHitCooldown();
+            getHitTarget().getHurt(1);
+        }
+    }
+
+    // Who loses health when this is hit
+    protected GameEnemy getHitTarget() {
+        return this;
     }
 
     @Override

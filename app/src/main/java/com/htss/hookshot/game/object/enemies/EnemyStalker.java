@@ -29,7 +29,7 @@ public class EnemyStalker extends ClickableEnemy {
 
     @Override
     public void update() {
-        if (tickFrozen()) {
+        if (tickTimers()) {
             // Stands still, but keeps pulsing, as some points of the animation hide its body
             updateFrame();
             return;
