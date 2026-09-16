@@ -28,7 +28,7 @@ public class HUDButton extends HUDElement implements Clickable {
     public HUDButton(int xCenter, int yCenter, int width, int height, String text, Execution execOff) {
         super(xCenter, yCenter, width, height);
         this.text = text;
-        this.background = new RectF(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
+        this.background = new RectF();
         this.execOff = execOff;
         getPaint().setTypeface(GameBoard.paint.getTypeface());
         getPaint().setTextSize(TEXT_SIZE);
@@ -36,6 +36,7 @@ public class HUDButton extends HUDElement implements Clickable {
 
     @Override
     public void draw(Canvas canvas) {
+        this.background.set(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
         setColor(Color.rgb(15,35,45));
         setAlpha(alpha);
         setStyle(Paint.Style.STROKE);

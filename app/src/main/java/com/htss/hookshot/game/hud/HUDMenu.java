@@ -19,7 +19,7 @@ public class HUDMenu extends HUDElement {
 
     public static final int MENU_ALPHA = 150;
 
-    private RectF background;
+    private RectF background = new RectF();
     private Vector<HUDButton> buttons = new Vector<HUDButton>();
     private int buttonHeight, buttonSeparation;
 
@@ -27,7 +27,6 @@ public class HUDMenu extends HUDElement {
         super(xCenter, yCenter, width, height);
         this.buttonHeight = buttonHeight;
         this.buttonSeparation = buttonSeparation;
-        this.background = new RectF(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
         getPaint().setTypeface(MyActivity.canvas.joystickMonospace);
         getPaint().setTextSize(buttonHeight / 3);
     }
@@ -42,6 +41,7 @@ public class HUDMenu extends HUDElement {
     private void drawBackground(Canvas canvas) {
         setColor(Color.CYAN);
         setAlpha(MENU_ALPHA);
+        this.background.set(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
         canvas.drawRoundRect(this.background, MyActivity.TILE_WIDTH / 2, MyActivity.TILE_WIDTH / 2, getPaint());
     }
 

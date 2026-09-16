@@ -16,18 +16,18 @@ public class HUDPauseButton extends HUDElement implements Clickable {
 
     private static final int MARGIN = MyActivity.TILE_WIDTH;
 
-    private RectF oval;
+    private RectF oval = new RectF();
     private int alpha = 99;
     private boolean clickable = true, on = false;
     private int touchId = -1, touchIndex = -1;
 
     public HUDPauseButton(int xCenter, int yCenter, int width, int height) {
         super(xCenter, yCenter, width, height);
-        this.oval = new RectF(getxCenter() - super.getWidth() / 2, getyCenter() - super.getHeight() / 2, getxCenter() + super.getWidth() / 2, getyCenter() + super.getHeight() / 2);
     }
 
     @Override
     public void draw(Canvas canvas) {
+        this.oval.set(getxCenter() - super.getWidth() / 2, getyCenter() - super.getHeight() / 2, getxCenter() + super.getWidth() / 2, getyCenter() + super.getHeight() / 2);
         setColor(getMainColor());
         setAlpha(alpha);
         setStyle(Paint.Style.FILL);

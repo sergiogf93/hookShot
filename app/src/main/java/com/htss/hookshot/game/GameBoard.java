@@ -64,6 +64,12 @@ public class GameBoard extends View{
         copyPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
     }
 
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        MyActivity.setPendingScreenSize(w, h);
+    }
+
     public void setFont(int c, float size){
         paint.setTextSize(size);
         fontSize = (int) size;
@@ -82,6 +88,8 @@ public class GameBoard extends View{
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
+        MyActivity.applyPendingResize();
 
         canvas.drawRect(0, 0, MyActivity.screenWidth, MyActivity.screenHeight, backgroundPaint);
 
@@ -166,7 +174,10 @@ public class GameBoard extends View{
 
         // Copy the visible part of the map into a bitmap reused every frame. The whole map is too big to draw on
         // the screen canvas, and allocating a screen sized bitmap per frame is slow
-        if (screenBitmap == null) {
+        if (screenBitmap == null || screenBitmap.getWidth() != MyActivity.screenWidth || screenBitmap.getHeight() != MyActivity.screenHeight) {
+            if (screenBitmap != null) {
+                screenBitmap.recycle();
+            }
             screenBitmap = Bitmap.createBitmap(MyActivity.screenWidth, MyActivity.screenHeight, Bitmap.Config.ARGB_8888);
             screenCanvas = new Canvas(screenBitmap);
         }
@@ -238,18 +249,16 @@ public class GameBoard extends View{
     }
 
     public void assertMapMargins(){
-        if (dx < - (MyActivity.currentMap.getWidth() - MyActivity.screenWidth)){
-            dx = - (MyActivity.currentMap.getWidth() - MyActivity.screenWidth);
-        }
-        if (dx > 0) {
-            dx = 0;
-        }
-        if (dy < - (MyActivity.currentMap.getHeight() - MyActivity.screenHeight)){
-            dy = - (MyActivity.currentMap.getHeight() - MyActivity.screenHeight);
-        }
-        if (dy > 0) {
-            dy = 0;
-        }
+        dx = clampDx(dx);
+        dy = clampDy(dy);
+    }
+
+    public static float clampDx(float dx) {
+        return Math.min(0, Math.max(dx, -(MyActivity.currentMap.getWidth() - MyActivity.screenWidth)));
+    }
+
+    public static float clampDy(float dy) {
+        return Math.min(0, Math.max(dy, -(MyActivity.currentMap.getHeight() - MyActivity.screenHeight)));
     }
 
     public void clearCircle(Bitmap bitmap, float cx, float cy, float radius) {

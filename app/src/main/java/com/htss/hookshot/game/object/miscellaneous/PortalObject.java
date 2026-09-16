@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.math.GameMath;
@@ -53,7 +54,7 @@ public class PortalObject extends GameDynamicObject {
         if (state == STATE_MOVING) {
             MyActivity.hideControls();
             MathVector currentD = new MathVector(MyActivity.canvas.dx, MyActivity.canvas.dy);
-            MathVector objectiveD = new MathVector(getTwinPortal().getDx(), getTwinPortal().getDy());
+            MathVector objectiveD = new MathVector(GameBoard.clampDx(getTwinPortal().getDx()), GameBoard.clampDy(getTwinPortal().getDy()));
             MathVector direction = new MathVector(currentD, objectiveD);
             if (direction.magnitude() > MyActivity.TILE_WIDTH) {
                 direction = direction.getUnitVector().rescaled(MyActivity.TILE_WIDTH);
@@ -72,10 +73,12 @@ public class PortalObject extends GameDynamicObject {
             if (MyActivity.character.getInfiniteJumpsTimer() != null) {
                 MyActivity.canvas.gameObjects.add(MyActivity.character.getInfiniteJumpsTimer());
             }
-            MyActivity.character.setPositionInRoom(getTwinPortal().getxPortal(), getTwinPortal().getyPortal());
+            // The camera the twin was placed with may not fit anymore if the screen size changed since
+            MyActivity.canvas.dx = GameBoard.clampDx(getTwinPortal().getDx());
+            MyActivity.canvas.dy = GameBoard.clampDy(getTwinPortal().getDy());
+            MyActivity.character.setxPosInScreen(getTwinPortal().getxPosInRoom() + MyActivity.canvas.dx);
+            MyActivity.character.setyPosInScreen(getTwinPortal().getyPosInRoom() + MyActivity.canvas.dy);
             MyActivity.character.update();
-            MyActivity.canvas.dx = getTwinPortal().getDx();
-            MyActivity.canvas.dy = getTwinPortal().getDy();
             state = STATE_REST;
         }
     }

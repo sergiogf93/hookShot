@@ -10,6 +10,7 @@
             android:name=".game.MyActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density"
             android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

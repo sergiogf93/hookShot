@@ -76,6 +76,7 @@ public class MyActivity extends Activity {
     public static GameEffect roomSwitchEffect;
     private final FramePacer framePacer = new FramePacer(UPDATES_PER_SECOND);
     public static int screenHeight, screenWidth; //Default 110 80, for screen size 30 20
+    private static int pendingScreenWidth, pendingScreenHeight;
     public static int frame = 0;
     public static MainCharacter character;
     public static Joystick joystick;
@@ -142,23 +143,23 @@ public class MyActivity extends Activity {
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
         screenHeight = displaymetrics.heightPixels; //720
         screenWidth = displaymetrics.widthPixels; //1280
+        pendingScreenWidth = screenWidth;
+        pendingScreenHeight = screenHeight;
         if (TILE_WIDTH == 0) {
             // Many sizes are fixed from TILE_WIDTH when their classes load, so it can't change while the process
             // lives, even when the activity comes back on the other screen of a foldable
             TILE_WIDTH = getTileWidth(getWindowManager().getDefaultDisplay());
         }
-        HORIZONTAL_MARGIN = screenWidth / 2 - TILE_WIDTH * 2;
-        VERTICAL_MARGIN = screenHeight / 2;
         BUTTON_A_BOTTOM_PADDING = 70 * TILE_WIDTH / 100;
         BUTTON_A_RIGHT_PADDING = 50 * TILE_WIDTH / 100;
         BUTTON_B_BOTTOM_PADDING = 50 * TILE_WIDTH / 100;
         BUTTON_B_RIGHT_PADDING = 250 * TILE_WIDTH / 100;
 
-        joystick = new Joystick(2 * TILE_WIDTH, screenHeight - TILE_WIDTH / 2 - TILE_WIDTH, TILE_WIDTH * 2, TILE_WIDTH * 2);
+        // The controls and menu are placed by layoutForScreen, which runs again when the screen size changes
+        joystick = new Joystick(0, 0, TILE_WIDTH * 2, TILE_WIDTH * 2);
 
         int buttonRadius = (int) (TILE_WIDTH*0.75);
-        buttonA = new HUDCircleButton(screenWidth - buttonRadius - BUTTON_A_RIGHT_PADDING,
-                screenHeight - buttonRadius - BUTTON_A_BOTTOM_PADDING, buttonRadius, "A", true, new Execution() {
+        buttonA = new HUDCircleButton(0, 0, buttonRadius, "A", true, new Execution() {
             @Override
             public double execute() {
                 if (MyActivity.character.isOnFloor()) {
@@ -172,8 +173,7 @@ public class MyActivity extends Activity {
         }
         );
 
-        buttonB = new HUDCircleButton(screenWidth - buttonRadius - BUTTON_B_RIGHT_PADDING,
-                screenHeight - buttonRadius - BUTTON_B_BOTTOM_PADDING, buttonRadius, "B", true, new Execution() {
+        buttonB = new HUDCircleButton(0, 0, buttonRadius, "B", true, new Execution() {
             @Override
             public double execute() {
                 if (MyActivity.character.getHook() != null) {
@@ -206,7 +206,7 @@ public class MyActivity extends Activity {
         }
         );
 
-        pauseButton = new HUDPauseButton(screenWidth / 2, screenHeight - TILE_WIDTH / 2, TILE_WIDTH, (int) (TILE_WIDTH * 0.5));
+        pauseButton = new HUDPauseButton(0, 0, TILE_WIDTH, (int) (TILE_WIDTH * 0.5));
 
         canvas = (GameBoard) findViewById(R.id.the_canvas);
         canvas.myActivity = this;
@@ -221,7 +221,8 @@ public class MyActivity extends Activity {
         int menuButtonSeparation = TILE_WIDTH / 5;
         int menuWidth = 5*TILE_WIDTH;
         int menuHeight = menuButtonHeight*nMenuButton + (nMenuButton+1)*menuButtonSeparation;
-        menu = new HUDMenu(screenWidth / 2, screenHeight / 2, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
+        menu = new HUDMenu(0, 0, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
+        layoutForScreen();
 
         LinearLayout myLayout = (LinearLayout) findViewById(R.id.layout);
         myLayout.setOnTouchListener(
@@ -252,6 +253,64 @@ public class MyActivity extends Activity {
         // screens, like tablets and unfolded foldables, show more of the cave instead of zooming in
         int shortSide = Math.min(metrics.widthPixels, metrics.heightPixels);
         return (int) Math.min(100 * shortSide / 720, MAX_TILE_WIDTH_DP * metrics.density);
+    }
+
+    private static void layoutForScreen() {
+        HORIZONTAL_MARGIN = screenWidth / 2 - TILE_WIDTH * 2;
+        VERTICAL_MARGIN = screenHeight / 2;
+        joystick.setCenter(2 * TILE_WIDTH, screenHeight - TILE_WIDTH / 2 - TILE_WIDTH);
+        int buttonRadius = (int) buttonA.getRadius();
+        buttonA.setCenter(screenWidth - buttonRadius - BUTTON_A_RIGHT_PADDING, screenHeight - buttonRadius - BUTTON_A_BOTTOM_PADDING);
+        buttonB.setCenter(screenWidth - buttonRadius - BUTTON_B_RIGHT_PADDING, screenHeight - buttonRadius - BUTTON_B_BOTTOM_PADDING);
+        pauseButton.setCenter(screenWidth / 2, screenHeight - TILE_WIDTH / 2);
+        menu.setCenter(screenWidth / 2, screenHeight / 2);
+        if (reloadButton != null) {
+            // Where Hook.addHookButtons puts it
+            reloadButton.setCenter(9 * screenWidth / 10, screenHeight / 2);
+        }
+    }
+
+    public static void setPendingScreenSize(int width, int height) {
+        // The manifest keeps the activity, and so the game, through size changes like folding or unfolding. The
+        // game board reports its new size, which the next frame applies once it's safe. The display metrics aren't
+        // used, as right after the change they still subtract the navigation bar of the old layout
+        pendingScreenWidth = width;
+        pendingScreenHeight = height;
+    }
+
+    public static void applyPendingResize() {
+        // Room switches and portal travel move the character and camera for the old size, so let them finish
+        boolean sizeChanged = pendingScreenWidth != screenWidth || pendingScreenHeight != screenHeight;
+        if (sizeChanged && roomSwitchEffect == null && handleTouch) {
+            resize(pendingScreenWidth, pendingScreenHeight);
+        }
+    }
+
+    private static void resize(int width, int height) {
+        screenWidth = width;
+        screenHeight = height;
+        layoutForScreen();
+        if (currentMap == null) {
+            (new MainMenu()).execute();
+            return;
+        }
+        // Keep the character where it is in the cave and center the camera on it
+        MathVector characterInRoom = character.getPositionInRoom();
+        canvas.dx = (float) (screenWidth / 2 - characterInRoom.x);
+        canvas.dy = (float) (screenHeight / 2 - characterInRoom.y);
+        canvas.assertMapMargins();
+        character.setxPosInScreen(characterInRoom.x + canvas.dx);
+        character.setyPosInScreen(characterInRoom.y + canvas.dy);
+        for (HUDAdvice advice : advices) {
+            advice.layoutForScreen();
+        }
+        // The player is busy folding the phone, so pause. Or pause again, to rebuild the menu for the new size
+        if (paused && hudElements.contains(menu)) {
+            unpause();
+        }
+        if (canPause()) {
+            pause();
+        }
     }
 
     private void initGfx() {

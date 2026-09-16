@@ -61,6 +61,12 @@ public abstract class HUDAdvice extends HUDElement implements Clickable{
         this.background = new RectF(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
     }
 
+    public void layoutForScreen() {
+        setCenter(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2);
+        setWidth((int) (MyActivity.screenWidth * 0.7));
+        generateLinesAndPrepareBackground(getText());
+    }
+
     @Override
     public int getHeight() {
         return lines.size() * size  + size;

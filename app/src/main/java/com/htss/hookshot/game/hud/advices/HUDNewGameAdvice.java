@@ -14,7 +14,7 @@ public class HUDNewGameAdvice extends HUDAdvice {
 
     public HUDNewGameAdvice(int size) {
         super(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, (int) (MyActivity.screenWidth * 0.7), GameStrings.getNewGameStringAdvice(), (int) (MyActivity.TILE_WIDTH * 0.3),0);
-        yesButton = new HUDButton(getxCenter() - getWidth()/2, getyCenter() + getHeight(), getWidth() / 4, size * 2, "YES", new Execution() {
+        yesButton = new HUDButton(0, 0, 0, size * 2, "YES", new Execution() {
             @Override
             public double execute() {
                 finish();
@@ -22,7 +22,7 @@ public class HUDNewGameAdvice extends HUDAdvice {
                 return 0;
             }
         });
-        noButton = new HUDButton(getxCenter() + getWidth()/2, getyCenter() + getHeight(), getWidth() / 4, size * 2, "NO", new Execution() {
+        noButton = new HUDButton(0, 0, 0, size * 2, "NO", new Execution() {
             @Override
             public double execute() {
                 MyActivity.advices.add(new HUDBasicControlsAdvice());
@@ -36,8 +36,22 @@ public class HUDNewGameAdvice extends HUDAdvice {
                 return 0;
             }
         });
+        placeButtons();
         MyActivity.hudElements.add(yesButton);
         MyActivity.hudElements.add(noButton);
+    }
+
+    private void placeButtons() {
+        yesButton.setCenter(getxCenter() - getWidth() / 2, getyCenter() + getHeight());
+        yesButton.setWidth(getWidth() / 4);
+        noButton.setCenter(getxCenter() + getWidth() / 2, getyCenter() + getHeight());
+        noButton.setWidth(getWidth() / 4);
+    }
+
+    @Override
+    public void layoutForScreen() {
+        super.layoutForScreen();
+        placeButtons();
     }
 
     @Override

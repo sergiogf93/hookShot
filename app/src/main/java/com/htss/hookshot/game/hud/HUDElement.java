@@ -57,6 +57,11 @@ public abstract class HUDElement {
         setyCenter((int) center.y);
     }
 
+    public void setCenter (int xCenter, int yCenter){
+        setxCenter(xCenter);
+        setyCenter(yCenter);
+    }
+
     public MathVector getCenter (){
         return new MathVector(getxCenter(),getyCenter());
     }
