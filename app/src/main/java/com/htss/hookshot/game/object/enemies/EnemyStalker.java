@@ -29,6 +29,11 @@ public class EnemyStalker extends ClickableEnemy {
 
     @Override
     public void update() {
+        if (tickFrozen()) {
+            // Stands still, but keeps pulsing, as some points of the animation hide its body
+            updateFrame();
+            return;
+        }
         manageActivateDeactivate();
         if (isInState(GameCharacter.STATE_FOLLOWING)) {
             follow();
@@ -91,7 +96,7 @@ public class EnemyStalker extends ClickableEnemy {
     @Override
     public void draw(Canvas canvas) {
         int animatedAlpha = StalkerAnimation.getAlphaAnimated(getFrame());
-        if (animatedAlpha > 245) {
+        if (animatedAlpha > 245 && !isFrozen()) {
             setBodyColor(Color.BLACK);
         }
         getPaint().setColor(bodyColor);

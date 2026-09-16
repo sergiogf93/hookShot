@@ -30,7 +30,7 @@ public class TerraWormBody extends ClickableEnemy {
 
     @Override
     public void draw(Canvas canvas) {
-        if (!isOn()){
+        if (!isOn() && !isFrozen()){
             DrawUtil.drawCircle(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), radius, Color.rgb(120,100,30), Paint.Style.STROKE);
             DrawUtil.drawRadialGradient(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), (float) (radius * 0.95), Color.rgb(10,10,10), Color.rgb(70, 0, 0), Shader.TileMode.CLAMP);
         } else {
@@ -81,6 +81,17 @@ public class TerraWormBody extends ClickableEnemy {
     @Override
     public double getBodyRadius() {
         return radius;
+    }
+
+    @Override
+    public void freeze() {
+        // The whole worm stops
+        terraWorm.freeze();
+    }
+
+    @Override
+    public boolean isFrozen() {
+        return terraWorm.isFrozen();
     }
 
     @Override

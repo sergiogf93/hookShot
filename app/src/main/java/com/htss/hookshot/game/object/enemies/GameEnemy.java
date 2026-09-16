@@ -7,6 +7,7 @@ import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameCharacter;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.TimeUtil;
 
 import java.util.Random;
 
@@ -15,14 +16,41 @@ import java.util.Random;
  */
 public abstract class GameEnemy extends GameCharacter {
 
+    // Hit enemies stop for a moment, so they're easier to hit again and to get away from
+    private static final int FREEZE_UPDATES = (int) TimeUtil.secondsToUpdates(0.5);
+
     private Paint paint = new Paint();
     private MathVector targetPositionInRoom, currentDirection;
+    private int frozenUpdates = 0;
 
     public GameEnemy(double xPos, double yPos, int mass, int collisionPriority, double maxVelocity, int maxHealth, boolean addToLists, boolean addToEnemyList) {
         super(xPos, yPos, mass, collisionPriority, maxVelocity, maxHealth, addToLists, addToLists);
         if (addToEnemyList) {
             MyActivity.enemies.add(this);
         }
+    }
+
+    @Override
+    public void getHurt(int damage) {
+        super.getHurt(damage);
+        freeze();
+    }
+
+    public void freeze() {
+        frozenUpdates = FREEZE_UPDATES;
+    }
+
+    public boolean isFrozen() {
+        return frozenUpdates > 0;
+    }
+
+    // Counts the freeze down, and tells whether this update is still frozen
+    protected boolean tickFrozen() {
+        if (frozenUpdates > 0) {
+            frozenUpdates--;
+            return true;
+        }
+        return false;
     }
 
     public void randomNewDirection () {

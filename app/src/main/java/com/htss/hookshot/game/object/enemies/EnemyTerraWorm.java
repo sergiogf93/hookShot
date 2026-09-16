@@ -34,10 +34,10 @@ public class EnemyTerraWorm extends GameEnemy {
 
     @Override
     public void update() {
-        updateFrame();
         if (getBodyParts().size() == 0) {
             die();
-        } else {
+        } else if (!tickFrozen()) {
+            updateFrame();
             if (getBodyParts().size() > 1) {
                 for (int i = 0; i < bodyParts.size() - 1; i++) {
                     TerraWormBody terraWormBody = bodyParts.get(i);
