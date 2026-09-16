@@ -54,11 +54,7 @@ public class HUDPauseButton extends HUDElement implements Clickable {
         setTouchIndex(index);
         setTouchId(id);
         setOn(true);
-        if (MyActivity.paused) {
-            MyActivity.unpause();
-        } else {
-            MyActivity.pause();
-        }
+        MyActivity.togglePause();
     }
 
     @Override

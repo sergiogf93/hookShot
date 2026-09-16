@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.view.Choreographer;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -67,6 +68,8 @@ public class MyActivity extends Activity {
     // rate. Otherwise it plays faster on 90 and 120 Hz screens
     public static final int UPDATES_PER_SECOND = 60;
     public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
+    // About the biggest tile a phone gets, 7.2 tiles over a 430 dp short side
+    private static final int MAX_TILE_WIDTH_DP = 60;
     private static int BUTTON_A_BOTTOM_PADDING,BUTTON_A_RIGHT_PADDING,BUTTON_B_BOTTOM_PADDING,BUTTON_B_RIGHT_PADDING;
 
     public static GameBoard canvas;
@@ -139,7 +142,11 @@ public class MyActivity extends Activity {
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
         screenHeight = displaymetrics.heightPixels; //720
         screenWidth = displaymetrics.widthPixels; //1280
-        TILE_WIDTH = 100 * screenHeight / 720;
+        if (TILE_WIDTH == 0) {
+            // Many sizes are fixed from TILE_WIDTH when their classes load, so it can't change while the process
+            // lives, even when the activity comes back on the other screen of a foldable
+            TILE_WIDTH = getTileWidth(getWindowManager().getDefaultDisplay());
+        }
         HORIZONTAL_MARGIN = screenWidth / 2 - TILE_WIDTH * 2;
         VERTICAL_MARGIN = screenHeight / 2;
         BUTTON_A_BOTTOM_PADDING = 70 * TILE_WIDTH / 100;
@@ -238,6 +245,15 @@ public class MyActivity extends Activity {
 
     }
 
+    private static int getTileWidth(Display display) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        display.getRealMetrics(metrics);
+        // Phones fit 7.2 tiles across their short side, as the game was designed on 720 px tall screens. Bigger
+        // screens, like tablets and unfolded foldables, show more of the cave instead of zooming in
+        int shortSide = Math.min(metrics.widthPixels, metrics.heightPixels);
+        return (int) Math.min(100 * shortSide / 720, MAX_TILE_WIDTH_DP * metrics.density);
+    }
+
     private void initGfx() {
         stopFrameUpdates();
 
@@ -268,7 +284,13 @@ public class MyActivity extends Activity {
     public void onBackPressed() {
         if (currentMap == null) {
             super.onBackPressed();
-        } else if (canPause()) {
+        } else {
+            togglePause();
+        }
+    }
+
+    public static void togglePause() {
+        if (canPause()) {
             pause();
         } else if (paused && hudElements.contains(menu)) {
             unpause();

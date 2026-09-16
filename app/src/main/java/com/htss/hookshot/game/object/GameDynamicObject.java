@@ -16,6 +16,8 @@ import java.util.Vector;
 public abstract class GameDynamicObject extends GameObject {
 
     public static int maximumVerticalMomentum = 25 * MyActivity.TILE_WIDTH / 100;
+    // Tuned on 720 px tall screens, where TILE_WIDTH is 100, and scaled like every other size
+    private static final double GRAVITY = MyActivity.TILE_WIDTH / 100.0;
 
     private double maxVelocity;
     protected MathVector p;
@@ -216,7 +218,7 @@ public abstract class GameDynamicObject extends GameObject {
                 return true;
             }
         } else {
-            p.y += getMass();
+            p.y += getMass() * GRAVITY;
             if (p.y >= 0) {
                 double checkDown = checkDownCollision(margin);
                 if (checkDown >= 0f){

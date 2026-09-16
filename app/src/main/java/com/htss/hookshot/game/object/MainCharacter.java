@@ -36,7 +36,8 @@ import java.util.LinkedList;
  */
 public class MainCharacter extends GameCharacter {
 
-    public static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
+    // Speed tuned on 720 px tall screens, where TILE_WIDTH is 100
+    public static final int MAX_HEALTH = 100, MAX_VELOCITY = 15 * MyActivity.TILE_WIDTH / 100;
     private static final int MAX_EXPLOSIONS = 5;
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
     // As long as the red flash of the HurtEffect
@@ -501,6 +502,12 @@ public class MainCharacter extends GameCharacter {
             }
         }));
         this.destroy();
+    }
+
+    @Override
+    public void addHealth(double health) {
+        super.addHealth(health);
+        this.manageHealthBar();
     }
 
     @Override
