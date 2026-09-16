@@ -16,6 +16,7 @@ import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
 import com.htss.hookshot.game.hud.HUDBar;
+import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
@@ -49,6 +50,10 @@ public class MainCharacter extends GameCharacter {
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
     // How much speed is kept every update on the ground
     private static final double GROUND_FRICTION = 0.75;
+    // Swinging on the chain, and flying once let go of it, can be this many times faster than walking
+    private static final double SWING_SPEED = 2;
+    // How far up the joystick is pushed to jump, as a share of its reach
+    private static final double JUMP_PUSH = 0.5;
     // Jumps rise at this share of the top speed, about 0.75 tiles high, and infinite jumps, with twice the top speed,
     // about 2.9
     private static final double JUMP_SPEED = 0.79;
@@ -83,6 +88,8 @@ public class MainCharacter extends GameCharacter {
     private double invulnerableUntilFrame = 0;
     // Above 0 squashed, below 0 stretched
     private float squash = 0;
+    // Let go of the chain in the air, until landing or hooking again
+    private boolean flying = false;
     private Paint bodyPaint = new Paint(Paint.ANTI_ALIAS_FLAG), outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RadialGradient bodyGradient;
     private int bodyGradientColor;
@@ -98,6 +105,8 @@ public class MainCharacter extends GameCharacter {
         rightFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED, false);
         leftEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         rightEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
+        // Slows down being thrown by the chain once on the ground. Walking sets the speed on every update anyway
+        friction = GROUND_FRICTION;
         this.healthBar = new HUDBar((int) getxPosInScreen(),(int) getyPosInScreen(), (int) (MyActivity.TILE_WIDTH *1.5),MyActivity.TILE_WIDTH /10,Color.GREEN,new Execution() {
             @Override
             public double execute() {
@@ -203,9 +212,7 @@ public class MainCharacter extends GameCharacter {
     public void update(){
         boolean wasOnFloor = isOnFloor();
         double fallSpeed = getP().y;
-        // Walking keeps its speed while the joystick is held, but the ground slows down any other movement, like
-        // being thrown by the chain
-        friction = MyActivity.joystick.isOn() ? 1 : GROUND_FRICTION;
+        steer();
         if (getHook() != null){
             if (getHook().isHooked()){
                 manageHookUpdate();
@@ -217,6 +224,9 @@ public class MainCharacter extends GameCharacter {
             }
         }
         super.update();
+        if (isOnFloor()) {
+            flying = false;
+        }
         if (!wasOnFloor && isOnFloor() && fallSpeed > LANDING_DUST_SPEED) {
             kickUpDust();
             squash = (float) Math.min(1, fallSpeed / MAX_SQUASH_SPEED);
@@ -233,6 +243,47 @@ public class MainCharacter extends GameCharacter {
         if (getHealth() > 0) {
             manageEnemyCollision();
         }
+    }
+
+    // The joystick sets the walking speed on the ground, and jumps when pushed well up. In the air it steers, but
+    // pushing the way the character already goes faster doesn't slow it down, and letting go keeps it going. With the
+    // chain reeled in all the way, it climbs around where the chain is hooked
+    private void steer() {
+        Joystick joystick = MyActivity.joystick;
+        if (!joystick.isOn() || MyActivity.currentMap == null) {
+            return;
+        }
+        double x = joystick.getSteerX() * getWalkingSpeed();
+        if (isHooked() && getHook().getNodesNumber() <= MIN_HOOSKSHOT_NODES) {
+            if (joystick.getSteerX() != 0 || joystick.getSteerY() != 0) {
+                setP(new MathVector(x, joystick.getSteerY() * getWalkingSpeed()));
+            }
+        } else if (isOnFloor()) {
+            p.x = x;
+            if (joystick.getPushY() < -JUMP_PUSH) {
+                jump(-MyActivity.TILE_WIDTH);
+            }
+        } else if (x != 0 && !(Math.signum(x) == Math.signum(p.x) && Math.abs(p.x) > Math.abs(x))) {
+            p.x = x;
+        }
+    }
+
+    // Swinging on the chain, and flying once let go of it, the character can go faster than walking, in any direction
+    @Override
+    protected void limitSpeed() {
+        boolean swinging = isHooked() && !getHook().isReloading() && !getHook().isFastReloading();
+        if (swinging || flying) {
+            double limit = getWalkingSpeed() * SWING_SPEED;
+            if (getP().magnitude() > limit) {
+                setP(getP().rescaled(limit));
+            }
+        } else {
+            super.limitSpeed();
+        }
+    }
+
+    private double getWalkingSpeed() {
+        return (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) ? MAX_VELOCITY * 2 : MAX_VELOCITY;
     }
 
     private void kickUpDust() {
@@ -262,11 +313,7 @@ public class MainCharacter extends GameCharacter {
         } else if (getHook().isReloading()) {
             setMaxVelocity(REEL_VELOCITY);
         } else {
-            if (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
-                setMaxVelocity(MAX_VELOCITY * 2);
-            } else {
-                setMaxVelocity(MAX_VELOCITY);
-            }
+            setMaxVelocity(getWalkingSpeed());
         }
         if (getHook().isReloading()){
             MathVector vectorToLastNode = new MathVector(getPositionInRoom(),getHook().getLastNode().getPositionInRoom());
@@ -556,6 +603,7 @@ public class MainCharacter extends GameCharacter {
         nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
         setHook(new Hook(getxPosInRoom(), getyPosInRoom(), nNodes, Color.GRAY, this, new MathVector(0, 0)));
         getHook().hook(downPoint.screenToRoom());
+        flying = false;
         // Sparks where the hook bites
         MathVector bite = downPoint.screenToRoom();
         Particles.burst(bite.x, bite.y, 6, Color.rgb(230, 230, 210), 0.05f, 0.02f, 0.25, 0.002f);
@@ -574,11 +622,8 @@ public class MainCharacter extends GameCharacter {
         setHook(null);
         MyActivity.hudElements.remove(MyActivity.extendButton);
         MyActivity.extendButton = null;
-        if (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
-            setMaxVelocity(MAX_VELOCITY * 2);
-        } else {
-            setMaxVelocity(MAX_VELOCITY);
-        }
+        setMaxVelocity(getWalkingSpeed());
+        flying = !isOnFloor();
         setState(STATE_MOVING);
     }
 

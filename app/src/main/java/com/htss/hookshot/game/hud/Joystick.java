@@ -6,8 +6,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
-import com.htss.hookshot.game.object.MainCharacter;
-import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Clickable;
@@ -20,6 +18,8 @@ import com.htss.hookshot.util.DrawUtil;
 public class Joystick extends HUDElement implements Clickable {
 
     private static final double MARGIN = MyActivity.TILE_WIDTH;
+    // Shares of the handle's reach: where it starts steering, and where it steers fully
+    private static final double DEAD_ZONE = 0.2, FULL_STEER = 0.7;
 
     private int xJ, yJ, touchId, touchIndex, alpha = 99;
     private double xDown, yDown;
@@ -51,38 +51,41 @@ public class Joystick extends HUDElement implements Clickable {
         UiStyle.drawControl(canvas, getPaint(), getxCenter() + getxJ(), getyCenter() + getyJ(), getHandleRadius(), true);
     }
 
+    // Only moves the handle. The character reads where it is on every update, so how it moves doesn't depend on how
+    // often the screen reports the finger
     public void moveJoystick(double x, double y){
         MathVector vTouch = new MathVector(x-getxCenter(),y-getyCenter());
-        int dx, dy;
-        double dist = vTouch.magnitude();
-        vTouch.normalize();
-        if(dist <= getHeight()/3){
-            dx = (int) Math.round(vTouch.x*dist);
-            dy = (int) Math.round(vTouch.y*dist);
-        } else {
-            dx = (int) Math.round(vTouch.x*getHeight()/3);
-            dy = (int) Math.round(vTouch.y*getHeight()/3);
+        if (vTouch.magnitude() > getReach()) {
+            vTouch.rescale(getReach());
         }
-        setxJ(dx);
-        setyJ(dy);
-        moveCharacter(getxJ(),getyJ());
+        setxJ((int) Math.round(vTouch.x));
+        setyJ((int) Math.round(vTouch.y));
     }
 
-    private void moveCharacter(int dx, int dy) {
-        if (MyActivity.character.getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
-            if (MyActivity.character.getP().y < -15 * MyActivity.TILE_WIDTH / 100) {
-                dy = 0;
-            }
-        }
-        if (MyActivity.character.isHooked() && MyActivity.character.getHook().getNodes().size() <= MainCharacter.MIN_HOOSKSHOT_NODES) {
-            // Climbing up to where the chain is hooked
-            MyActivity.character.addP(new MathVector(dx, dy));
-        } else {
-            MyActivity.character.addP(new MathVector(dx, 0));
-            if (MyActivity.character.isOnFloor()){
-                MyActivity.character.jump(dy);
-            }
-        }
+    // The furthest the handle goes from the centre
+    private float getReach() {
+        return getHeight() / 3f;
+    }
+
+    // How far the handle is pushed up or down, from -1 (up) to 1
+    public double getPushY() {
+        return getyJ() / getReach();
+    }
+
+    // How much the handle steers along each axis, from -1 to 1
+    public double getSteerX() {
+        return steering(getxJ() / getReach());
+    }
+
+    public double getSteerY() {
+        return steering(getPushY());
+    }
+
+    // Near the centre it doesn't steer, so a resting thumb doesn't move the character, and it steers fully a bit
+    // before the edge
+    private static double steering(double push) {
+        double amount = (Math.abs(push) - DEAD_ZONE) / (FULL_STEER - DEAD_ZONE);
+        return Math.signum(push) * Math.max(0, Math.min(1, amount));
     }
 
     @Override
@@ -90,6 +93,7 @@ public class Joystick extends HUDElement implements Clickable {
         setOn(true);
         setTouchId(id);
         setTouchIndex(index);
+        moveJoystick(x, y);
     }
 
     @Override
@@ -99,7 +103,10 @@ public class Joystick extends HUDElement implements Clickable {
         setyJ(0);
         setTouchId(-1);
         setTouchIndex(-1);
-        MyActivity.character.setP(new MathVector(0, MyActivity.character.getP().y));
+        // Walking stops with the handle, but the character keeps going through the air
+        if (MyActivity.character.isOnFloor()) {
+            MyActivity.character.setP(new MathVector(0, MyActivity.character.getP().y));
+        }
     }
 
     @Override

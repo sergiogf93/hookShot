@@ -46,18 +46,7 @@ public abstract class GameDynamicObject extends GameObject {
                 manageCollisions(getMargin());
             }
         }
-        if(Math.abs(getP().x) > getMaxVelocity()){
-            setP(new MathVector(Math.signum(getP().x)*getMaxVelocity(),getP().y));
-        }
-        if (getP().y > 0){
-            if (getP().y > 3*getMaxVelocity()){
-                setP(new MathVector(getP().x, Math.signum(getP().y)*getMaxVelocity()));
-            }
-        } else if (getP().y < 0){
-            if (-getP().y > getMaxVelocity()){
-                setP(new MathVector(getP().x, Math.signum(getP().y)*getMaxVelocity()));
-            }
-        }
+        limitSpeed();
         manageConstraints();
         // The lift only moves the object, whatever its top speed, and isn't kept as speed, which would make it keep
         // rising once out of the ground
@@ -71,6 +60,18 @@ public abstract class GameDynamicObject extends GameObject {
             if (Math.abs(p.x) < 1){
                 p.x = 0;
             }
+        }
+    }
+
+    // Sideways and rising no faster than the top speed, and falling no faster than three times it
+    protected void limitSpeed() {
+        if(Math.abs(getP().x) > getMaxVelocity()){
+            setP(new MathVector(Math.signum(getP().x)*getMaxVelocity(),getP().y));
+        }
+        if (getP().y > 3*getMaxVelocity()){
+            setP(new MathVector(getP().x, 3*getMaxVelocity()));
+        } else if (-getP().y > getMaxVelocity()){
+            setP(new MathVector(getP().x, -getMaxVelocity()));
         }
     }
 
