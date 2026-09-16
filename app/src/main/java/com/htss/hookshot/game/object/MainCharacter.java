@@ -52,11 +52,13 @@ public class MainCharacter extends GameCharacter {
     private static final double GROUND_FRICTION = 0.75;
     // Swinging on the chain, and flying once let go of it, can be this many times faster than walking
     private static final double SWING_SPEED = 2;
-    // How far up the joystick is pushed to jump, as a share of its reach
-    private static final double JUMP_PUSH = 0.5;
-    // Jumps rise at this share of the top speed, about 0.75 tiles high, and infinite jumps, with twice the top speed,
-    // about 2.9
-    private static final double JUMP_SPEED = 0.79;
+    // How far up the joystick is pushed to jump, as a share of its reach. About 12 degrees above level
+    private static final double JUMP_PUSH = 0.2;
+    // The character falls faster than other objects, so jumps rise and fall quickly: 0.7 tiles high in a third of a
+    // second, and infinite jumps, with twice the top speed, 2.7 tiles high
+    private static final double GRAVITY_SCALE = 5 / 3.0;
+    // How hard the joystick pushes a swing, as a share of gravity. Pushing the way it swings builds it up
+    private static final double SWING_PUSH = 0.5;
     // As long as the red flash of the HurtEffect
     private static final double INVULNERABLE_DURATION = TimeUtil.secondsToUpdates(0.833);
     // Falling faster than this kicks up dust on landing
@@ -245,9 +247,9 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
-    // The joystick sets the walking speed on the ground, and jumps when pushed well up. In the air it steers, but
-    // pushing the way the character already goes faster doesn't slow it down, and letting go keeps it going. With the
-    // chain reeled in all the way, it climbs around where the chain is hooked
+    // The joystick sets the walking speed, also while jumping, and jumps when pushed up. Swinging, it pushes the swing
+    // instead. Thrown by the chain, it steers, but pushing the way the character already goes faster doesn't slow it
+    // down, and letting go keeps it going. With the chain reeled in all the way, it climbs around where it's hooked
     private void steer() {
         Joystick joystick = MyActivity.joystick;
         if (!joystick.isOn() || MyActivity.currentMap == null) {
@@ -258,14 +260,35 @@ public class MainCharacter extends GameCharacter {
             if (joystick.getSteerX() != 0 || joystick.getSteerY() != 0) {
                 setP(new MathVector(x, joystick.getSteerY() * getWalkingSpeed()));
             }
-        } else if (isOnFloor()) {
+        } else if (isSwinging()) {
+            p.x += joystick.getSteerX() * getGravity() * SWING_PUSH;
+        } else if (flying) {
+            if (x != 0 && !(Math.signum(x) == Math.signum(p.x) && Math.abs(p.x) > Math.abs(x))) {
+                p.x = x;
+            }
+        } else {
             p.x = x;
-            if (joystick.getPushY() < -JUMP_PUSH) {
+            if (isOnFloor() && joystick.getPushY() < -JUMP_PUSH) {
                 jump(-MyActivity.TILE_WIDTH);
             }
-        } else if (x != 0 && !(Math.signum(x) == Math.signum(p.x) && Math.abs(p.x) > Math.abs(x))) {
-            p.x = x;
         }
+    }
+
+    // Letting go of the joystick stops walking and jumping sideways, but not swinging or being thrown by the chain
+    public void releaseJoystick() {
+        if (!flying && !isSwinging()) {
+            setP(new MathVector(0, getP().y));
+        }
+    }
+
+    // Hanging from the chain in the air, and not climbing around where it's hooked
+    private boolean isSwinging() {
+        return isHooked() && !isOnFloor() && getHook().getNodesNumber() > MIN_HOOSKSHOT_NODES;
+    }
+
+    @Override
+    protected double getGravity() {
+        return super.getGravity() * GRAVITY_SCALE;
     }
 
     // Swinging on the chain, and flying once let go of it, the character can go faster than walking, in any direction
@@ -480,10 +503,9 @@ public class MainCharacter extends GameCharacter {
         canvas.drawCircle((float) limb.getxPosInScreen(), (float) limb.getyPosInScreen(), limb.getRadius(), outlinePaint);
     }
 
-    // Pushes the character up, or down for a positive push. It never rises faster than a share of its top speed, so
-    // jumps stay as high as when rising was also slowed down by the push meant for ceilings
+    // Pushes the character up, never faster than its top speed, even while swinging, when it can go faster
     public void jump(double push) {
-        p.y = Math.max(p.y + push, -getMaxVelocity() * JUMP_SPEED);
+        p.y = Math.max(p.y + push, -getMaxVelocity());
     }
 
     @Override

@@ -103,10 +103,7 @@ public class Joystick extends HUDElement implements Clickable {
         setyJ(0);
         setTouchId(-1);
         setTouchIndex(-1);
-        // Walking stops with the handle, but the character keeps going through the air
-        if (MyActivity.character.isOnFloor()) {
-            MyActivity.character.setP(new MathVector(0, MyActivity.character.getP().y));
-        }
+        MyActivity.character.releaseJoystick();
     }
 
     @Override

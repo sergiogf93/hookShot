@@ -63,6 +63,11 @@ public abstract class GameDynamicObject extends GameObject {
         }
     }
 
+    // How much faster it falls every update, before its mass
+    protected double getGravity() {
+        return GRAVITY;
+    }
+
     // Sideways and rising no faster than the top speed, and falling no faster than three times it
     protected void limitSpeed() {
         if(Math.abs(getP().x) > getMaxVelocity()){
@@ -119,7 +124,7 @@ public abstract class GameDynamicObject extends GameObject {
             getOutUpDown();
         } else if (up && !down){
             // Bumped into a ceiling, so start falling
-            p.y += GRAVITY;
+            p.y += getGravity();
         } else if (!up && down){
             if (makeSureNotUnderground){
                 raiseAboveGround(margin);
@@ -231,7 +236,7 @@ public abstract class GameDynamicObject extends GameObject {
                 return true;
             }
         } else {
-            p.y += getMass() * GRAVITY;
+            p.y += getMass() * getGravity();
             if (p.y >= 0) {
                 double checkDown = checkDownCollision(margin);
                 if (checkDown >= 0f){
