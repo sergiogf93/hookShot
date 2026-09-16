@@ -7,9 +7,13 @@ import android.graphics.Shader;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
+import com.htss.hookshot.game.object.enemies.ClickableEnemy;
+import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.TimeUtil;
+
+import java.util.ArrayList;
 
 /**
  * Created by Sergio on 07/06/2017.
@@ -17,6 +21,8 @@ import com.htss.hookshot.util.TimeUtil;
 public class ExplosionObject extends GameDynamicObject {
 
     private static double DURATION = TimeUtil.secondsToUpdates(0.083);
+    // A whole stalker or worm segment
+    private static final int DAMAGE = 5;
 
     private float maxRadius;
     private Paint paint = new Paint();
@@ -33,6 +39,19 @@ public class ExplosionObject extends GameDynamicObject {
         if (getFrame() > DURATION) {
             this.destroy();
             MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
+            hurtEnemies();
+        }
+    }
+
+    private void hurtEnemies() {
+        // Copied, as enemies leave the list when they die
+        for (GameEnemy enemy : new ArrayList<GameEnemy>(MyActivity.enemies)) {
+            if (enemy instanceof ClickableEnemy) {
+                ClickableEnemy target = (ClickableEnemy) enemy;
+                if (distanceTo(target) < getRadius() + target.getBodyRadius()) {
+                    target.getHurt(DAMAGE);
+                }
+            }
         }
     }
 

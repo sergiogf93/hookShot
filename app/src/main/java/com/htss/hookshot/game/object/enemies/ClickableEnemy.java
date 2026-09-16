@@ -13,6 +13,9 @@ import java.util.Random;
  */
 public abstract class ClickableEnemy extends GameEnemy implements Clickable {
 
+    // Enemies are small and fast, so a near miss still counts as a hit instead of firing the hook
+    private static final double TAP_MARGIN = MyActivity.TILE_WIDTH * 0.8;
+
     private boolean clickable = true, on = false;
     private int touchId = -1, touchIndex = -1;
 
@@ -25,8 +28,20 @@ public abstract class ClickableEnemy extends GameEnemy implements Clickable {
         setTouchIndex(index);
         setTouchId(id);
         setOn(true);
+        hit();
+    }
+
+    // Hit by a tap or by the hook
+    public void hit() {
         this.getHurt(1);
     }
+
+    @Override
+    public boolean pressed(double x, double y) {
+        return getPositionInScreen().distanceTo(new MathVector(x, y)) <= getBodyRadius() + TAP_MARGIN;
+    }
+
+    public abstract double getBodyRadius();
 
     @Override
     public void reset() {

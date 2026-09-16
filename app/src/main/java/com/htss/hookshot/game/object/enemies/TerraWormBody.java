@@ -73,11 +73,14 @@ public class TerraWormBody extends ClickableEnemy {
     }
 
     @Override
-    public void press(double x, double y, int id, int index) {
-        setTouchIndex(index);
-        setTouchId(id);
-        setOn(true);
+    public void hit() {
+        // The worm loses its tail first, wherever it's hit
         terraWorm.getBodyParts().firstElement().getHurt(1);
+    }
+
+    @Override
+    public double getBodyRadius() {
+        return radius;
     }
 
     @Override

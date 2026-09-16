@@ -19,6 +19,14 @@ public abstract class GameMath {
         return minVal*(max-val)/(max-min) + maxVal*(min-val)/(min-max);
     }
 
+    public static double distanceToSegment(MathVector point, MathVector start, MathVector end) {
+        MathVector segment = new MathVector(start, end);
+        double lengthSquared = segment.dotProduct(segment);
+        double t = (lengthSquared == 0) ? 0 : new MathVector(start, point).dotProduct(segment) / lengthSquared;
+        t = Math.max(0, Math.min(1, t));
+        return point.distanceTo(segment.scaled(t).applyTo(start));
+    }
+
     public static double areaTriangle(Point p1, Point p2, Point p3) {
         double a = (new MathVector(p1,p2)).magnitude();
         double b = (new MathVector(p2,p3)).magnitude();

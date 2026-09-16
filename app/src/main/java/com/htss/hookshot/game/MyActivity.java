@@ -35,9 +35,11 @@ import com.htss.hookshot.game.hud.HUDPowerUpButton;
 import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
+import com.htss.hookshot.game.object.enemies.ClickableEnemy;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.game.object.hook.Hook;
+import com.htss.hookshot.game.object.hook.HookStrike;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
@@ -49,6 +51,7 @@ import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.map.Map;
+import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.FramePacer;
 
@@ -500,7 +503,12 @@ public class MyActivity extends Activity {
         if (!hookableFound) {
             MathVector objective = checkIfSomethingInTheWay(xHook, yHook);
             MathVector objectiveInRoom = objective.screenToRoom();
-            if (character.distanceTo(objectiveInRoom) <= (character.getMaxHookNodes() - 1) * Hook.SEPARATION) {
+            ClickableEnemy enemyInTheWay = getEnemyInTheWay(objectiveInRoom);
+            if (enemyInTheWay != null) {
+                // The chain hits the enemy instead of going past it, so the hook never pulls you towards one
+                new HookStrike(enemyInTheWay);
+                enemyInTheWay.hit();
+            } else if (character.distanceTo(objectiveInRoom) <= getHookReach()) {
                 int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
                 if (Color.alpha(pixel) == 255 || checkIfDoorsContain(objectiveInRoom)) {
                     decideBetweenFastReloadOrShoot(objective);
@@ -514,6 +522,29 @@ public class MyActivity extends Activity {
             }
         }
         lastTap = SystemClock.uptimeMillis();
+    }
+
+    private static double getHookReach() {
+        return (character.getMaxHookNodes() - 1) * Hook.SEPARATION;
+    }
+
+    private static ClickableEnemy getEnemyInTheWay(MathVector objectiveInRoom) {
+        MathVector start = character.getPositionInRoom();
+        MathVector end = objectiveInRoom;
+        if (start.distanceTo(end) > getHookReach()) {
+            end = new MathVector(start, end).rescaled(getHookReach()).applyTo(start);
+        }
+        ClickableEnemy closest = null;
+        for (GameEnemy enemy : enemies) {
+            if (enemy instanceof ClickableEnemy) {
+                ClickableEnemy target = (ClickableEnemy) enemy;
+                boolean inTheWay = GameMath.distanceToSegment(target.getPositionInRoom(), start, end) <= target.getBodyRadius() + Hook.RADIUS;
+                if (inTheWay && (closest == null || character.distanceTo(target) < character.distanceTo(closest))) {
+                    closest = target;
+                }
+            }
+        }
+        return closest;
     }
 
     private void decideBetweenFastReloadOrShoot(MathVector objective) {
@@ -553,9 +584,6 @@ public class MyActivity extends Activity {
 
         Vector joined = new Vector();
         joined.addAll(hudElements);
-        if (!paused) {
-            joined.addAll(enemies);
-        }
         for (int k = 0; k < joined.size(); k++) {
             Object element = joined.get(k);
             if (element instanceof Clickable) {
@@ -568,10 +596,36 @@ public class MyActivity extends Activity {
                 }
             }
         }
+        if (nothingPressed && !paused) {
+            // The controls come first. And a tap hits a single enemy, the closest, even when its generous hit area
+            // reaches several, like the segments of a worm
+            ClickableEnemy enemy = getTappedEnemy(xDown, yDown);
+            if (enemy != null) {
+                enemy.press(xDown, yDown, id, pointerIndex);
+                nothingPressed = false;
+            }
+        }
         if (currentMap == null) {
             MyActivity.character.setPositionInRoom(xDown,yDown);
         }
         return nothingPressed;
+    }
+
+    private static ClickableEnemy getTappedEnemy(double x, double y) {
+        MathVector tap = new MathVector(x, y);
+        ClickableEnemy closest = null;
+        double closestDistance = 0;
+        for (GameEnemy enemy : enemies) {
+            if (enemy instanceof ClickableEnemy) {
+                ClickableEnemy clickable = (ClickableEnemy) enemy;
+                double distance = tap.distanceTo(clickable.getPositionInScreen()) - clickable.getBodyRadius();
+                if (clickable.isClickable() && clickable.pressed(x, y) && (closest == null || distance < closestDistance)) {
+                    closest = clickable;
+                    closestDistance = distance;
+                }
+            }
+        }
+        return closest;
     }
 
     private boolean checkIfDoorsContain(MathVector point) {
@@ -588,7 +642,7 @@ public class MyActivity extends Activity {
     private MathVector checkIfSomethingInTheWay(double xDown, double yDown) {
         MathVector vector = new MathVector(character.getPositionInScreen(),new MathVector(xDown,yDown));
         int i = 0;
-        while (vector.magnitude() <= (character.getMaxHookNodes() - 1) * Hook.SEPARATION){
+        while (vector.magnitude() <= getHookReach()){
             i++;
             vector.rescale(i);
             MathVector point = vector.applyTo(character.getPositionInRoom());

@@ -18,7 +18,7 @@ public class EnemyStalker extends ClickableEnemy {
 
     private static final double THRESHOLD_DISTANCE = MyActivity.TILE_WIDTH * 6, SEARCHING_DISTANCE = MyActivity.TILE_WIDTH * 20;
     private static final int MAX_SEARCHING_TIME = (int) TimeUtil.secondsToUpdates(16.667);
-    private static final double MAX_RADIUS = MyActivity.TILE_WIDTH / 2, MIN_RADIUS = MyActivity.TILE_WIDTH / 10, MARGIN = MyActivity.TILE_WIDTH*0.8;
+    private static final double MAX_RADIUS = MyActivity.TILE_WIDTH / 2, MIN_RADIUS = MyActivity.TILE_WIDTH / 10;
 
     private int frameWhenLost = 0, bodyColor = Color.BLACK;
 
@@ -169,8 +169,8 @@ public class EnemyStalker extends ClickableEnemy {
     }
 
     @Override
-    public boolean pressed(double xScreen, double yScreen) {
-        return getPositionInScreen().distanceTo(new MathVector(xScreen, yScreen)) <= MAX_RADIUS + MARGIN;
+    public double getBodyRadius() {
+        return MAX_RADIUS;
     }
 }
 
