@@ -5,11 +5,19 @@ package com.htss.hookshot.map;
  * Created by Sergio on 25/08/2016.
  */
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Shader;
 
 import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
@@ -47,6 +55,8 @@ public class Map {
     private static final int MAX_POWERUPS = 3;
     private static final int MAX_ENEMIES = 2;
     private static final int MAX_HEALTH = 2;
+    // How the rock texture is drawn: its pixels per cave square, and how strong its lit edges and deep shadows are
+    private static final int ROCK_TEXELS_PER_SQUARE = 24, RIM_ALPHA = 80, SHADOW_ALPHA = 170;
     // Large odd number (the golden ratio in 64 bits), so consecutive levels get very different seeds
     private static final long LEVEL_SEED_SPREAD = 0x9E3779B97F4A7C15L;
 
@@ -1345,17 +1355,109 @@ public class Map {
     }
 
 
-    public void draw(Canvas canvas){
-        for (int i=0 ; i < triangles.size() ; i+=3){
-            Point[] points = new Point[3];
-            points[0] = vertices.get(triangles.get(i));
-            points[1] = vertices.get(triangles.get(i+1));
-            points[2] = vertices.get(triangles.get(i+2));
-            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 120, 0, 0), Paint.Style.FILL, true, GameBoard.paint);
-        }
+    public void draw(Canvas canvas, CavePalette palette){
+        drawRock(canvas, palette);
+        drawDepth(canvas, palette);
+        drawOutlines(canvas, palette.outline);
         for (Point[] crack : cracks) {
             DrawUtil.drawVoidPolygon(crack, canvas, Color.BLACK, MyActivity.TILE_WIDTH / 50, false);
         }
+    }
+
+    private void drawRock(Canvas canvas, CavePalette palette) {
+        // One path for all the rock, as filling each triangle apart left thin seams between them
+        Path rock = new Path();
+        for (int i = 0; i < triangles.size(); i += 3) {
+            Point a = vertices.get(triangles.get(i));
+            Point b = vertices.get(triangles.get(i + 1));
+            Point c = vertices.get(triangles.get(i + 2));
+            rock.moveTo(a.x, a.y);
+            rock.lineTo(b.x, b.y);
+            rock.lineTo(c.x, c.y);
+            rock.close();
+        }
+        BitmapShader texture = new BitmapShader(CaveTextures.getRock(palette), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+        Matrix scale = new Matrix();
+        scale.setScale((float) SQUARE_SIZE / ROCK_TEXELS_PER_SQUARE, (float) SQUARE_SIZE / ROCK_TEXELS_PER_SQUARE);
+        texture.setLocalMatrix(scale);
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        paint.setShader(texture);
+        canvas.drawPath(rock, paint);
+    }
+
+    private void drawDepth(Canvas canvas, CavePalette palette) {
+        // Rock is lit next to the caves and darker deeper in. Worked out per tile, blurred, and scaled up smoothly
+        int[][] depth = getDepthInRock();
+        float[] light = new float[xTiles * yTiles], shadow = new float[xTiles * yTiles];
+        for (int x = 0; x < xTiles; x++) {
+            for (int y = 0; y < yTiles; y++) {
+                light[y * xTiles + x] = (depth[x][y] == 1) ? 1 : 0;
+                shadow[y * xTiles + x] = Math.min(1, Math.max(0, (depth[x][y] - 2) / 4f));
+            }
+        }
+        light = blur(light);
+        shadow = blur(shadow);
+        int[] pixels = new int[xTiles * yTiles];
+        for (int i = 0; i < pixels.length; i++) {
+            int lightAlpha = (int) (RIM_ALPHA * light[i]);
+            int alpha = Math.min(255, lightAlpha + (int) (SHADOW_ALPHA * shadow[i]));
+            float rimShare = (alpha == 0) ? 0 : (float) lightAlpha / alpha;
+            pixels[i] = Color.argb(alpha, (int) (Color.red(palette.rim) * rimShare), (int) (Color.green(palette.rim) * rimShare), (int) (Color.blue(palette.rim) * rimShare));
+        }
+        Bitmap shading = Bitmap.createBitmap(pixels, xTiles, yTiles, Bitmap.Config.ARGB_8888);
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        // Only on the rock already drawn, and keeping it opaque, as collisions look for opaque pixels
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
+        float half = (float) SQUARE_SIZE / 2;
+        canvas.drawBitmap(shading, null, new RectF(-half, -half, xTiles * (float) SQUARE_SIZE - half, yTiles * (float) SQUARE_SIZE - half), paint);
+        shading.recycle();
+    }
+
+    // How many tiles each tile is from the nearest cave, 0 for the caves themselves
+    private int[][] getDepthInRock() {
+        int[][] depth = new int[xTiles][yTiles];
+        LinkedList<Coord> queue = new LinkedList<Coord>();
+        for (int x = 0; x < xTiles; x++) {
+            for (int y = 0; y < yTiles; y++) {
+                if (map[x][y] == 0) {
+                    queue.add(new Coord(x, y));
+                } else {
+                    depth[x][y] = Integer.MAX_VALUE;
+                }
+            }
+        }
+        int[][] neighbours = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        while (!queue.isEmpty()) {
+            Coord tile = queue.poll();
+            int next = depth[tile.tileX][tile.tileY] + 1;
+            for (int[] neighbour : neighbours) {
+                int x = tile.tileX + neighbour[0];
+                int y = tile.tileY + neighbour[1];
+                if (isInMapRange(x, y) && depth[x][y] > next) {
+                    depth[x][y] = next;
+                    queue.add(new Coord(x, y));
+                }
+            }
+        }
+        return depth;
+    }
+
+    private float[] blur(float[] values) {
+        float[] blurred = new float[values.length];
+        for (int x = 0; x < xTiles; x++) {
+            for (int y = 0; y < yTiles; y++) {
+                float sum = 0;
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dy = -1; dy <= 1; dy++) {
+                        int nx = Math.max(0, Math.min(xTiles - 1, x + dx));
+                        int ny = Math.max(0, Math.min(yTiles - 1, y + dy));
+                        sum += values[ny * xTiles + nx];
+                    }
+                }
+                blurred[y * xTiles + x] = sum / 9;
+            }
+        }
+        return blurred;
     }
 
     public void drawMap (Canvas canvas){
@@ -1388,7 +1490,7 @@ public class Map {
             DrawUtil.drawPolygon(points, canvas, Color.argb(255, 60, 0, 0), Paint.Style.FILL, true, GameBoard.paint);
             DrawUtil.drawVoidPolygon(points, canvas, Color.BLACK, (float) (SQUARE_SIZE / 3), false);
         }
-        drawOutlines(canvas);
+        drawOutlines(canvas, Color.argb(255, 45, 0, 0));
 
 //        for (Vector<Point> passage : passages){
 //            Point[] points = new Point[2];
@@ -1398,17 +1500,32 @@ public class Map {
 //        }
     }
 
-    public void drawOutlines(Canvas canvas) {
-        Vector<Point> outline = new Vector<Point>();
+    private void drawOutlines(Canvas canvas, int color) {
+        Path path = new Path();
         for (Vector<Integer> outlineIndexes : outlines){
-            outline.clear();
+            Point previous = null;
             for (Integer index : outlineIndexes){
-                if (vertices.get(index).y != 0 && vertices.get(index).y != getHeight()){
-                    outline.add(vertices.get(index));
+                Point point = vertices.get(index);
+                // Not along the map's top and bottom borders
+                if (point.y == 0 || point.y == getHeight()) {
+                    continue;
                 }
+                // A jump is where a border was skipped, so the outline continues from the new point
+                if (previous == null || Math.hypot(point.x - previous.x, point.y - previous.y) > MyActivity.TILE_WIDTH) {
+                    path.moveTo(point.x, point.y);
+                } else {
+                    path.lineTo(point.x, point.y);
+                }
+                previous = point;
             }
-            DrawUtil.drawVoidPolygon(outline.toArray(), canvas, Color.argb(255, 45, 0, 0), (float) (SQUARE_SIZE / 4), false);
         }
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth((float) (SQUARE_SIZE / 4));
+        paint.setStrokeJoin(Paint.Join.ROUND);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setColor(color);
+        canvas.drawPath(path, paint);
     }
 
     public void drawNodes (Canvas canvas){

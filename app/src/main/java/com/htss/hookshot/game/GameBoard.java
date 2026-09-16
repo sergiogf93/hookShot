@@ -21,6 +21,8 @@ import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.interfaces.Interactable;
+import com.htss.hookshot.map.CavePalette;
+import com.htss.hookshot.map.Map;
 import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.StringUtil;
 
@@ -41,11 +43,8 @@ public class GameBoard extends View{
     public static float dx = 0, dy = 0;
 
     public static Paint paint = new Paint();
-    public static Paint backgroundPaint = new Paint();
 
     public static Bitmap mapBitmap;
-
-    public static int background = Color.argb(100, 30, 40, 100);
 
     public static Vector<GameObject> gameObjects = new Vector<GameObject>();
     public static Vector<GameObject> debugObjects = new Vector<GameObject>();
@@ -56,12 +55,16 @@ public class GameBoard extends View{
     private Canvas screenCanvas;
     private final Rect visibleMap = new Rect(), screenRect = new Rect();
     private final Paint copyPaint = new Paint();
+    private final Atmosphere atmosphere = new Atmosphere();
+    private final Paint digEdgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public GameBoard(Context context, AttributeSet attrs) {
         super(context, attrs);
-        backgroundPaint.setColor(background);
         // Replace the previous frame's pixels, so the transparent caves don't keep them
         copyPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+        // Only drawn over rock, keeping it opaque. No sizes here, as the tile size isn't known yet
+        digEdgePaint.setStyle(Paint.Style.STROKE);
+        digEdgePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
     }
 
     @Override
@@ -91,7 +94,7 @@ public class GameBoard extends View{
 
         MyActivity.applyPendingResize();
 
-        canvas.drawRect(0, 0, MyActivity.screenWidth, MyActivity.screenHeight, backgroundPaint);
+        atmosphere.drawBehind(canvas, myActivity.level);
 
         if (MyActivity.roomSwitchEffect == null) {
 
@@ -100,6 +103,10 @@ public class GameBoard extends View{
             }
 
             drawObjects(canvas);
+
+            if (MyActivity.currentMap != null && MyActivity.character != null) {
+                atmosphere.drawLight(canvas, (float) MyActivity.character.getxPosInScreen(), (float) MyActivity.character.getyPosInScreen());
+            }
 
             drawHudElements(canvas);
 
@@ -219,9 +226,7 @@ public class GameBoard extends View{
         mapBitmap = Bitmap.createBitmap(MyActivity.currentMap.getWidth(), MyActivity.currentMap.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas mapCanvas = new Canvas(mapBitmap);
 
-        MyActivity.currentMap.draw(mapCanvas);
-
-        MyActivity.currentMap.drawOutlines(mapCanvas);
+        MyActivity.currentMap.draw(mapCanvas, CavePalette.forLevel(myActivity.level));
 
     }
 
@@ -267,6 +272,10 @@ public class GameBoard extends View{
         p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         Canvas cnv = new Canvas(bitmap);
         cnv.drawCircle(cx, cy, radius, p);
+        // Dug tunnels get the same dark edge as the rest of the cave
+        digEdgePaint.setColor(CavePalette.forLevel(myActivity.level).outline);
+        digEdgePaint.setStrokeWidth((float) (Map.SQUARE_SIZE / 4));
+        cnv.drawCircle(cx, cy, radius, digEdgePaint);
     }
 
 }
