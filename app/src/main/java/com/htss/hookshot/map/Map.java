@@ -47,6 +47,8 @@ public class Map {
     private static final int MAX_POWERUPS = 3;
     private static final int MAX_ENEMIES = 2;
     private static final int MAX_HEALTH = 2;
+    // Large odd number (the golden ratio in 64 bits), so consecutive levels get very different seeds
+    private static final long LEVEL_SEED_SPREAD = 0x9E3779B97F4A7C15L;
 
     private int[][] map;
     private int xTiles, yTiles, fillPercent, maxSizeForSusceptible;
@@ -100,8 +102,9 @@ public class Map {
     private void manageAddingFunctions() {
         Random addingRandom = new Random();
         // Mixed differently from the map's seed + level so the two don't share a sequence. Multiplying by the level
-        // gave every first level seed 0, so the same starting power-ups
-        addingRandom.setSeed(MyActivity.canvas.myActivity.seed * 31 + MyActivity.canvas.myActivity.level);
+        // gave every first level seed 0, so the same starting power-ups. The level is spread over all the bits, as
+        // Random's first number, which picks doors or enemies, barely changes between seeds that differ by 1
+        addingRandom.setSeed(MyActivity.canvas.myActivity.seed * 31 + MyActivity.canvas.myActivity.level * LEVEL_SEED_SPREAD);
         susceptibleRooms.remove(entranceRoom);
         susceptibleRooms.remove(exitRoom);
         if (roomRegions.size() > 2) {
