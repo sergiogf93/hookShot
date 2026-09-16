@@ -19,6 +19,7 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
     private int touchId = -1, touchIndex = -1;
     private GamePowerUp powerUp;
     private int quantity;
+    private Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public HUDPowerUpButton(int xCenter, int yCenter, int width, boolean clickable, GamePowerUp powerUp, int quantity) {
         super(xCenter, yCenter, width, width);
@@ -58,14 +59,16 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
     }
 
     private void drawQuantity(Canvas canvas) {
-        setColor(Color.WHITE);
-        setAlpha(HUDMenu.MENU_ALPHA);
-        canvas.drawText("x " + quantity, getxCenter() + getWidth() / 5, getyCenter() + getHeight() / 2, getPaint());
+        UiStyle.drawText(canvas, getPaint(), "x " + quantity, getxCenter() + getWidth() / 5, getyCenter() + getHeight() / 2, UiStyle.TEXT);
     }
 
     private void drawButton(Canvas canvas) {
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getWidth() / 2, Color.rgb(0, 150, 150), Paint.Style.STROKE);
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getWidth() / 2, getMainColor(), Paint.Style.FILL);
+        // The equipped power-up glows
+        boolean selected = isOn() || MyActivity.character.getCurrentPowerUp() == powerUp.getType();
+        if (selected) {
+            DrawUtil.drawGlow(canvas, glowPaint, getxCenter(), getyCenter(), getWidth() * 0.7f, DrawUtil.withAlpha(UiStyle.getAccent(), 140));
+        }
+        UiStyle.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getWidth() / 2, selected);
     }
 
     private void drawPowerUp(Canvas canvas) {
@@ -75,13 +78,6 @@ public class HUDPowerUpButton extends HUDElement implements Clickable{
         }
     }
 
-    private int getMainColor() {
-        if (isOn() || MyActivity.character.getCurrentPowerUp() == powerUp.getType()) {
-            return Color.rgb(45, 85, 110);
-        } else {
-            return Color.CYAN;
-        }
-    }
 
     public boolean isClickable() {
         return clickable;

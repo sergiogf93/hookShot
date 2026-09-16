@@ -6,6 +6,7 @@ import android.graphics.RectF;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.HUDElement;
+import com.htss.hookshot.game.hud.UiStyle;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.util.StringUtil;
 
@@ -74,13 +75,10 @@ public abstract class HUDAdvice extends HUDElement implements Clickable{
 
     @Override
     public void draw(Canvas canvas) {
-        setColor(Color.CYAN);
-        setAlpha(ALPHA);
-        canvas.drawRoundRect(this.background, MyActivity.TILE_WIDTH / 2, MyActivity.TILE_WIDTH / 2, getPaint());
-        setColor(Color.BLACK);
+        UiStyle.drawPanel(canvas, getPaint(), this.background, MyActivity.TILE_WIDTH / 3f);
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
-            canvas.drawText(line, (float) (getxCenter() - getWidth() / 2 + getWidth() * 0.1), getyCenter() - getHeight() / 2 + (i + 1) * size + getHeight() / 10, getPaint());
+            UiStyle.drawText(canvas, getPaint(), line, (float) (getxCenter() - getWidth() / 2 + getWidth() * 0.1), getyCenter() - getHeight() / 2 + (i + 1) * size + getHeight() / 10, UiStyle.TEXT);
         }
     }
 

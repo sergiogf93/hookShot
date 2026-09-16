@@ -62,10 +62,10 @@ public class HUDText extends HUDElement implements Clickable {
         setColor(Color.BLACK);
         canvas.drawText(getText(),getxCenter()-getWidth()/2,getyCenter()+getHeight()/4,getPaint());
         if(!isOn()) {
-            setColor(Color.WHITE);
+            setColor(UiStyle.TEXT);
             canvas.drawText(getText(), getxCenter() - getWidth() / 2 + DEPTH, getyCenter() + getHeight() / 4 + DEPTH, getPaint());
         } else {
-            setColor(Color.GRAY);
+            setColor(UiStyle.getAccent());
             canvas.drawText(getText(), getxCenter() - getWidth() / 2 + DEPTH / 2, getyCenter() + getHeight() / 4 + DEPTH / 2, getPaint());
         }
     }

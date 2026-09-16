@@ -22,7 +22,6 @@ public class HUDButton extends HUDElement implements Clickable {
     private RectF background;
     private boolean clickable = true, on = false;
     private int touchId = -1, touchIndex = -1;
-    private int alpha = 150;
     private Execution execOff;
 
     public HUDButton(int xCenter, int yCenter, int width, int height, String text, Execution execOff) {
@@ -37,25 +36,13 @@ public class HUDButton extends HUDElement implements Clickable {
     @Override
     public void draw(Canvas canvas) {
         this.background.set(getxCenter() - getWidth() / 2, getyCenter() - getHeight() / 2, getxCenter() + getWidth() / 2, getyCenter() + getHeight() / 2);
-        setColor(Color.rgb(15,35,45));
-        setAlpha(alpha);
-        setStyle(Paint.Style.STROKE);
-        canvas.drawRoundRect(this.background, getWidth() / 20, getHeight() / 5, getPaint());
-        setColor(getMainColor());
-        setAlpha(alpha);
-        setStyle(Paint.Style.FILL);
-        canvas.drawRoundRect(this.background, getWidth() / 20, getHeight() / 5, getPaint());
-        setColor(Color.rgb(11,22,30));
-        getPaint().setTextSize(TEXT_SIZE);
-        canvas.drawText(getText(), getxCenter() - getTextWidth() / 2, getyCenter() + TEXT_SIZE / 4, getPaint());
-    }
-
-    private int getMainColor() {
         if (isOn()) {
-            return Color.rgb(45, 85, 110);
+            UiStyle.drawControl(canvas, getPaint(), this.background, true);
         } else {
-            return Color.rgb(90, 170, 220);
+            UiStyle.drawPanel(canvas, getPaint(), this.background, getHeight() / 2f);
         }
+        getPaint().setTextSize(TEXT_SIZE);
+        UiStyle.drawText(canvas, getPaint(), getText(), getxCenter() - getTextWidth() / 2, getyCenter() + TEXT_SIZE / 4, isOn() ? UiStyle.getAccent() : UiStyle.TEXT);
     }
 
     public String getText() {

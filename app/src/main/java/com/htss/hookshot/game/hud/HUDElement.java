@@ -15,7 +15,7 @@ import com.htss.hookshot.math.MathVector;
 public abstract class HUDElement {
 
     private int xCenter, yCenter, width, height;
-    private Paint paint = new Paint();
+    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public HUDElement(int xCenter, int yCenter, int width, int height) {
         this.xCenter = xCenter;

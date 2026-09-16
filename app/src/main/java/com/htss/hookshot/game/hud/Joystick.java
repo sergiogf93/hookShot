@@ -43,13 +43,12 @@ public class Joystick extends HUDElement implements Clickable {
     }
 
     private void drawBase(Canvas canvas) {
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getRadius(), Color.rgb(30, 30, 30), Paint.Style.FILL);
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.95 * getRadius()), Color.WHITE, Paint.Style.FILL);
+        UiStyle.drawControl(canvas, getPaint(), getxCenter(), getyCenter(), getRadius(), false);
     }
 
     private void drawHandle(Canvas canvas) {
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter() + getxJ(), getyCenter() + getyJ(), getHandleRadius(), Color.rgb(30, 30, 30), Paint.Style.FILL);
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter() + getxJ(), getyCenter() + getyJ(), (float) (0.95 * getHandleRadius()), Color.rgb(200, 200, 200), Paint.Style.FILL);
+        // Filled like a pressed button, so it stands out from the base
+        UiStyle.drawControl(canvas, getPaint(), getxCenter() + getxJ(), getyCenter() + getyJ(), getHandleRadius(), true);
     }
 
     public void moveJoystick(double x, double y){

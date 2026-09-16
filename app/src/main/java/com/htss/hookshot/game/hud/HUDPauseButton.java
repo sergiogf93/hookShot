@@ -28,26 +28,16 @@ public class HUDPauseButton extends HUDElement implements Clickable {
     @Override
     public void draw(Canvas canvas) {
         this.oval.set(getxCenter() - super.getWidth() / 2, getyCenter() - super.getHeight() / 2, getxCenter() + super.getWidth() / 2, getyCenter() + super.getHeight() / 2);
-        setColor(getMainColor());
-        setAlpha(alpha);
-        setStyle(Paint.Style.FILL);
-        canvas.drawOval(this.oval, getPaint());
+        UiStyle.drawControl(canvas, getPaint(), this.oval, isOn());
         drawThreePoints(canvas);
     }
 
     private void drawThreePoints(Canvas canvas) {
         for (int i = -1; i <= 1; i++) {
-            DrawUtil.drawCircle(canvas, getPaint(), getxCenter() + i * super.getWidth() / 4, getyCenter(), super.getWidth() / 15, Color.rgb(30, 30, 30), Paint.Style.FILL);
+            DrawUtil.drawCircle(canvas, getPaint(), getxCenter() + i * super.getWidth() / 4, getyCenter(), super.getWidth() / 15, UiStyle.TEXT, Paint.Style.FILL);
         }
     }
 
-    private int getMainColor() {
-        if (isOn()) {
-            return Color.rgb(180,180,180);
-        } else {
-            return Color.WHITE;
-        }
-    }
 
     @Override
     public void press(double x, double y, int id, int index) {

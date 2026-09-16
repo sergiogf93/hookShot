@@ -8,6 +8,7 @@ import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.hud.HUDText;
+import com.htss.hookshot.game.hud.HUDTitle;
 import com.htss.hookshot.game.hud.advices.HUDNewGameAdvice;
 import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.game.object.hook.Hook;
@@ -34,7 +35,9 @@ public class MainMenu implements Execution {
         MyActivity.enemies.clear();
         MyActivity.advices.clear();
         MyActivity.canvas.myActivity.load();
-        HUDText newGame = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 3, true, "NEW GAME", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
+        // The items sit a bit below the middle, leaving room for the title
+        MyActivity.hudElements.add(new HUDTitle(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 5, MyActivity.canvas.fontSize * 26 / 10));
+        HUDText newGame = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 2, true, "NEW GAME", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
             @Override
             public double execute() {
                 MyActivity.gameEffects.add( new FadeEffect(Color.BLACK, new LaunchGame(), new Execution() {
@@ -48,10 +51,10 @@ public class MainMenu implements Execution {
             }
         });
         MyActivity.hudElements.add(newGame);
-        int yExitButton = -1;
+        int yExitButton = 0;
         if (MyActivity.canvas.myActivity.seed != -1) {
-            yExitButton = 1;
-            HUDText continueButton = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize, true, "CONTINUE", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
+            yExitButton = 2;
+            HUDText continueButton = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, true, "CONTINUE", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
                 @Override
                 public double execute() {
                     Coord entrance = new Coord(Integer.parseInt(MyActivity.canvas.myActivity.entranceString.split(" ")[0]), Integer.parseInt(MyActivity.canvas.myActivity.entranceString.split(" ")[1]));
@@ -83,10 +86,12 @@ public class MainMenu implements Execution {
         }
 
         int n = MyActivity.screenHeight / Hook.SEPARATION - 5;
-        MyActivity.character = new MainCharacter(MyActivity.screenWidth / 2, n * Hook.SEPARATION);
-        Hook hook = new Hook(MyActivity.screenWidth / 2, n * Hook.SEPARATION, n, Color.GRAY, MyActivity.character, new MathVector(0, 0));
+        // Hanging to the right, so its chain doesn't cross the menu
+        int hangingX = MyActivity.screenWidth * 4 / 5;
+        MyActivity.character = new MainCharacter(hangingX, n * Hook.SEPARATION);
+        Hook hook = new Hook(hangingX, n * Hook.SEPARATION, n, Color.GRAY, MyActivity.character, new MathVector(0, 0));
         MyActivity.character.setHook(hook);
-        hook.hook(new MathVector(MyActivity.screenWidth / 2, MyActivity.screenHeight / 10 ));
+        hook.hook(new MathVector(hangingX, MyActivity.screenHeight / 10));
 
         MyActivity.paused = false;
         return 0;

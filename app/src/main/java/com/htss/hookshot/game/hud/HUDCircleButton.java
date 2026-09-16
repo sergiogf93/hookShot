@@ -63,23 +63,12 @@ public class HUDCircleButton extends HUDElement implements Clickable {
 
     @Override
     public void draw(Canvas canvas) {
-        setAlpha(alpha);
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), getRadius(), Color.rgb(30, 30, 30), Paint.Style.FILL);
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.95 * getRadius()),  Color.WHITE, Paint.Style.FILL);
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.9 * getRadius()), Color.rgb(30, 30, 30), Paint.Style.FILL);
-        DrawUtil.drawCircle(canvas, getPaint(), getxCenter(), getyCenter(), (float) (0.85 * getRadius()), getMainColor(), Paint.Style.FILL);
-        getPaint().setColor(Color.rgb(30, 30, 30));
+        UiStyle.drawControl(canvas, getPaint(), getxCenter(), getyCenter(), getRadius(), isOn());
         int textSize = (int) (2 * getRadius() / 3);
+        getPaint().setTypeface(MyActivity.canvas.arcadeClassicFont);
         getPaint().setTextSize(textSize);
-        canvas.drawText(getText(), (float) (getxCenter() - StringUtil.sizeOfString(getText(), textSize) / 1.5), getyCenter() + textSize / 4, getPaint());
-    }
-
-    private int getMainColor() {
-        if (isOn()) {
-            return Color.rgb(180,180,180);
-        } else {
-            return Color.WHITE;
-        }
+        float textX = getxCenter() - getPaint().measureText(getText()) / 2;
+        UiStyle.drawText(canvas, getPaint(), getText(), textX, getyCenter() + textSize / 3f, isOn() ? UiStyle.getAccent() : UiStyle.TEXT);
     }
 
     @Override

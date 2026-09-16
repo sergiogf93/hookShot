@@ -29,7 +29,7 @@ public class HUDNotification extends HUDElement {
 
     @Override
     public void draw(Canvas canvas) {
-        canvas.drawText(text, MARGIN, HUDStatus.BOTTOM + MARGIN / 2 + getHeight() * (1 + MyActivity.notifications.indexOf(this)), getPaint());
+        UiStyle.drawText(canvas, getPaint(), text, MARGIN, HUDStatus.BOTTOM + MARGIN / 2 + getHeight() * (1 + MyActivity.notifications.indexOf(this)), UiStyle.TEXT);
         frame++;
         if (frame >= duration) {
             MyActivity.notifications.remove(this);
