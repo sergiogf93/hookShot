@@ -7,6 +7,9 @@ import android.graphics.Shader;
 
 import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.HurtEffect;
+import com.htss.hookshot.effect.Particles;
+import com.htss.hookshot.effect.ScreenShake;
+import com.htss.hookshot.map.CavePalette;
 import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
@@ -42,6 +45,8 @@ public class MainCharacter extends GameCharacter {
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
     // As long as the red flash of the HurtEffect
     private static final double INVULNERABLE_DURATION = TimeUtil.secondsToUpdates(0.833);
+    // Falling faster than this kicks up dust on landing
+    private static final double LANDING_DUST_SPEED = MyActivity.TILE_WIDTH * 0.08;
 
     public static final int BODY_RADIUS = 10*MyActivity.TILE_WIDTH /50, FIST_RADIUS = MyActivity.TILE_WIDTH /8,
                             FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
@@ -176,6 +181,8 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public void update(){
+        boolean wasOnFloor = isOnFloor();
+        double fallSpeed = getP().y;
         if (getHook() != null){
             if (getHook().isHooked()){
                 manageHookUpdate();
@@ -187,6 +194,9 @@ public class MainCharacter extends GameCharacter {
             }
         }
         super.update();
+        if (!wasOnFloor && isOnFloor() && fallSpeed > LANDING_DUST_SPEED) {
+            kickUpDust();
+        }
         if (getP().x != 0f){
             setState(STATE_MOVING);
         } else {
@@ -196,6 +206,13 @@ public class MainCharacter extends GameCharacter {
         if (getHealth() > 0) {
             manageEnemyCollision();
         }
+    }
+
+    private void kickUpDust() {
+        double x = getxPosInRoom(), y = getyPosInRoom() + getHeight() / 2;
+        int dust = CavePalette.withAlpha(CavePalette.forLevel(MyActivity.canvas.myActivity.level).dust, 140);
+        Particles.burst(x, y, 5, dust, 0.05f, 0.035f, 0.5, -0.0005f, 170, 200);
+        Particles.burst(x, y, 5, dust, 0.05f, 0.035f, 0.5, -0.0005f, -20, 10);
     }
 
     private void manageEnemyCollision() {
@@ -460,6 +477,9 @@ public class MainCharacter extends GameCharacter {
         nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
         setHook(new Hook(getxPosInRoom(), getyPosInRoom(), nNodes, Color.GRAY, this, new MathVector(0, 0)));
         getHook().hook(downPoint.screenToRoom());
+        // Sparks where the hook bites
+        MathVector bite = downPoint.screenToRoom();
+        Particles.burst(bite.x, bite.y, 6, Color.rgb(230, 230, 210), 0.05f, 0.02f, 0.25, 0.002f);
     }
 
     public void removeHook() {
@@ -518,6 +538,8 @@ public class MainCharacter extends GameCharacter {
         }
         invulnerableUntilFrame = getFrame() + INVULNERABLE_DURATION;
         MyActivity.gameEffects.add(new HurtEffect());
+        ScreenShake.shake(0.06f);
+        Particles.burst(getxPosInRoom(), getyPosInRoom(), 8, Color.rgb(220, 30, 30), 0.07f, 0.03f, 0.4, 0.003f);
         super.getHurt(damage);
         this.manageHealthBar();
     }

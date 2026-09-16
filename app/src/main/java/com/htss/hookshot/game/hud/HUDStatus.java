@@ -24,8 +24,12 @@ public class HUDStatus extends HUDElement {
     // Where the level and health end, for what's drawn below them
     public static final int BOTTOM = MARGIN + TEXT_SIZE + MARGIN / 2 + BAR_HEIGHT;
 
+    // The bar slides to the health, and a lighter trail shows what was just lost
+    private static final double BAR_EASING = 0.2, TRAIL_DRAIN = 0.006;
+
     private HashMap<Integer, GamePowerUp> icons = new HashMap<Integer, GamePowerUp>();
     private Rect bar = new Rect();
+    private double shownFill = -1, trailFill = -1;
 
     public HUDStatus() {
         super(0, 0, 0, 0);
@@ -50,11 +54,20 @@ public class HUDStatus extends HUDElement {
     }
 
     private void drawHealth(Canvas canvas) {
-        double fill = MyActivity.character.getHealth() / MyActivity.character.getMaxHealth();
+        double fill = Math.max(0, MyActivity.character.getHealth() / MyActivity.character.getMaxHealth());
+        if (shownFill < 0) {
+            shownFill = fill;
+            trailFill = fill;
+        }
+        shownFill += (fill - shownFill) * BAR_EASING;
+        trailFill = Math.max(shownFill, trailFill - TRAIL_DRAIN);
         bar.set(MARGIN, BOTTOM - BAR_HEIGHT, MARGIN + BAR_WIDTH, BOTTOM);
         setColor(Color.BLACK);
         canvas.drawRect(bar, getPaint());
-        bar.right = (int) (MARGIN + BAR_WIDTH * Math.max(fill, 0));
+        bar.right = (int) (MARGIN + BAR_WIDTH * trailFill);
+        setColor(Color.rgb(255, 240, 200));
+        canvas.drawRect(bar, getPaint());
+        bar.right = (int) (MARGIN + BAR_WIDTH * shownFill);
         setColor(HUDBar.getHealthColor(fill));
         canvas.drawRect(bar, getPaint());
     }

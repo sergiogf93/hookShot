@@ -84,6 +84,11 @@ public class TerraWormBody extends ClickableEnemy {
     }
 
     @Override
+    protected int getParticleColor() {
+        return Color.rgb(150, 125, 50);
+    }
+
+    @Override
     public void freeze() {
         // The whole worm stops
         terraWorm.freeze();

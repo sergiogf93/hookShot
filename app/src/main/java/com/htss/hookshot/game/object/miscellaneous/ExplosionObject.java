@@ -5,7 +5,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Shader;
 
+import com.htss.hookshot.effect.Particles;
+import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.CavePalette;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.enemies.ClickableEnemy;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
@@ -40,7 +43,17 @@ public class ExplosionObject extends GameDynamicObject {
             this.destroy();
             MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
             hurtEnemies();
+            burst();
         }
+    }
+
+    // Fire and bits of rock, and a strong shake
+    private void burst() {
+        float x = (float) getxPosInRoom(), y = (float) getyPosInRoom();
+        Particles.burst(x, y, 14, Color.rgb(255, 210, 70), 0.14f, 0.05f, 0.45, 0.002f);
+        Particles.burst(x, y, 10, Color.rgb(255, 100, 30), 0.12f, 0.05f, 0.4, 0.002f);
+        Particles.burst(x, y, 16, CavePalette.forLevel(MyActivity.canvas.myActivity.level).rock, 0.11f, 0.05f, 0.8, 0.006f);
+        ScreenShake.shake(0.12f);
     }
 
     private void hurtEnemies() {

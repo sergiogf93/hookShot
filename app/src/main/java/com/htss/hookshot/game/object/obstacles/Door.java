@@ -6,6 +6,8 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 
+import com.htss.hookshot.effect.Particles;
+import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.HUDNotification;
 import com.htss.hookshot.game.object.GameDynamicObject;
@@ -46,6 +48,9 @@ public class Door extends GameDynamicObject {
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.dynamicObjects.remove(this);
             MyActivity.notifications.add(new HUDNotification("DOOR OPENED!", TimeUtil.secondsToUpdates(1.667)));
+            // The door breaks apart
+            Particles.burst(getxPosInRoom(), getyPosInRoom(), 24, Color.GRAY, 0.12f, 0.05f, 0.8, 0.006f);
+            ScreenShake.shake(0.05f);
         }
     }
 

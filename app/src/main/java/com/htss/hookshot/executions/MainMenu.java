@@ -3,6 +3,8 @@ package com.htss.hookshot.executions;
 import android.graphics.Color;
 
 import com.htss.hookshot.effect.FadeEffect;
+import com.htss.hookshot.effect.Particles;
+import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.hud.HUDText;
@@ -27,6 +29,8 @@ public class MainMenu implements Execution {
         MyActivity.hudElements.clear();
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
+        Particles.clear();
+        ScreenShake.clear();
         MyActivity.enemies.clear();
         MyActivity.advices.clear();
         MyActivity.canvas.myActivity.load();

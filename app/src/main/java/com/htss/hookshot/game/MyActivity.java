@@ -22,6 +22,8 @@ import android.widget.LinearLayout;
 import com.htss.hookshot.R;
 import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
+import com.htss.hookshot.effect.Particles;
+import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.effect.SwitchMapHorizontalEffect;
 import com.htss.hookshot.effect.SwitchMapVerticalEffect;
 import com.htss.hookshot.executions.MainMenu;
@@ -706,6 +708,8 @@ public class MyActivity extends Activity {
         canvas.gameObjects.clear();
         dynamicObjects.clear();
         enemies.clear();
+        Particles.clear();
+        ScreenShake.clear();
         canvas.gameObjects.add(character);
         dynamicObjects.add(character);
     }

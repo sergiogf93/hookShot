@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Interactable;
@@ -46,6 +47,7 @@ public class HealthDrop extends GameDynamicObject implements Interactable {
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.character.addHealth(HEALTH);
             MyActivity.character.checkIfRemoveInterest(this);
+            Particles.burst(getxPosInRoom(), getyPosInRoom(), 12, Color.rgb(120, 255, 120), 0.07f, 0.03f, 0.5, 0);
         }
     }
 }

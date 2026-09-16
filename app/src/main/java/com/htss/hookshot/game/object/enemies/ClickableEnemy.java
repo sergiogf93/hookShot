@@ -1,7 +1,10 @@
 package com.htss.hookshot.game.object.enemies;
 
+import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.htss.hookshot.effect.Particles;
+import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.math.MathVector;
@@ -35,8 +38,23 @@ public abstract class ClickableEnemy extends GameEnemy implements Clickable {
     public void hit() {
         if (canBeHit()) {
             startHitCooldown();
+            Particles.burst(getxPosInRoom(), getyPosInRoom(), 6, getParticleColor(), 0.06f, 0.03f, 0.35, 0.003f);
             getHitTarget().getHurt(1);
         }
+    }
+
+    @Override
+    public void die() {
+        super.die();
+        float size = Math.max(0.03f, (float) getBodyRadius() / MyActivity.TILE_WIDTH * 0.3f);
+        Particles.burst(getxPosInRoom(), getyPosInRoom(), 18, getParticleColor(), 0.1f, size, 0.7, 0.004f);
+        Particles.burst(getxPosInRoom(), getyPosInRoom(), 6, Color.WHITE, 0.14f, 0.02f, 0.3, 0);
+        ScreenShake.shake(0.04f);
+    }
+
+    // The colour of the bits flying off when it's hit or dies
+    protected int getParticleColor() {
+        return Color.rgb(140, 20, 20);
     }
 
     // Who loses health when this is hit

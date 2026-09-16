@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Interactable;
@@ -28,6 +29,7 @@ public class WallButton extends GameDynamicObject implements Interactable{
             if (distanceTo(MyActivity.character) < getRadius()*1.5){
                 setOn(true);
                 MyActivity.character.checkIfRemoveInterest(this);
+                Particles.burst(getxPosInRoom(), getyPosInRoom(), 10, Color.rgb(140, 255, 100), 0.05f, 0.025f, 0.4, 0);
             }
         }
     }

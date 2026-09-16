@@ -1,5 +1,7 @@
 package com.htss.hookshot.executions;
 
+import com.htss.hookshot.effect.Particles;
+import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.advices.HUDBombsAdvice;
 import com.htss.hookshot.game.hud.advices.HUDCompassAdvice;
@@ -38,6 +40,8 @@ public class LaunchGame implements Execution {
     public double execute() {
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
+        Particles.clear();
+        ScreenShake.clear();
 
         if (entrance == null) { // New Game
             entrance = new Coord(MyActivity.mapXTiles / 2, MyActivity.mapYTiles / 2);

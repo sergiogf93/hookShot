@@ -1,7 +1,9 @@
 package com.htss.hookshot.game.object.interactables.powerups;
 
+import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Interactable;
@@ -44,6 +46,7 @@ public abstract class GamePowerUp extends GameDynamicObject implements Interacta
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.character.addPowerUp(this.type);
             MyActivity.character.checkIfRemoveInterest(this);
+            Particles.burst(getxPosInRoom(), getyPosInRoom(), 12, Color.rgb(170, 255, 255), 0.07f, 0.03f, 0.5, 0);
         }
     }
 

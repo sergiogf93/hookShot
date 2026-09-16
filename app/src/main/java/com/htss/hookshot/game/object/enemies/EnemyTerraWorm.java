@@ -2,7 +2,9 @@ package com.htss.hookshot.game.object.enemies;
 
 import android.graphics.Canvas;
 
+import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.CavePalette;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
 
@@ -56,6 +58,17 @@ public class EnemyTerraWorm extends GameEnemy {
             bodyParts.lastElement().updatePosition();
             setPositionInRoom(bodyParts.lastElement().getPositionInRoom());
             MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), MAX_RADIUS);
+            throwDebris();
+        }
+    }
+
+    // Bits of rock thrown ahead of the head as it digs, every few updates, while it can be seen
+    private void throwDebris() {
+        if (getFrame() % 3 == 0 && MyActivity.isInScreen(getPositionInScreen())) {
+            MathVector front = getCurrentDirection().rescaled(MAX_RADIUS).applyTo(getPositionInRoom());
+            float angle = (float) Math.toDegrees(Math.atan2(getCurrentDirection().y, getCurrentDirection().x));
+            int rock = CavePalette.forLevel(MyActivity.canvas.myActivity.level).rock;
+            Particles.burst(front.x, front.y, 2, rock, 0.05f, 0.04f, 0.6, 0.004f, angle - 60, angle + 60);
         }
     }
 

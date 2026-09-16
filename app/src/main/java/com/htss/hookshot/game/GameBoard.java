@@ -16,6 +16,8 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import com.htss.hookshot.effect.GameEffect;
+import com.htss.hookshot.effect.Particles;
+import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.object.GameDynamicObject;
@@ -98,11 +100,18 @@ public class GameBoard extends View{
 
         if (MyActivity.roomSwitchEffect == null) {
 
+            ScreenShake.update();
+            canvas.save();
+            canvas.translate(ScreenShake.getOffsetX(), ScreenShake.getOffsetY());
+
             if (MyActivity.currentMap != null) {
                 drawGame(canvas);
             }
 
             drawObjects(canvas);
+
+            Particles.draw(canvas);
+            canvas.restore();
 
             if (MyActivity.currentMap != null && MyActivity.character != null) {
                 atmosphere.drawLight(canvas, (float) MyActivity.character.getxPosInScreen(), (float) MyActivity.character.getyPosInScreen());
@@ -196,6 +205,9 @@ public class GameBoard extends View{
     }
 
     private void drawObjects(Canvas canvas) {
+        if (!MyActivity.paused) {
+            Particles.update();
+        }
         for (int i = 0; i < gameObjects.size(); i++) {
             GameObject gameObject = gameObjects.get(i);
             if (!MyActivity.paused) {
