@@ -45,6 +45,7 @@ public class HealthDrop extends GameDynamicObject implements Interactable {
         if (distanceTo(MyActivity.character) < MyActivity.TILE_WIDTH /2){
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.character.addHealth(HEALTH);
+            MyActivity.character.checkIfRemoveInterest(this);
         }
     }
 }

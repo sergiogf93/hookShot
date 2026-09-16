@@ -99,7 +99,9 @@ public class Map {
 
     private void manageAddingFunctions() {
         Random addingRandom = new Random();
-        addingRandom.setSeed(MyActivity.canvas.myActivity.seed * MyActivity.canvas.myActivity.level);
+        // Mixed differently from the map's seed + level so the two don't share a sequence. Multiplying by the level
+        // gave every first level seed 0, so the same starting power-ups
+        addingRandom.setSeed(MyActivity.canvas.myActivity.seed * 31 + MyActivity.canvas.myActivity.level);
         susceptibleRooms.remove(entranceRoom);
         susceptibleRooms.remove(exitRoom);
         if (roomRegions.size() > 2) {

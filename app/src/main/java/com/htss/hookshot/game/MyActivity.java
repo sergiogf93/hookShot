@@ -18,6 +18,7 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 
 import com.htss.hookshot.R;
+import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.SwitchMapHorizontalEffect;
 import com.htss.hookshot.effect.SwitchMapVerticalEffect;
@@ -122,6 +123,11 @@ public class MyActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // The game state lives in static fields, which outlive the activity when Android keeps the process
+        roomSwitchEffect = null;
+        handleTouch = true;
+        gameEffects.clear();
+        notifications.clear();
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         // Ask screens that can change refresh rate to match the update rate, so no frame is repeated
         WindowManager.LayoutParams windowAttributes = getWindow().getAttributes();
@@ -251,7 +257,36 @@ public class MyActivity extends Activity {
     @Override
     protected void onPause() {
         stopFrameUpdates();
+        // Come back to the pause menu instead of straight into the action
+        if (canPause()) {
+            pause();
+        }
         super.onPause();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (currentMap == null) {
+            super.onBackPressed();
+        } else if (canPause()) {
+            pause();
+        } else if (paused && hudElements.contains(menu)) {
+            unpause();
+        }
+    }
+
+    private static boolean canPause() {
+        // Not while dead, reading a tip or travelling through a portal. Nor during the fade into a game, which
+        // can show a tip when it ends
+        if (currentMap == null || paused || !handleTouch) {
+            return false;
+        }
+        for (GameEffect effect : gameEffects) {
+            if (effect instanceof FadeEffect) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void startFrameUpdates() {
@@ -334,81 +369,37 @@ public class MyActivity extends Activity {
 
     private void handleTouch(MotionEvent ev) {
         if (roomSwitchEffect == null) {
-            int pointerCount = ev.getPointerCount();
-            boolean nothingPressed = true;
-            double xHook = 0;
-            double yHook = 0;
-            for (int i = 0; i < pointerCount; i++) {
-                int id = ev.getPointerId(i);
-                double xDown = ev.getX(i);
-                double yDown = ev.getY(i);
-                int action = ev.getActionMasked();
-                int actionIndex = ev.getActionIndex();
-                switch (action) {
-                    case MotionEvent.ACTION_UP: {
-                        nothingPressed = false;
-                        manageUpTouch(false,id,actionIndex);
-                        break;
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_POINTER_DOWN: {
+                    // Only the finger that went down presses. Pressing again under the fingers already on the
+                    // screen would repeat their A and B actions
+                    int index = ev.getActionIndex();
+                    double xDown = ev.getX(index);
+                    double yDown = ev.getY(index);
+                    boolean nothingPressed = manageDownTouch(xDown, yDown, ev.getPointerId(index), index);
+                    if (nothingPressed && !paused && currentMap != null) {
+                        manageHooking(xDown, yDown);
                     }
-                    case MotionEvent.ACTION_POINTER_UP: {
-                        nothingPressed = false;
-                        manageUpTouch(true,id,actionIndex);
-                        break;
-                    }
-                    case MotionEvent.ACTION_DOWN: {
-                        nothingPressed = manageDownTouch(xDown,yDown,id, ev.findPointerIndex(id));
-                        if (nothingPressed) {
-                            xHook = xDown;
-                            yHook = yDown;
-                        }
-                        break;
-                    }
-                    case MotionEvent.ACTION_POINTER_DOWN: {
-                        nothingPressed = manageDownTouch(xDown,yDown,id, ev.findPointerIndex(id));
-                        if (nothingPressed) {
-                            xHook = xDown;
-                            yHook = yDown;
-                        }
-                        break;
-                    }
-                    case MotionEvent.ACTION_MOVE: {
-                        nothingPressed = false;
-                        if (MyActivity.currentMap != null) {
-                            for (int k = 0; k < hudElements.size(); k++) {
-                                HUDElement element = hudElements.get(k);
-                                if (element instanceof Clickable) {
-                                    if (element instanceof Joystick) {
-                                        if (joystick.isClickable() && joystick.isOn() && joystick.getTouchId() == id && joystick.getTouchIndex() == ev.findPointerIndex(id)) {
-                                            joystick.moveJoystick(xDown, yDown);
-                                        }
-                                    } else {
-                                        Clickable clickable = (Clickable) element;
-                                        if (clickable.isClickable()) {
-                                            if (!clickable.isOn()) {
-                                                if (clickable.pressed(xDown, yDown)) {
-//                                                clickable.press(xDown, yDown, id, ev.findPointerIndex(id));
-                                                }
-                                            } else if (clickable.getTouchId() == id) {
-                                                if (!clickable.pressed(xDown, yDown)) {
-//                                                clickable.reset();
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                    break;
+                }
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_POINTER_UP: {
+                    manageUpTouch(ev.getPointerId(ev.getActionIndex()));
+                    break;
+                }
+                case MotionEvent.ACTION_MOVE: {
+                    for (int i = 0; i < ev.getPointerCount(); i++) {
+                        if (currentMap != null) {
+                            // Match fingers by id, as their index changes when another finger lifts
+                            if (joystick.isClickable() && joystick.isOn() && joystick.getTouchId() == ev.getPointerId(i)) {
+                                joystick.moveJoystick(ev.getX(i), ev.getY(i));
                             }
                         } else {
-                            MyActivity.character.setPositionInRoom(xDown,yDown);
+                            character.setPositionInRoom(ev.getX(i), ev.getY(i));
                         }
-                        break;
                     }
-                }
-            }
-            if (!paused) {
-                if (currentMap != null) {
-                    if (nothingPressed) {
-                        manageHooking(xHook, yHook);
-                    }
+                    break;
                 }
             }
         }
@@ -456,7 +447,7 @@ public class MyActivity extends Activity {
         }
     }
 
-    private void manageUpTouch(boolean isPointer, int id, int actionIndex) {
+    private void manageUpTouch(int id) {
         Vector joined = new Vector();
         joined.addAll(hudElements);
         if (!paused) {
@@ -466,14 +457,8 @@ public class MyActivity extends Activity {
             Object element = joined.get(k);
             if (element instanceof Clickable) {
                 Clickable clickable = (Clickable) element;
-                if (isPointer) {
-                    if (clickable.isOn() && clickable.getTouchId() == id && clickable.getTouchIndex() == actionIndex) {
-                        ((Clickable) element).reset();
-                    }
-                } else {
-                    if (clickable.isOn() && clickable.getTouchId() == id) {
-                        clickable.reset();
-                    }
+                if (clickable.isOn() && clickable.getTouchId() == id) {
+                    clickable.reset();
                 }
             }
         }

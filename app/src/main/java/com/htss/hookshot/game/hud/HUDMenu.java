@@ -83,7 +83,7 @@ public class HUDMenu extends HUDElement {
         buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 2*buttonSeparation + 3* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "EXIT GAME", new Execution() {
             @Override
             public double execute() {
-                System.exit(0);
+                MyActivity.canvas.myActivity.finish();
                 return 0;
             }
         }));

@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.graphics.Shader;
 
 import com.htss.hookshot.effect.FadeEffect;
+import com.htss.hookshot.effect.HurtEffect;
 import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
@@ -38,6 +39,8 @@ public class MainCharacter extends GameCharacter {
     public static final int MAX_HEALTH = 100, MAX_VELOCITY = 15;
     private static final int MAX_EXPLOSIONS = 5;
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
+    // As long as the red flash of the HurtEffect
+    private static final double INVULNERABLE_DURATION = TimeUtil.convertSecondToGameSecond(0.5);
 
     public static final int BODY_RADIUS = 10*MyActivity.TILE_WIDTH /50, FIST_RADIUS = MyActivity.TILE_WIDTH /8,
                             FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
@@ -56,6 +59,7 @@ public class MainCharacter extends GameCharacter {
     private CompassObject compass;
     private int explosionsUsed = 0;
     private TimerObject infiniteJumpsTimer;
+    private double invulnerableUntilFrame = 0;
 
     public MainCharacter(double xPos, double yPos) {
         super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, false, false);
@@ -501,6 +505,12 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public void getHurt(int damage) {
+        // Enemy contact is checked every update, so without this window it hits 60 times a second
+        if (getFrame() < invulnerableUntilFrame) {
+            return;
+        }
+        invulnerableUntilFrame = getFrame() + INVULNERABLE_DURATION;
+        MyActivity.gameEffects.add(new HurtEffect());
         super.getHurt(damage);
         this.manageHealthBar();
     }

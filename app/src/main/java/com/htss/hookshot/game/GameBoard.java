@@ -52,9 +52,16 @@ public class GameBoard extends View{
 
     public static String debugText = "";
 
+    private Bitmap screenBitmap;
+    private Canvas screenCanvas;
+    private final Rect visibleMap = new Rect(), screenRect = new Rect();
+    private final Paint copyPaint = new Paint();
+
     public GameBoard(Context context, AttributeSet attrs) {
         super(context, attrs);
         backgroundPaint.setColor(background);
+        // Replace the previous frame's pixels, so the transparent caves don't keep them
+        copyPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
     }
 
     public void setFont(int c, float size){
@@ -157,11 +164,17 @@ public class GameBoard extends View{
     private void drawGame(Canvas canvas) {
         assertMapMargins();
 
-        Bitmap mapInScreen = getMapInScreen();
+        // Copy the visible part of the map into a bitmap reused every frame. The whole map is too big to draw on
+        // the screen canvas, and allocating a screen sized bitmap per frame is slow
+        if (screenBitmap == null) {
+            screenBitmap = Bitmap.createBitmap(MyActivity.screenWidth, MyActivity.screenHeight, Bitmap.Config.ARGB_8888);
+            screenCanvas = new Canvas(screenBitmap);
+        }
+        visibleMap.set((int) -dx, (int) -dy, (int) -dx + MyActivity.screenWidth, (int) -dy + MyActivity.screenHeight);
+        screenRect.set(0, 0, MyActivity.screenWidth, MyActivity.screenHeight);
+        screenCanvas.drawBitmap(mapBitmap, visibleMap, screenRect, copyPaint);
 
-        canvas.drawBitmap(mapInScreen, 0, 0, paint);
-
-        mapInScreen.recycle();
+        canvas.drawBitmap(screenBitmap, 0, 0, paint);
     }
 
     private void drawObjects(Canvas canvas) {

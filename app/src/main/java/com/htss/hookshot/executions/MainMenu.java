@@ -60,7 +60,7 @@ public class MainMenu implements Execution {
         HUDText exitGame = new HUDText(MyActivity.screenWidth/2, MyActivity.screenHeight / 2 + yExitButton * MyActivity.canvas.fontSize, true, "EXIT GAME", MyActivity.TILE_WIDTH * 8 /10, new Execution() {
             @Override
             public double execute() {
-                System.exit(0);
+                MyActivity.canvas.myActivity.finish();
                 return 0;
             }
         });
