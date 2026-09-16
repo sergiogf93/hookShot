@@ -523,13 +523,7 @@ public class MainCharacter extends GameCharacter {
     }
 
     private void manageHealthBar() {
-        if (getHealth() < getMaxHealth()/5) {
-            this.healthBar.setColor(Color.RED);
-        } else if (getHealth() < getMaxHealth() / 2) {
-            this.healthBar.setColor(Color.YELLOW);
-        } else {
-            this.healthBar.setColor(Color.GREEN);
-        }
+        this.healthBar.setColor(HUDBar.getHealthColor(getHealth() / getMaxHealth()));
         if (this.healthBar.getAlpha() == 0) {
             this.healthBar.setAlpha(1);
         }

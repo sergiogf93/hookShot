@@ -59,6 +59,16 @@ public class HUDBar extends HUDElement {
         return color;
     }
 
+    public static int getHealthColor(double fill) {
+        if (fill < 0.2) {
+            return Color.RED;
+        } else if (fill < 0.5) {
+            return Color.YELLOW;
+        } else {
+            return Color.GREEN;
+        }
+    }
+
     public void setColor(int color) {
         this.color = color;
     }

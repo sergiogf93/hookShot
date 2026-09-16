@@ -32,6 +32,7 @@ import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.HUDMenu;
 import com.htss.hookshot.game.hud.HUDPauseButton;
 import com.htss.hookshot.game.hud.HUDPowerUpButton;
+import com.htss.hookshot.game.hud.HUDStatus;
 import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.GameDynamicObject;
@@ -87,6 +88,7 @@ public class MyActivity extends Activity {
     public static HUDCircleButton reloadButton, extendButton, buttonB, buttonA;
     public static HUDPauseButton pauseButton;
     public static HUDMenu menu;
+    public static HUDStatus status;
     public static LinkedList<HUDPowerUpButton> powerUpButtons = new LinkedList<HUDPowerUpButton>();
     public static boolean paused = false, handleTouch = true, debugging = false;
     public static long lastTap = 0;
@@ -226,6 +228,7 @@ public class MyActivity extends Activity {
         int menuWidth = 5*TILE_WIDTH;
         int menuHeight = menuButtonHeight*nMenuButton + (nMenuButton+1)*menuButtonSeparation;
         menu = new HUDMenu(0, 0, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
+        status = new HUDStatus();
         layoutForScreen();
 
         LinearLayout myLayout = (LinearLayout) findViewById(R.id.layout);

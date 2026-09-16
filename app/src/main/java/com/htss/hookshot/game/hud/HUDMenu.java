@@ -57,18 +57,8 @@ public class HUDMenu extends HUDElement {
         Rect healthBar = new Rect(getxCenter() - getWidth() / 2, (int) (getyCenter() - getHeight() / 2 - 2 * getPaint().getTextSize() / 3), (int) (getxCenter() - getWidth() / 2 + getWidth() * fill), (int) (getyCenter() - getHeight() / 2 - getPaint().getTextSize() / 3));
         setColor(Color.BLACK);
         canvas.drawRect(backBar, getPaint());
-        setColor(getHealthColor());
+        setColor(HUDBar.getHealthColor(fill));
         canvas.drawRect(healthBar, getPaint());
-    }
-
-    private int getHealthColor() {
-        if (MyActivity.character.getHealth() < MyActivity.character.getMaxHealth()/5) {
-            return Color.RED;
-        } else if (MyActivity.character.getHealth() < MyActivity.character.getMaxHealth() / 2) {
-            return Color.YELLOW;
-        } else {
-            return Color.GREEN;
-        }
     }
 
     public void addMenuButtons() {

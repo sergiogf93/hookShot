@@ -67,6 +67,7 @@ public class LaunchGame implements Execution {
         MyActivity.hudElements.clear();
         MyActivity.addControls();
         MyActivity.hudElements.add(MyActivity.pauseButton);
+        MyActivity.hudElements.add(MyActivity.status);
 
         //////////////////
         MyActivity.character.setPowerUp(GamePowerUp.PORTAL, portals);
