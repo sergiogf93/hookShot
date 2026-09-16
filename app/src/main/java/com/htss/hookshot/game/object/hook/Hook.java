@@ -1,5 +1,7 @@
 package com.htss.hookshot.game.object.hook;
 
+import android.graphics.Canvas;
+
 import com.htss.hookshot.constraints.ChildOfConstraint;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.HUDCircleButton;
@@ -35,6 +37,19 @@ public class Hook extends Chain {
             node.setGhost(true);
             if (!node.equals(getFirstNode())){
                 node.setP(initP);
+            }
+        }
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        super.draw(canvas);
+        if (getNodesNumber() > 1) {
+            Circle tip = getLastNode();
+            MathVector direction = new MathVector(getPrevNodeOf(tip).getPositionInScreen(), tip.getPositionInScreen());
+            if (!direction.isNull()) {
+                direction.normalize();
+                drawClaw(canvas, (float) tip.getxPosInScreen(), (float) tip.getyPosInScreen(), (float) direction.x, (float) direction.y, tip.getRadius());
             }
         }
     }

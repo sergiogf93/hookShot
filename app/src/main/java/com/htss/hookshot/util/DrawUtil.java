@@ -77,6 +77,28 @@ public class DrawUtil {
         canvas.drawCircle(x, y, radius, paint);
     }
 
+    // A soft light around a point, fading out at the radius
+    public static void drawGlow(Canvas canvas, Paint paint, float x, float y, float radius, int color) {
+        if (radius <= 0) {
+            return;
+        }
+        paint.setStyle(Paint.Style.FILL);
+        paint.setShader(new RadialGradient(x, y, radius, color, withAlpha(color, 0), Shader.TileMode.CLAMP));
+        canvas.drawCircle(x, y, radius, paint);
+        paint.setShader(null);
+    }
+
+    public static int withAlpha(int color, int alpha) {
+        return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color));
+    }
+
+    public static int blend(int from, int to, float amount) {
+        return Color.argb((int) (Color.alpha(from) + (Color.alpha(to) - Color.alpha(from)) * amount),
+                (int) (Color.red(from) + (Color.red(to) - Color.red(from)) * amount),
+                (int) (Color.green(from) + (Color.green(to) - Color.green(from)) * amount),
+                (int) (Color.blue(from) + (Color.blue(to) - Color.blue(from)) * amount));
+    }
+
     public static void drawArc(Canvas canvas, Paint paint, float x, float y, float radius, int color, int start, int sweep) {
         int alpha = paint.getAlpha();
         paint.setColor(color);

@@ -3,6 +3,7 @@ package com.htss.hookshot.game.object.hook;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 
 import com.htss.hookshot.constraints.RelativeToPointConstraint;
 import com.htss.hookshot.game.object.debug.Circle;
@@ -16,6 +17,17 @@ import java.util.Vector;
  * Created by Sergio on 02/08/2016.
  */
 public class Chain extends GameDynamicObject {
+
+    // Steel colours, for the chain and the hook's strike
+    private static final int CABLE_DARK = Color.rgb(45, 48, 56), CABLE_LIGHT = Color.rgb(150, 156, 168),
+            LINK_FILL = Color.rgb(125, 131, 143), LINK_EDGE = Color.rgb(28, 30, 36);
+    private static final Paint cablePaint = new Paint(Paint.ANTI_ALIAS_FLAG), linkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final Path clawPath = new Path();
+
+    static {
+        cablePaint.setStyle(Paint.Style.STROKE);
+        cablePaint.setStrokeCap(Paint.Cap.ROUND);
+    }
 
     private int separation, direction = 1;
     private Vector<Circle> nodes;
@@ -57,12 +69,50 @@ public class Chain extends GameDynamicObject {
         for (int i=0 ; i < getNodesNumber() - 1 ; i++){
             Circle node1 = getNode(i);
             Circle node2 = getNode(i+1);
-            Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            node1.draw(canvas);
-            node2.draw(canvas);
-            canvas.drawLine((float)node1.getxPosInScreen(),(float)node1.getyPosInScreen(),(float)node2.getxPosInScreen(),(float)node2.getyPosInScreen(),paint);
+            drawCable(canvas, (float) node1.getxPosInScreen(), (float) node1.getyPosInScreen(), (float) node2.getxPosInScreen(), (float) node2.getyPosInScreen(), node1.getRadius());
         }
+        for (Circle node : getNodes()) {
+            drawLink(canvas, (float) node.getxPosInScreen(), (float) node.getyPosInScreen(), node.getRadius());
+        }
+    }
+
+    // A steel cable, dark with a lighter line along it
+    public static void drawCable(Canvas canvas, float x1, float y1, float x2, float y2, float radius) {
+        cablePaint.setStrokeWidth(radius * 0.8f);
+        cablePaint.setColor(CABLE_DARK);
+        canvas.drawLine(x1, y1, x2, y2, cablePaint);
+        cablePaint.setStrokeWidth(radius * 0.3f);
+        cablePaint.setColor(CABLE_LIGHT);
+        canvas.drawLine(x1, y1, x2, y2, cablePaint);
+    }
+
+    // A ring joining two lengths of cable
+    public static void drawLink(Canvas canvas, float x, float y, float radius) {
+        linkPaint.setStyle(Paint.Style.FILL);
+        linkPaint.setColor(LINK_FILL);
+        canvas.drawCircle(x, y, radius * 0.7f, linkPaint);
+        linkPaint.setStyle(Paint.Style.STROKE);
+        linkPaint.setStrokeWidth(radius * 0.25f);
+        linkPaint.setColor(LINK_EDGE);
+        canvas.drawCircle(x, y, radius * 0.7f, linkPaint);
+    }
+
+    // The hook's tip, pointing along the given unit direction
+    public static void drawClaw(Canvas canvas, float x, float y, float directionX, float directionY, float radius) {
+        float normalX = -directionY, normalY = directionX;
+        clawPath.reset();
+        clawPath.moveTo(x + directionX * radius * 1.8f, y + directionY * radius * 1.8f);
+        clawPath.lineTo(x + (normalX * 1.1f - directionX * 0.3f) * radius, y + (normalY * 1.1f - directionY * 0.3f) * radius);
+        clawPath.lineTo(x - directionX * radius * 0.1f, y - directionY * radius * 0.1f);
+        clawPath.lineTo(x - (normalX * 1.1f + directionX * 0.3f) * radius, y - (normalY * 1.1f + directionY * 0.3f) * radius);
+        clawPath.close();
+        linkPaint.setStyle(Paint.Style.FILL);
+        linkPaint.setColor(LINK_FILL);
+        canvas.drawPath(clawPath, linkPaint);
+        linkPaint.setStyle(Paint.Style.STROKE);
+        linkPaint.setStrokeWidth(radius * 0.25f);
+        linkPaint.setColor(LINK_EDGE);
+        canvas.drawPath(clawPath, linkPaint);
     }
 
     @Override

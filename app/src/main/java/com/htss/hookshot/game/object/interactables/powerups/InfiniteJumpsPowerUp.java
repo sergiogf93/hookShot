@@ -16,6 +16,7 @@ public class InfiniteJumpsPowerUp extends GamePowerUp {
 
     @Override
     public void draw(Canvas canvas) {
+        drawGlow(canvas);
         DrawUtil.drawArc(canvas, getPaint(), (float) getxPosInScreen() - getWidth() / 2, (float) getyPosInScreen() - getHeight() / 4, (float) getxPosInScreen() + getWidth() / 2, (float) getyPosInScreen() + getHeight() / 4, Color.CYAN, -45, 270);
         DrawUtil.drawArc(canvas, getPaint(), (float) (getxPosInScreen() - getWidth() / 2.8), (float) getyPosInScreen(), getWidth() / 3, Color.CYAN, -80, 80);
         DrawUtil.drawArc(canvas, getPaint(), (float) (getxPosInScreen() + getWidth() / 2.8), (float) getyPosInScreen(), getWidth() / 3, Color.CYAN, 180, 80);

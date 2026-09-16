@@ -21,6 +21,7 @@ public class CompassPowerUp extends GamePowerUp {
 
     @Override
     public void draw(Canvas canvas) {
+        drawGlow(canvas);
         DrawUtil.drawCircle(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), getWidth() / 2, Color.YELLOW, Paint.Style.STROKE);
         DrawUtil.drawCircle(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), getWidth() / 2, Color.rgb(200,200,200), Paint.Style.FILL);
         drawNeedles(canvas);

@@ -17,7 +17,7 @@ public class HealthDrop extends GameDynamicObject implements Interactable {
 
     private static final float RADIUS = MyActivity.TILE_WIDTH / 7;
     private static final double HEALTH = 10;
-    private Paint paint = new Paint();
+    private Paint paint = new Paint(), glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public HealthDrop(double xPos, double yPos, boolean addToGameObjectsList, boolean addToDynamicObjectsList) {
         super(xPos, yPos, 0,0,0, addToGameObjectsList, addToDynamicObjectsList);
@@ -26,6 +26,8 @@ public class HealthDrop extends GameDynamicObject implements Interactable {
 
     @Override
     public void draw(Canvas canvas) {
+        float pulse = 1 + 0.12f * (float) Math.sin(2 * Math.PI * getFrame() / 60);
+        DrawUtil.drawGlow(canvas, glowPaint, (float) getxPosInScreen(), (float) getyPosInScreen(), RADIUS * 2.6f * pulse, Color.argb(150, 120, 255, 120));
         DrawUtil.drawCircle(canvas, paint, (float) getxPosInScreen(), (float) getyPosInScreen(), RADIUS, Color.GREEN, Paint.Style.FILL);
         DrawUtil.drawCircle(canvas, paint, (float) getxPosInScreen(), (float) getyPosInScreen(), RADIUS, Color.RED, Paint.Style.STROKE);
         DrawUtil.drawCircle(canvas, paint, (float) getxPosInScreen() + RADIUS/4, (float) getyPosInScreen() - RADIUS/4, (float) (RADIUS * 0.1), Color.WHITE, Paint.Style.STROKE);

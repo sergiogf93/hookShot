@@ -3,6 +3,7 @@ package com.htss.hookshot.map;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 
+import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.NoiseUtil;
 
 import java.util.HashMap;
@@ -46,7 +47,7 @@ public class CaveTextures {
             int[] pixels = new int[SIZE * SIZE];
             for (int i = 0; i < pixels.length; i++) {
                 int alpha = (int) (190 * NoiseUtil.smoothstep(0.45f, 0.65f, noise[i]));
-                pixels[i] = CavePalette.withAlpha(palette.backdrop, alpha);
+                pixels[i] = DrawUtil.withAlpha(palette.backdrop, alpha);
             }
             backdrop = Bitmap.createBitmap(pixels, SIZE, SIZE, Bitmap.Config.ARGB_8888);
             backdrops.put(palette, backdrop);

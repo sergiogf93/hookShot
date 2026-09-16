@@ -1,8 +1,6 @@
 package com.htss.hookshot.game.object.hook;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
@@ -19,14 +17,11 @@ public class HookStrike extends GameDynamicObject {
     private static final double DURATION = TimeUtil.secondsToUpdates(0.2);
 
     private GameObject target;
-    private Paint nodePaint = new Paint(), linkPaint = new Paint();
 
     public HookStrike(GameObject target) {
         super(target.getxPosInRoom(), target.getyPosInRoom(), 0, 0, 0, true, false);
         this.target = target;
         setGhost(true);
-        nodePaint.setColor(Color.GRAY);
-        linkPaint.setColor(Color.RED);
     }
 
     @Override
@@ -47,13 +42,13 @@ public class HookStrike extends GameDynamicObject {
         }
         double reached = 1 - Math.abs(2 * getFrame() / DURATION - 1);
         MathVector tip = toTarget.scaled(reached).applyTo(start);
-        canvas.drawLine((float) start.x, (float) start.y, (float) tip.x, (float) tip.y, linkPaint);
+        Chain.drawCable(canvas, (float) start.x, (float) start.y, (float) tip.x, (float) tip.y, Hook.RADIUS);
         MathVector direction = toTarget.getUnitVector();
-        for (double distance = 0; distance < toTarget.magnitude() * reached; distance += Hook.SEPARATION) {
-            MathVector node = direction.scaled(distance).applyTo(start);
-            canvas.drawCircle((float) node.x, (float) node.y, Hook.RADIUS, nodePaint);
+        for (double distance = Hook.SEPARATION; distance < toTarget.magnitude() * reached; distance += Hook.SEPARATION) {
+            MathVector link = direction.scaled(distance).applyTo(start);
+            Chain.drawLink(canvas, (float) link.x, (float) link.y, Hook.RADIUS);
         }
-        canvas.drawCircle((float) tip.x, (float) tip.y, Hook.RADIUS, nodePaint);
+        Chain.drawClaw(canvas, (float) tip.x, (float) tip.y, (float) direction.x, (float) direction.y, Hook.RADIUS);
     }
 
     @Override

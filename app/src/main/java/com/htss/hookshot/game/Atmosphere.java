@@ -11,6 +11,7 @@ import android.graphics.Shader;
 
 import com.htss.hookshot.map.CavePalette;
 import com.htss.hookshot.map.CaveTextures;
+import com.htss.hookshot.util.DrawUtil;
 
 import java.util.Random;
 
@@ -93,7 +94,7 @@ public class Atmosphere {
         float lightRadius = 0.75f * Math.max(width, height);
         // A faint warm glow on the character, like a lantern, fading into darkness
         lightShader = new RadialGradient(0, 0, lightRadius,
-                new int[]{CavePalette.withAlpha(palette.dust, 40), Color.TRANSPARENT, CavePalette.withAlpha(palette.darkness, 110), CavePalette.withAlpha(palette.darkness, 175)},
+                new int[]{DrawUtil.withAlpha(palette.dust, 40), Color.TRANSPARENT, DrawUtil.withAlpha(palette.darkness, 110), DrawUtil.withAlpha(palette.darkness, 175)},
                 new float[]{0, 0.35f, 0.75f, 1}, Shader.TileMode.CLAMP);
         lightPaint.setShader(lightShader);
     }

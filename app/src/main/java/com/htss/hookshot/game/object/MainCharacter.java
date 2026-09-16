@@ -2,7 +2,9 @@ package com.htss.hookshot.game.object;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.RadialGradient;
 import android.graphics.Shader;
 
 import com.htss.hookshot.effect.FadeEffect;
@@ -47,6 +49,12 @@ public class MainCharacter extends GameCharacter {
     private static final double INVULNERABLE_DURATION = TimeUtil.secondsToUpdates(0.833);
     // Falling faster than this kicks up dust on landing
     private static final double LANDING_DUST_SPEED = MyActivity.TILE_WIDTH * 0.08;
+    // Landing this fast squashes the most, and every update undoes part of the squash or stretch
+    private static final double MAX_SQUASH_SPEED = MyActivity.TILE_WIDTH * 0.25;
+    private static final float TAKEOFF_STRETCH = -0.6f, SQUASH_DECAY = 0.85f;
+    private static final int BLINK_PERIOD = (int) TimeUtil.secondsToUpdates(3.5), BLINK_UPDATES = (int) TimeUtil.secondsToUpdates(0.117);
+    // The body's highlight, mixed with its colour, and the dark line around hands and feet
+    private static final int BODY_LIGHT = Color.rgb(150, 160, 190), LIMB_OUTLINE = Color.argb(200, 20, 20, 28);
 
     public static final int BODY_RADIUS = 10*MyActivity.TILE_WIDTH /50, FIST_RADIUS = MyActivity.TILE_WIDTH /8,
                             FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
@@ -66,6 +74,12 @@ public class MainCharacter extends GameCharacter {
     private int explosionsUsed = 0;
     private TimerObject infiniteJumpsTimer;
     private double invulnerableUntilFrame = 0;
+    // Above 0 squashed, below 0 stretched
+    private float squash = 0;
+    private Paint bodyPaint = new Paint(Paint.ANTI_ALIAS_FLAG), outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private RadialGradient bodyGradient;
+    private int bodyGradientColor;
+    private Matrix bodyMatrix = new Matrix();
 
     public MainCharacter(double xPos, double yPos) {
         super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, false, false);
@@ -196,7 +210,11 @@ public class MainCharacter extends GameCharacter {
         super.update();
         if (!wasOnFloor && isOnFloor() && fallSpeed > LANDING_DUST_SPEED) {
             kickUpDust();
+            squash = (float) Math.min(1, fallSpeed / MAX_SQUASH_SPEED);
+        } else if (wasOnFloor && !isOnFloor() && getP().y < -LANDING_DUST_SPEED) {
+            squash = TAKEOFF_STRETCH;
         }
+        squash *= SQUASH_DECAY;
         if (getP().x != 0f){
             setState(STATE_MOVING);
         } else {
@@ -210,7 +228,7 @@ public class MainCharacter extends GameCharacter {
 
     private void kickUpDust() {
         double x = getxPosInRoom(), y = getyPosInRoom() + getHeight() / 2;
-        int dust = CavePalette.withAlpha(CavePalette.forLevel(MyActivity.canvas.myActivity.level).dust, 140);
+        int dust = DrawUtil.withAlpha(CavePalette.forLevel(MyActivity.canvas.myActivity.level).dust, 140);
         Particles.burst(x, y, 5, dust, 0.05f, 0.035f, 0.5, -0.0005f, 170, 200);
         Particles.burst(x, y, 5, dust, 0.05f, 0.035f, 0.5, -0.0005f, -20, 10);
     }
@@ -258,6 +276,10 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public void draw(Canvas canvas) {
+        // Squashed on landing and stretched on takeoff, around the feet
+        canvas.save();
+        float pivotY = (float) getyPosInScreen() + BODY_RADIUS + FOOT_RADIUS;
+        canvas.scale(1 + 0.3f * squash, 1 - 0.25f * squash, (float) getxPosInScreen(), pivotY);
         MathVector separationHand;
         MathVector separationFoot;
         MathVector positionFromHands;
@@ -308,23 +330,23 @@ public class MainCharacter extends GameCharacter {
         } else {
             rightHand.setRadius(FIST_RADIUS);
         }
-        rightHand.draw(canvas);
+        drawLimb(canvas, rightHand);
         // Right foot
         rightFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
-        rightFoot.draw(canvas);
+        drawLimb(canvas, rightFoot);
         // Body
         body.setPositionInRoom(getPositionInRoom());
-        body.draw(canvas);
+        drawBody(canvas);
         // Eyes
         paint.setColor(Color.YELLOW);
         vectorForEyes.rotateDeg(-1 * getFacing() * 90);
         vectorForEyes.rescale(separationToEye);
         leftEye.setPositionInRoom(vectorForEyes.applyTo(getPositionInRoom()));
-        leftEye.draw(canvas);
+        drawEye(canvas, leftEye);
         vectorForEyes.reflect(new MathVector(0, 1));
         vectorForEyes.scale(2);
         rightEye.setPositionInRoom(vectorForEyes.applyTo(getPositionInRoom()));
-        rightEye.draw(canvas);
+        drawEye(canvas, rightEye);
         // Left hand
         separationHand.reflect(new MathVector(0,1));
         separationFoot.reflect(axisForFeet);
@@ -339,10 +361,10 @@ public class MainCharacter extends GameCharacter {
         } else {
             leftHand.setRadius(FIST_RADIUS);
         }
-        leftHand.draw(canvas);
+        drawLimb(canvas, leftHand);
         // Left foot
         leftFoot.setPositionInRoom(separationFoot.applyTo(getPositionInRoom()));
-        leftFoot.draw(canvas);
+        drawLimb(canvas, leftFoot);
         // Bomb explosions left
         if (getCurrentPowerUp() == GamePowerUp.BOMB) {
             double[] angles = {0, 30, -30, 60, -60};
@@ -353,6 +375,51 @@ public class MainCharacter extends GameCharacter {
                 DrawUtil.drawRadialGradient(canvas, rPaint, (float) p.x, (float) p.y, FIST_RADIUS, Color.YELLOW, Color.RED, Shader.TileMode.MIRROR);
             }
         }
+        canvas.restore();
+    }
+
+    private void drawBody(Canvas canvas) {
+        MathVector center = body.getPositionInScreen();
+        if (bodyGradient == null || bodyGradientColor != body.getColor()) {
+            bodyGradientColor = body.getColor();
+            bodyGradient = new RadialGradient(0, 0, BODY_RADIUS * 1.6f, DrawUtil.blend(bodyGradientColor, BODY_LIGHT, 0.45f),
+                    DrawUtil.blend(bodyGradientColor, Color.BLACK, 0.55f), Shader.TileMode.CLAMP);
+            bodyPaint.setShader(bodyGradient);
+        }
+        // Lit from the top left
+        bodyMatrix.setTranslate((float) center.x - BODY_RADIUS * 0.4f, (float) center.y - BODY_RADIUS * 0.4f);
+        bodyGradient.setLocalMatrix(bodyMatrix);
+        canvas.drawCircle((float) center.x, (float) center.y, BODY_RADIUS, bodyPaint);
+        // A light rim, so it stands out in the dark caves
+        outlinePaint.setStyle(Paint.Style.STROKE);
+        outlinePaint.setStrokeWidth(BODY_RADIUS / 7f);
+        outlinePaint.setColor(DrawUtil.withAlpha(CavePalette.forLevel(MyActivity.canvas.myActivity.level).dust, 170));
+        canvas.drawCircle((float) center.x, (float) center.y, BODY_RADIUS, outlinePaint);
+    }
+
+    private void drawEye(Canvas canvas, BiCircleShape eye) {
+        MathVector center = eye.getPositionInScreen();
+        if (getFrame() % BLINK_PERIOD < BLINK_UPDATES) {
+            outlinePaint.setStyle(Paint.Style.STROKE);
+            outlinePaint.setStrokeWidth(EYE_RADIUS * 0.6f);
+            outlinePaint.setStrokeCap(Paint.Cap.ROUND);
+            outlinePaint.setColor(eye.getColor());
+            canvas.drawLine((float) center.x - EYE_RADIUS, (float) center.y, (float) center.x + EYE_RADIUS, (float) center.y, outlinePaint);
+        } else {
+            eye.draw(canvas);
+            // A glint on the upper part
+            outlinePaint.setStyle(Paint.Style.FILL);
+            outlinePaint.setColor(Color.WHITE);
+            canvas.drawCircle((float) eye.getCenter2().x, (float) eye.getCenter2().y, EYE_RADIUS * 0.4f, outlinePaint);
+        }
+    }
+
+    private void drawLimb(Canvas canvas, CircleShape limb) {
+        limb.draw(canvas);
+        outlinePaint.setStyle(Paint.Style.STROKE);
+        outlinePaint.setStrokeWidth(limb.getRadius() / 4f);
+        outlinePaint.setColor(LIMB_OUTLINE);
+        canvas.drawCircle((float) limb.getxPosInScreen(), (float) limb.getyPosInScreen(), limb.getRadius(), outlinePaint);
     }
 
     public void jump(double jump) {

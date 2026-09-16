@@ -1,5 +1,6 @@
 package com.htss.hookshot.game.object.interactables.powerups;
 
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
@@ -7,6 +8,7 @@ import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Interactable;
+import com.htss.hookshot.util.DrawUtil;
 
 /**
  * Created by Sergio on 05/06/2017.
@@ -17,13 +19,37 @@ public abstract class GamePowerUp extends GameDynamicObject implements Interacta
 
     private int type;
     private int width, height;
-    private Paint paint = new Paint();
+    private Paint paint = new Paint(), glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    // Items in the cave glow, their icons in the HUD and the pause menu don't
+    private boolean glowing;
 
     public GamePowerUp(double xPos, double yPos, int width, int height, int type, boolean addToGameObjects, boolean addToDynamicObjects) {
         super(xPos, yPos, 0, 0, 0, addToGameObjects, addToDynamicObjects);
         this.width = width;
         this.height = height;
         this.type = type;
+        this.glowing = addToGameObjects;
+    }
+
+    // Pulsing behind the item, so it stands out in the cave
+    protected void drawGlow(Canvas canvas) {
+        if (glowing) {
+            float pulse = 1 + 0.12f * (float) Math.sin(2 * Math.PI * getFrame() / 60);
+            DrawUtil.drawGlow(canvas, glowPaint, (float) getxPosInScreen(), (float) getyPosInScreen(), Math.max(getWidth(), getHeight()) * 1.1f * pulse, getGlowColor());
+        }
+    }
+
+    private int getGlowColor() {
+        switch (type) {
+            case PORTAL:
+                return Color.argb(150, 200, 120, 255);
+            case COMPASS:
+                return Color.argb(150, 255, 240, 120);
+            case BOMB:
+                return Color.argb(150, 255, 150, 60);
+            default:
+                return Color.argb(150, 120, 230, 255);
+        }
     }
 
     public double getDy(int frame, float maxDy) {

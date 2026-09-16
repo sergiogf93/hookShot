@@ -2,9 +2,12 @@ package com.htss.hookshot.game.object.obstacles;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.Shader;
 
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.effect.ScreenShake;
@@ -27,7 +30,9 @@ public class Door extends GameDynamicObject {
     private int width, height;
     private Vector<WallButton> buttons;
     private MathVector vector;
-    private Paint paint = new Paint();
+    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final int STEEL_LIGHT = Color.rgb(170, 176, 188), STEEL = Color.rgb(110, 116, 128),
+            STEEL_DARK = Color.rgb(58, 62, 72), STEEL_EDGE = Color.rgb(28, 30, 36);
 
     public Door(double xPos, double yPos, int width, int height, MathVector vector, Vector<WallButton> buttons, boolean addToLists) {
         super(xPos, yPos, 0, 0, 0, addToLists, addToLists);
@@ -56,8 +61,35 @@ public class Door extends GameDynamicObject {
 
     @Override
     public void draw(Canvas canvas) {
-        DrawUtil.drawPolygon(getCorners(), canvas, Color.GRAY, Paint.Style.FILL, true, paint);
+        drawSteel(canvas);
         drawButtons(canvas, getVector().scaled(-1 * (getWidth() / 2 - buttons.get(0).getRadius())).applyTo(getPositionInScreen()));
+    }
+
+    // Steel lit along one side, with bars across it and a dark edge
+    private void drawSteel(Canvas canvas) {
+        Point[] corners = getCorners();
+        Path outline = new Path();
+        outline.moveTo(corners[0].x, corners[0].y);
+        for (int i = 1; i < corners.length; i++) {
+            outline.lineTo(corners[i].x, corners[i].y);
+        }
+        outline.close();
+        MathVector center = getPositionInScreen();
+        MathVector across = getVector().getNormal().scaled(getHeight() / 2);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setShader(new LinearGradient((float) (center.x + across.x), (float) (center.y + across.y), (float) (center.x - across.x), (float) (center.y - across.y),
+                new int[]{STEEL_LIGHT, STEEL, STEEL_DARK}, null, Shader.TileMode.CLAMP));
+        canvas.drawPath(outline, paint);
+        paint.setShader(null);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setColor(STEEL_EDGE);
+        paint.setStrokeWidth(getHeight() / 10f);
+        for (float along = -getWidth() / 2f + getHeight(); along < getWidth() / 2f - getHeight() / 2f; along += getHeight()) {
+            MathVector bar = getVector().scaled(along).applyTo(center);
+            canvas.drawLine((float) (bar.x + across.x * 0.7), (float) (bar.y + across.y * 0.7), (float) (bar.x - across.x * 0.7), (float) (bar.y - across.y * 0.7), paint);
+        }
+        paint.setStrokeWidth(getHeight() / 8f);
+        canvas.drawPath(outline, paint);
     }
 
     private Point[] getCorners() {

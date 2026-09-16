@@ -8,6 +8,7 @@ import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.interfaces.Interactable;
+import com.htss.hookshot.util.DrawUtil;
 
 /**
  * Created by Sergio on 03/09/2016.
@@ -16,6 +17,7 @@ public class WallButton extends GameDynamicObject implements Interactable{
 
     private float radius;
     private boolean on;
+    private Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public WallButton(double xPos, double yPos, float radius, boolean on, boolean addToGameObjects, boolean addToDynamicObjects) {
         super(xPos, yPos, 0, 0, 0, addToGameObjects, addToDynamicObjects);
@@ -36,6 +38,8 @@ public class WallButton extends GameDynamicObject implements Interactable{
 
     @Override
     public void draw(Canvas canvas) {
+        DrawUtil.drawGlow(canvas, glowPaint, (float) getxPosInScreen(), (float) getyPosInScreen(), getRadius() * 1.7f,
+                isOn() ? Color.argb(140, 120, 255, 100) : Color.argb(110, 255, 80, 60));
         Paint paint = new Paint();
         paint.setColor(Color.argb(255,200,200,0));
         canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), paint);

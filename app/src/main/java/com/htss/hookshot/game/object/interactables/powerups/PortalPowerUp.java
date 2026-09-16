@@ -17,6 +17,7 @@ public class PortalPowerUp extends GamePowerUp {
 
     @Override
     public void draw(Canvas canvas) {
+        drawGlow(canvas);
         RectF oval = new RectF((float) getxPosInScreen() - getWidth() / 2, (float) (getyPosInScreen() - getHeight() / 2 + getDy(getFrame(), getHeight() / 4)), (float) getxPosInScreen() + getWidth() / 2, (float) (getyPosInScreen() + getHeight() / 2 + getDy(getFrame(), getHeight() / 4)));
         drawArc(canvas, oval, Color.BLUE, 35, 180);
         drawArc(canvas, oval, Color.RED, 215, 180);

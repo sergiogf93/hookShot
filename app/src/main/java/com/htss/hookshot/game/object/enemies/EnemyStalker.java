@@ -2,11 +2,13 @@ package com.htss.hookshot.game.object.enemies;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.StalkerAnimation;
 import com.htss.hookshot.game.object.GameCharacter;
 import com.htss.hookshot.math.MathVector;
+import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.TimeUtil;
 
 /**
@@ -21,6 +23,7 @@ public class EnemyStalker extends ClickableEnemy {
     private static final double MAX_RADIUS = MyActivity.TILE_WIDTH / 2, MIN_RADIUS = MyActivity.TILE_WIDTH / 10;
 
     private int frameWhenLost = 0, bodyColor = Color.BLACK;
+    private Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public EnemyStalker(double xPos, double yPos, boolean addToLists) {
         super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, MAX_HEALTH, addToLists, addToLists);
@@ -95,6 +98,9 @@ public class EnemyStalker extends ClickableEnemy {
 
     @Override
     public void draw(Canvas canvas) {
+        // A soft glow in the colour of its eye, so it can be seen against dark rock
+        int eyeColor = isInState(GameCharacter.STATE_REST) ? Color.YELLOW : Color.RED;
+        DrawUtil.drawGlow(canvas, glowPaint, (float) getxPosInScreen(), (float) getyPosInScreen(), (float) (MAX_RADIUS * 1.8), DrawUtil.withAlpha(eyeColor, 70));
         int animatedAlpha = StalkerAnimation.getAlphaAnimated(getFrame());
         if (animatedAlpha > 245 && !isFrozen()) {
             setBodyColor(Color.BLACK);

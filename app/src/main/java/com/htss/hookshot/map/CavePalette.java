@@ -2,6 +2,8 @@ package com.htss.hookshot.map;
 
 import android.graphics.Color;
 
+import com.htss.hookshot.util.DrawUtil;
+
 /**
  * The cave's colours. They change every few levels, so going deeper shows.
  */
@@ -38,21 +40,12 @@ public class CavePalette {
         this.backgroundTop = backgroundTop;
         this.backgroundBottom = backgroundBottom;
         this.dust = dust;
-        this.backdrop = blend(backgroundBottom, rock, 0.5f);
-        this.darkness = blend(Color.BLACK, backgroundTop, 0.5f);
+        this.backdrop = DrawUtil.blend(backgroundBottom, rock, 0.5f);
+        this.darkness = DrawUtil.blend(Color.BLACK, backgroundTop, 0.5f);
     }
 
     public static CavePalette forLevel(int level) {
         return PALETTES[(Math.max(level, 0) / LEVELS_PER_PALETTE) % PALETTES.length];
     }
 
-    public static int withAlpha(int color, int alpha) {
-        return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color));
-    }
-
-    private static int blend(int from, int to, float amount) {
-        return Color.rgb((int) (Color.red(from) + (Color.red(to) - Color.red(from)) * amount),
-                (int) (Color.green(from) + (Color.green(to) - Color.green(from)) * amount),
-                (int) (Color.blue(from) + (Color.blue(to) - Color.blue(from)) * amount));
-    }
 }
