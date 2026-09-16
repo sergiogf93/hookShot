@@ -14,7 +14,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class JumpEffect extends GameDynamicObject {
 
-    private static final double DURATION = TimeUtil.secondsToFrameTime(0.167);
+    private static final double DURATION = TimeUtil.secondsToUpdates(0.167);
 
     private int maxWidth, maxHeight;
     private Paint paint = new Paint();

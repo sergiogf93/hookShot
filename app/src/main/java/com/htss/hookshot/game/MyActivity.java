@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.view.Choreographer;
 import android.view.Display;
@@ -62,11 +63,11 @@ public class MyActivity extends Activity {
 //    public static int FILL_PERCENT = 20;
 //    public static int mapXTiles = 30, mapYTiles = 20;
 
-    public static final int FRAME_RATE = 10;
     // The game logic runs once per redraw and was tuned on 60 Hz phones, so redraws are capped to this
     // rate. Otherwise it plays faster on 90 and 120 Hz screens
     public static final int UPDATES_PER_SECOND = 60;
-    // Most time between two taps, or two presses of a button, for them to count as a double tap
+    // Most time between two taps, or two presses of a button, for them to count as a double tap. Measured with
+    // SystemClock.uptimeMillis, which doesn't jump when the phone's clock is changed
     public static final long DOUBLE_TAP_MILLIS = 500;
     public static int TILE_WIDTH, HORIZONTAL_MARGIN, VERTICAL_MARGIN;
     // About the biggest tile a phone gets, 7.2 tiles over a 430 dp short side
@@ -78,7 +79,6 @@ public class MyActivity extends Activity {
     private final FramePacer framePacer = new FramePacer(UPDATES_PER_SECOND);
     public static int screenHeight, screenWidth; //Default 110 80, for screen size 30 20
     private static int pendingScreenWidth, pendingScreenHeight;
-    public static int frame = 0;
     public static MainCharacter character;
     public static Joystick joystick;
     public static HUDCircleButton reloadButton, extendButton, buttonB, buttonA;
@@ -243,7 +243,7 @@ public class MyActivity extends Activity {
             public void run() {
                 initGfx();
             }
-        }, FRAME_RATE);
+        }, 10);
 
     }
 
@@ -385,7 +385,6 @@ public class MyActivity extends Activity {
         @Override
         public void doFrame(long frameTimeNanos) {
             if (framePacer.shouldUpdate(frameTimeNanos)) {
-                frame += FRAME_RATE;
                 canvas.invalidate();
             }
             Choreographer.getInstance().postFrameCallback(this);
@@ -507,19 +506,19 @@ public class MyActivity extends Activity {
                     decideBetweenFastReloadOrShoot(objective);
                 } else {
                     if (character.isHooked()) {
-                        if (System.currentTimeMillis() - lastTap < DOUBLE_TAP_MILLIS) {
+                        if (SystemClock.uptimeMillis() - lastTap < DOUBLE_TAP_MILLIS) {
                             character.getHook().setFastReloading(true);
                         }
                     }
                 }
             }
         }
-        lastTap = System.currentTimeMillis();
+        lastTap = SystemClock.uptimeMillis();
     }
 
     private void decideBetweenFastReloadOrShoot(MathVector objective) {
         if (character.isHooked()) {
-            if (character.getHook().getNodesNumber() > Hook.MIN_RELOADING_NODES && !character.getHook().isFastReloading() && System.currentTimeMillis() - lastTap < DOUBLE_TAP_MILLIS || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
+            if (character.getHook().getNodesNumber() > Hook.MIN_RELOADING_NODES && !character.getHook().isFastReloading() && SystemClock.uptimeMillis() - lastTap < DOUBLE_TAP_MILLIS || character.getHook().getHookedPoint().distanceTo(objective.screenToRoom()) < TILE_WIDTH) {
                 character.getHook().setFastReloading(true);
             } else {
                 character.shootHook(objective.x, objective.y);

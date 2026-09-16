@@ -95,15 +95,15 @@ public class PortalObject extends GameDynamicObject {
     }
 
     public int getRadius() {
-        if (getFrame() < TimeUtil.secondsToFrameTime(0.333)){
-            return (int) (radius*getFrame()/TimeUtil.secondsToFrameTime(0.333));
+        if (getFrame() < TimeUtil.secondsToUpdates(0.333)){
+            return (int) (radius*getFrame()/TimeUtil.secondsToUpdates(0.333));
         } else {
             return radius;
         }
     }
 
     public int getStartAngle() {
-        return (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.secondsToFrameTime(1.667)) + 25);
+        return (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.secondsToUpdates(1.667)) + 25);
     }
     @Override
     public int getWidth() {

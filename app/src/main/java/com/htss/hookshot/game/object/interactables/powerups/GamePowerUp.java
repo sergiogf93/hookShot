@@ -25,7 +25,7 @@ public abstract class GamePowerUp extends GameDynamicObject implements Interacta
     }
 
     public double getDy(int frame, float maxDy) {
-        return maxDy*Math.sin(2*Math.PI*frame/(50* MyActivity.FRAME_RATE));
+        return maxDy*Math.sin(2*Math.PI*frame/50);
     }
 
     @Override

@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.SystemClock;
 
 import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
@@ -87,17 +88,17 @@ public class HUDCircleButton extends HUDElement implements Clickable {
         setTouchId(id);
         setOn(true);
         if (getExecDoubleOn() != null) {
-            if(System.currentTimeMillis() - getTimeWhenOn() < MyActivity.DOUBLE_TAP_MILLIS) {
+            if(SystemClock.uptimeMillis() - getTimeWhenOn() < MyActivity.DOUBLE_TAP_MILLIS) {
                 setTimeWhenOn(0);
                 getExecDoubleOn().execute();
             } else {
                 if (getExecOn() != null){
-                    setTimeWhenOn(System.currentTimeMillis());
+                    setTimeWhenOn(SystemClock.uptimeMillis());
                     getExecOn().execute();
                 }
             }
         } else {
-            setTimeWhenOn(System.currentTimeMillis());
+            setTimeWhenOn(SystemClock.uptimeMillis());
             if (getExecOn() != null) {
                 getExecOn().execute();
             }

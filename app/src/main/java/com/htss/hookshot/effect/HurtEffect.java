@@ -13,7 +13,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class HurtEffect extends GameEffect {
 
-    private static int DURATION = (int) TimeUtil.secondsToFrameTime(0.833);
+    private static int DURATION = (int) TimeUtil.secondsToUpdates(0.833);
     private int frame = 0;
 
     @Override
@@ -24,7 +24,7 @@ public class HurtEffect extends GameEffect {
         int alpha = -200*frame/DURATION + 200;
         paint.setAlpha(alpha);
         canvas.drawRect(rect,paint);
-        frame += MyActivity.FRAME_RATE;
+        frame++;
     }
 
     @Override

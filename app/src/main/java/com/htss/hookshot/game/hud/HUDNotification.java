@@ -30,7 +30,7 @@ public class HUDNotification extends HUDElement {
     @Override
     public void draw(Canvas canvas) {
         canvas.drawText(text, MARGIN, MARGIN + getHeight() * (1 + MyActivity.notifications.indexOf(this)), getPaint());
-        frame += MyActivity.FRAME_RATE;
+        frame++;
         if (frame >= duration) {
             MyActivity.notifications.remove(this);
         }

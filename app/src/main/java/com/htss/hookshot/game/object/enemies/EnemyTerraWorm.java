@@ -21,7 +21,7 @@ public class EnemyTerraWorm extends GameEnemy {
     private int frameWhenChangedDirection = 0;
     private int currentRotation = 0;
     private boolean attacking = false;
-    private double maxDurationToChangeDirection = TimeUtil.secondsToFrameTime(5);
+    private double maxDurationToChangeDirection = TimeUtil.secondsToUpdates(5);
     private Vector<TerraWormBody> bodyParts = new Vector<TerraWormBody>();
 
     public EnemyTerraWorm(double xPos, double yPos, int nParts, boolean addToLists, boolean addToEnemyList) {

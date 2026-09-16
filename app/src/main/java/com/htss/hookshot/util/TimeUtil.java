@@ -7,10 +7,9 @@ import com.htss.hookshot.game.MyActivity;
  */
 public class TimeUtil {
 
-    // Game objects count time in frame units, adding FRAME_RATE of them on every update. Durations are rounded to
-    // whole updates, as that's how the game advances
-    public static double secondsToFrameTime(double seconds) {
-        return Math.round(seconds * MyActivity.UPDATES_PER_SECOND) * MyActivity.FRAME_RATE;
+    // Game objects count time in updates, which is how the game advances, so durations are rounded to whole updates
+    public static double secondsToUpdates(double seconds) {
+        return Math.round(seconds * MyActivity.UPDATES_PER_SECOND);
     }
 
 }

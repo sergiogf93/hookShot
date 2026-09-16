@@ -45,7 +45,7 @@ public class Door extends GameDynamicObject {
         if (allOn){
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.dynamicObjects.remove(this);
-            MyActivity.notifications.add(new HUDNotification("DOOR OPENED!", TimeUtil.secondsToFrameTime(1.667)));
+            MyActivity.notifications.add(new HUDNotification("DOOR OPENED!", TimeUtil.secondsToUpdates(1.667)));
         }
     }
 

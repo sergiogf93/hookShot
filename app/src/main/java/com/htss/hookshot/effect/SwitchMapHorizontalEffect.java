@@ -12,7 +12,7 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class SwitchMapHorizontalEffect extends GameEffect {
 
-    private static final double DURATION = TimeUtil.secondsToFrameTime(1.667);
+    private static final double DURATION = TimeUtil.secondsToUpdates(1.667);
 
     private Bitmap currentMapScreenBitmap, nextMapScreenBitmap;
     private int frame = 0, direction;
@@ -40,7 +40,7 @@ public class SwitchMapHorizontalEffect extends GameEffect {
         MyActivity.character.setxPosInScreen(xEdgePosition + characterHorizontalDistanceToEdge);
         MyActivity.character.draw(canvas);
 
-        frame += MyActivity.FRAME_RATE;
+        frame++;
     }
 
     @Override

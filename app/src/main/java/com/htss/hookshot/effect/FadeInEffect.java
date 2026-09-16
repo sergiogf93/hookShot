@@ -12,7 +12,7 @@ import com.htss.hookshot.game.MyActivity;
  */
 public class FadeInEffect extends GameEffect {
 
-    public final static int END_FRAME = 500;
+    public final static int END_FRAME = 50;
     private final Rect rectangle = new Rect(0, 0, MyActivity.screenWidth, MyActivity.screenHeight);
     private Paint paint;
     private int frame = 0, color;
@@ -37,7 +37,7 @@ public class FadeInEffect extends GameEffect {
         }
         paint.setAlpha(alpha);
         canvas.drawRect(rectangle,paint);
-        frame += 2*getDirection()*MyActivity.FRAME_RATE;
+        frame += 2*getDirection();
     }
 
     @Override
