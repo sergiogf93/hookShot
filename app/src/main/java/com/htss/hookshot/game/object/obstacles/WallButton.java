@@ -2,7 +2,10 @@ package com.htss.hookshot.game.object.obstacles;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Shader;
 
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
@@ -15,9 +18,15 @@ import com.htss.hookshot.util.DrawUtil;
  */
 public class WallButton extends GameDynamicObject implements Interactable{
 
+    private static final int STEEL_LIGHT = Color.rgb(170, 176, 188), STEEL_DARK = Color.rgb(58, 62, 72),
+            EDGE = Color.rgb(28, 30, 36), RECESS = Color.rgb(24, 26, 32), RIVET = Color.rgb(196, 202, 214),
+            LIGHT_OFF = Color.rgb(255, 70, 50), LIGHT_ON = Color.rgb(120, 255, 100);
+
     private float radius;
     private boolean on;
-    private Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG), paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private LinearGradient ringShader;
+    private Matrix ringMatrix = new Matrix();
 
     public WallButton(double xPos, double yPos, float radius, boolean on, boolean addToGameObjects, boolean addToDynamicObjects) {
         super(xPos, yPos, 0, 0, 0, addToGameObjects, addToDynamicObjects);
@@ -36,25 +45,44 @@ public class WallButton extends GameDynamicObject implements Interactable{
         }
     }
 
+    // A steel ring bolted to the rock around a light, red and pulsing until the character touches it, like the lights
+    // on the doors it opens
     @Override
     public void draw(Canvas canvas) {
-        DrawUtil.drawGlow(canvas, glowPaint, (float) getxPosInScreen(), (float) getyPosInScreen(), getRadius() * 1.7f,
-                isOn() ? Color.argb(140, 120, 255, 100) : Color.argb(110, 255, 80, 60));
-        Paint paint = new Paint();
-        paint.setColor(Color.argb(255,200,200,0));
-        canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), paint);
-        if (isOn()){
-            paint.setColor(Color.GREEN);
-        } else {
-            paint.setColor(Color.RED);
+        float x = (float) getxPosInScreen(), y = (float) getyPosInScreen(), r = getRadius();
+        float pulse = 0.55f + 0.45f * (float) Math.sin(getFrame() * 0.15);
+        int light = isOn() ? LIGHT_ON : LIGHT_OFF;
+        DrawUtil.drawGlow(canvas, glowPaint, x, y, r * 1.7f, DrawUtil.withAlpha(light, isOn() ? 140 : (int) (120 * pulse)));
+        if (ringShader == null) {
+            ringShader = new LinearGradient(0, -r, 0, r, STEEL_LIGHT, STEEL_DARK, Shader.TileMode.CLAMP);
         }
-        canvas.drawCircle((float)getxPosInScreen(), (float) getyPosInScreen(),getRadius()/3,paint);
+        ringMatrix.setTranslate(x, y);
+        ringShader.setLocalMatrix(ringMatrix);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setAlpha(255);
+        paint.setShader(ringShader);
+        canvas.drawCircle(x, y, r, paint);
+        paint.setShader(null);
+        paint.setColor(RECESS);
+        canvas.drawCircle(x, y, r * 0.62f, paint);
+        for (int i = 0; i < 4; i++) {
+            double angle = Math.PI / 4 + i * Math.PI / 2;
+            float rx = x + (float) Math.cos(angle) * r * 0.81f, ry = y + (float) Math.sin(angle) * r * 0.81f;
+            paint.setColor(EDGE);
+            canvas.drawCircle(rx, ry, r * 0.09f, paint);
+            paint.setColor(RIVET);
+            canvas.drawCircle(rx - r * 0.02f, ry - r * 0.02f, r * 0.055f, paint);
+        }
+        paint.setColor(isOn() ? light : DrawUtil.blend(Color.rgb(90, 20, 14), light, pulse));
+        canvas.drawCircle(x, y, r * 0.32f, paint);
+        paint.setColor(Color.argb(150, 255, 255, 255));
+        canvas.drawCircle(x - r * 0.11f, y - r * 0.11f, r * 0.1f, paint);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(getRadius() / 50);
-        paint.setColor(Color.argb(255, 100, 100, 100));
-        canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), paint);
-        canvas.drawCircle((float) getxPosInScreen(), (float) getyPosInScreen(), 2*getRadius()/3, paint);
-        canvas.drawCircle((float)getxPosInScreen(), (float) getyPosInScreen(),getRadius()/3,paint);
+        paint.setColor(EDGE);
+        paint.setStrokeWidth(r / 10f);
+        canvas.drawCircle(x, y, r, paint);
+        paint.setStrokeWidth(r / 14f);
+        canvas.drawCircle(x, y, r * 0.62f, paint);
     }
 
     @Override

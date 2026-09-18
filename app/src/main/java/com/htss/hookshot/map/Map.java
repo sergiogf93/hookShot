@@ -944,44 +944,36 @@ public class Map {
         }
     }
 
+    // The gate covers the whole hole the exit makes in the border, and a square of rock at each end. The hole isn't
+    // always centred on the exit: near a corner, the map's edge and the next border cut part of it off, and a gate
+    // centred on the exit left a gap there
     private void addExitDoor(Random random, int maxButtons) {
         int nButtons = getNButtons(random, maxButtons);
-//        Calculate the width for the door
-        MathVector vector = new MathVector(1, 0);
-        int start = -1;
-        int end = yTiles;
-        if (getExit().tileX == 0 || getExit().tileX == xTiles - 1) {
-            vector = new MathVector(0, 1);
-            for (int y = 0; y < yTiles; y++) {
-                if (start == -1) {
-                    if (map[getExit().tileX][y] == 0) {
-                        start = y;
-                    }
-                } else {
-                    if (map[getExit().tileX][y] == 1) {
-                        end = y;
-                        break;
-                    }
-                }
-            }
-        } else {
-            for (int x = 0; x < xTiles; x++) {
-                if (start == -1) {
-                    if (map[x][yTiles - 1] == 0) {
-                        start = x;
-                    }
-                } else {
-                    if (map[x][yTiles - 1] == 1) {
-                        end = x;
-                        break;
-                    }
-                }
-            }
+        boolean onSide = getExit().tileX == 0 || getExit().tileX == xTiles - 1;
+        int length = onSide ? yTiles : xTiles;
+        int start = onSide ? getExit().tileY : getExit().tileX;
+        int end = start;
+        while (start > 0 && isOpenAlongExit(onSide, start - 1)) {
+            start--;
         }
+        while (end < length - 1 && isOpenAlongExit(onSide, end + 1)) {
+            end++;
+        }
+        double middle = (start + end) / 2.0 * SQUARE_SIZE;
+        int width = (int) ((end - start + 3) * SQUARE_SIZE), thickness = (int) (1.5 * SQUARE_SIZE);
 
 //      Set the WallButtons
         Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, random, true);
-        addDoor(getExit().tileX * SQUARE_SIZE, getExit().tileY * SQUARE_SIZE, (int) ((end - start + 2) * SQUARE_SIZE), (int) (1.5 * SQUARE_SIZE), vector, buttons);
+        if (onSide) {
+            addDoor(getExit().tileX * SQUARE_SIZE, middle, width, thickness, new MathVector(0, 1), buttons);
+        } else {
+            addDoor(middle, getExit().tileY * SQUARE_SIZE, width, thickness, new MathVector(1, 0), buttons);
+        }
+    }
+
+    // Whether a tile of the border line the exit is in, counted along that line, is open
+    private boolean isOpenAlongExit(boolean onSide, int along) {
+        return onSide ? map[getExit().tileX][along] == 0 : map[along][getExit().tileY] == 0;
     }
 
     private int getNButtons(Random random, int maxButtons) {
