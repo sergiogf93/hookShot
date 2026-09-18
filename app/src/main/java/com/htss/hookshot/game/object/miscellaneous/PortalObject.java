@@ -21,7 +21,8 @@ public class PortalObject extends GameDynamicObject {
 
     private int state = STATE_REST;
     private int radius;
-    private Paint paint = new Paint();
+    private Paint paint = new Paint(), glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final PortalArt art = new PortalArt();
     private PortalObject twinPortal;
     private float dx, dy;
     private double xPortal, yPortal;
@@ -34,7 +35,6 @@ public class PortalObject extends GameDynamicObject {
         this.dx = dx;
         this.dy = dy;
         setGhost(true);
-        getPaint().setStrokeWidth(radius/10);
     }
 
     public void use() {
@@ -83,15 +83,13 @@ public class PortalObject extends GameDynamicObject {
         }
     }
 
+    // Like the portal power-up's icon, with a faint glow so it stands out in the dark. Until its twin is placed, the cave
+    // shows through its middle
     @Override
     public void draw(Canvas canvas) {
-        int startAngle = getStartAngle();
-        int radius = getRadius();
-        DrawUtil.drawArc(canvas, getPaint(), (float) getxPosInScreen() - radius, (float) getyPosInScreen() - radius, (float) getxPosInScreen() + radius, (float) getyPosInScreen() + radius, Color.RED, startAngle, 180);
-        DrawUtil.drawArc(canvas, getPaint(), (float) getxPosInScreen() - radius, (float) getyPosInScreen() - radius, (float) getxPosInScreen() + radius, (float) getyPosInScreen() + radius, Color.BLUE, startAngle + 180, 180);
-        if (getTwinPortal() != null) {
-            DrawUtil.drawCircle(canvas, getPaint(),(float) getxPosInScreen(), (float) getyPosInScreen(), radius,Color.BLACK, Paint.Style.FILL);
-        }
+        float x = (float) getxPosInScreen(), y = (float) getyPosInScreen(), radius = getRadius();
+        DrawUtil.drawGlow(canvas, glowPaint, x, y, radius * 1.7f, Color.argb(90, 170, 100, 255));
+        art.draw(canvas, x, y, radius, getFrame(), getTwinPortal() != null);
     }
 
     public int getRadius() {
@@ -102,9 +100,6 @@ public class PortalObject extends GameDynamicObject {
         }
     }
 
-    public int getStartAngle() {
-        return (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.secondsToUpdates(1.667)) + 25);
-    }
     @Override
     public int getWidth() {
         return radius*2;

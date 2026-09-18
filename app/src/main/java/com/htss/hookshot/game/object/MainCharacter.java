@@ -20,9 +20,11 @@ import com.htss.hookshot.game.hud.Joystick;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
+import com.htss.hookshot.game.object.miscellaneous.BurstArt;
 import com.htss.hookshot.game.object.miscellaneous.CompassObject;
 import com.htss.hookshot.game.object.miscellaneous.ExplosionObject;
 import com.htss.hookshot.game.object.miscellaneous.JumpEffect;
+import com.htss.hookshot.game.object.miscellaneous.PortalArt;
 import com.htss.hookshot.game.object.miscellaneous.PortalObject;
 import com.htss.hookshot.game.object.miscellaneous.TimerObject;
 import com.htss.hookshot.game.object.shapes.BiCircleShape;
@@ -46,6 +48,8 @@ public class MainCharacter extends GameCharacter {
     public static final int MAX_HEALTH = 100, MAX_VELOCITY = 15 * MyActivity.TILE_WIDTH / 100;
     private static final int MAX_EXPLOSIONS = 5;
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
+    // The swiftness timer around it, cyan like the jump rings
+    private static final int SWIFTNESS_TIMER = Color.rgb(43, 184, 214);
     // How much speed is kept every update on the ground
     private static final double GROUND_FRICTION = 0.75;
     // Swinging on the chain, and flying once let go of it, can be this many times faster than walking
@@ -92,6 +96,8 @@ public class MainCharacter extends GameCharacter {
     private float squash = 0;
     // Let go of the chain in the air, until landing or hooking again
     private boolean flying = false;
+    // The explosions left with the bomb power-up, shown above its head like the explosions
+    private final BurstArt explosionsLeftArt = new BurstArt();
     private Paint bodyPaint = new Paint(Paint.ANTI_ALIAS_FLAG), outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RadialGradient bodyGradient;
     private int bodyGradientColor;
@@ -410,8 +416,8 @@ public class MainCharacter extends GameCharacter {
         if (getCurrentPowerUp() == GamePowerUp.PORTAL) {
             paint.setStrokeWidth(rightHand.getWidth()/4);
             int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.secondsToUpdates(1.667)) + 25);
-            DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.RED, startAngle, 180);
-            DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), Color.BLUE, startAngle + 180, 180);
+            DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), PortalArt.RED, startAngle, 180);
+            DrawUtil.drawArc(canvas, paint, (float) rightHand.getPositionInScreen().x - rightHand.getRadius(), (float) rightHand.getPositionInScreen().y - rightHand.getRadius(), (float) rightHand.getPositionInScreen().x + rightHand.getRadius(), (float)(float) rightHand.getPositionInScreen().y + rightHand.getRadius(), PortalArt.BLUE, startAngle + 180, 180);
         }
         if (getCurrentPowerUp() == GamePowerUp.BOMB) {
             rightHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.secondsToUpdates(0.333), FIST_RADIUS, getFrame() % TimeUtil.secondsToUpdates(0.333)));
@@ -441,8 +447,8 @@ public class MainCharacter extends GameCharacter {
         leftHand.setPositionInRoom(separationHand.applyTo(positionFromHands));
         if (getCurrentPowerUp() == GamePowerUp.PORTAL && portals.size() % 2 == 0) {
             int startAngle = (int) (180 * Math.sin(2 * Math.PI * getFrame() / TimeUtil.secondsToUpdates(1.667)) + 25);
-            DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.RED, startAngle, 180);
-            DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), Color.BLUE, startAngle + 180, 180);
+            DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), PortalArt.RED, startAngle, 180);
+            DrawUtil.drawArc(canvas, paint, (float) leftHand.getPositionInScreen().x - leftHand.getRadius(), (float) leftHand.getPositionInScreen().y - leftHand.getRadius(), (float) leftHand.getPositionInScreen().x + leftHand.getRadius(), (float)(float) leftHand.getPositionInScreen().y + leftHand.getRadius(), PortalArt.BLUE, startAngle + 180, 180);
         }
         if (getCurrentPowerUp() == GamePowerUp.BOMB) {
             leftHand.setRadius((int) GameMath.linealValue(0, 0, TimeUtil.secondsToUpdates(0.333), FIST_RADIUS, getFrame() % TimeUtil.secondsToUpdates(0.333)));
@@ -457,10 +463,9 @@ public class MainCharacter extends GameCharacter {
         if (getCurrentPowerUp() == GamePowerUp.BOMB) {
             double[] angles = {0, 30, -30, 60, -60};
             MathVector v = new MathVector(0, -getHeight() * 3 / 4);
-            Paint rPaint = new Paint();
             for (int i = 0; i < MAX_EXPLOSIONS - (explosionsUsed % MAX_EXPLOSIONS); i++) {
                 MathVector p = v.rotatedDeg(angles[i]).applyTo(getPositionInScreen());
-                DrawUtil.drawRadialGradient(canvas, rPaint, (float) p.x, (float) p.y, FIST_RADIUS, Color.YELLOW, Color.RED, Shader.TileMode.MIRROR);
+                explosionsLeftArt.draw(canvas, (float) p.x, (float) p.y, FIST_RADIUS * 1.1f, getFrame() + i * 7, 0);
             }
         }
         canvas.restore();
@@ -746,7 +751,7 @@ public class MainCharacter extends GameCharacter {
                 setMaxVelocity(MAX_VELOCITY * 2);
                 setColors(Color.CYAN, Color.BLACK, Color.WHITE, Color.WHITE, Color.BLUE, Color.BLUE);
                 powerUps.put(GamePowerUp.INFINITE_JUMPS, powerUps.get(GamePowerUp.INFINITE_JUMPS) - 1);
-                setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.secondsToUpdates(8.333),Color.BLUE,true,true, new Execution() {
+                setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.secondsToUpdates(8.333),SWIFTNESS_TIMER,true,true, new Execution() {
                     @Override
                     public double execute() {
                         setMaxVelocity(MAX_VELOCITY);

@@ -2,11 +2,7 @@ package com.htss.hookshot.game.object.interactables.powerups;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Point;
 
-import com.htss.hookshot.math.MathVector;
-import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.TimeUtil;
 
 /**
@@ -14,33 +10,48 @@ import com.htss.hookshot.util.TimeUtil;
  */
 public class CompassPowerUp extends GamePowerUp {
 
+    // A brass pocket compass with a ring on top, its needle swinging from side to side
+    private static final int DARK_BRASS = Color.rgb(58, 42, 16), BRASS = Color.rgb(201, 154, 60),
+            BRASS_LIGHT = Color.rgb(240, 205, 122), FACE = Color.rgb(244, 236, 216), TICK = Color.rgb(138, 106, 42),
+            NORTH = Color.rgb(224, 58, 58), SOUTH = Color.rgb(58, 110, 224);
+    private static final double SWING_PERIOD = TimeUtil.secondsToUpdates(1.667);
+
     public CompassPowerUp(double xPos, double yPos, int width, boolean addToGameObjects, boolean addToDynamicObjects) {
         super(xPos, yPos, width, width, GamePowerUp.COMPASS, addToGameObjects, addToDynamicObjects);
-        getPaint().setStrokeWidth(getWidth() / 5);
     }
 
     @Override
     public void draw(Canvas canvas) {
         drawGlow(canvas);
-        DrawUtil.drawCircle(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), getWidth() / 2, Color.YELLOW, Paint.Style.STROKE);
-        DrawUtil.drawCircle(canvas, getPaint(), (float) getxPosInScreen(), (float) getyPosInScreen(), getWidth() / 2, Color.rgb(200,200,200), Paint.Style.FILL);
-        drawNeedles(canvas);
+        // Its case as wide as the old compass with its rim
+        beginIcon(canvas, getWidth() * 1.2f * 100 / 66f, 50, 0);
+        strokeCircle(canvas, 50, 16, 6, DARK_BRASS, 7);
+        strokeCircle(canvas, 50, 16, 6, BRASS, 3);
+        fillCircle(canvas, 50, 54, 33, DARK_BRASS);
+        fillCircle(canvas, 50, 54, 30, BRASS);
+        iconPath.reset();
+        iconPath.moveTo(26, 44);
+        iconPath.quadTo(32, 28, 48, 25);
+        strokePath(canvas, iconPath, BRASS_LIGHT, 4);
+        fillCircle(canvas, 50, 54, 22, FACE);
+        strokeCircle(canvas, 50, 54, 22, TICK, 2);
+        iconPath.reset();
+        iconPath.moveTo(50, 34);
+        iconPath.lineTo(50, 38);
+        iconPath.moveTo(50, 70);
+        iconPath.lineTo(50, 74);
+        iconPath.moveTo(30, 54);
+        iconPath.lineTo(34, 54);
+        iconPath.moveTo(66, 54);
+        iconPath.lineTo(70, 54);
+        strokePath(canvas, iconPath, TICK, 2);
+        canvas.save();
+        canvas.rotate(45 * (float) Math.sin(2 * Math.PI * getFrame() / SWING_PERIOD), 50, 54);
+        fillPath(canvas, polygon(50, 36, 55, 54, 45, 54), NORTH);
+        fillPath(canvas, polygon(50, 72, 55, 54, 45, 54), SOUTH);
+        canvas.restore();
+        fillCircle(canvas, 50, 54, 3, DARK_BRASS);
+        canvas.restore();
     }
 
-    private void drawNeedles(Canvas canvas) {
-        Point[] points = new Point[4];
-        MathVector vector = getVector();
-        points[0] = vector.rescaled(getWidth() / 5).applyTo(getPositionInScreen()).toPoint();
-        points[1] = vector.getNormal().rescaled(getWidth() / 5).applyTo(getPositionInScreen()).toPoint();
-        points[2] = vector.rescaled(getWidth() / 2).applyTo(getPositionInScreen()).toPoint();
-        points[3] = vector.getNormal().rescaled(-1 * getWidth() / 5).applyTo(getPositionInScreen()).toPoint();
-        DrawUtil.drawPolygon(points, canvas, Color.RED, Paint.Style.FILL, true, getPaint());
-        points[2] = vector.rescaled(-1 * getWidth() / 2).applyTo(getPositionInScreen()).toPoint();
-        DrawUtil.drawPolygon(points, canvas, Color.BLUE, Paint.Style.FILL, true, getPaint());
-    }
-
-    private MathVector getVector() {
-        double angle = (Math.PI/4)*Math.sin(2*Math.PI*getFrame()/ TimeUtil.secondsToUpdates(1.667));
-        return new MathVector(Math.cos(angle), Math.sin(angle));
-    }
 }

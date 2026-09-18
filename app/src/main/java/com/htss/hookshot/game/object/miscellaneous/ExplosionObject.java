@@ -3,7 +3,6 @@ package com.htss.hookshot.game.object.miscellaneous;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Shader;
 
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.effect.ScreenShake;
@@ -24,12 +23,17 @@ import java.util.ArrayList;
  */
 public class ExplosionObject extends GameDynamicObject {
 
-    private static double DURATION = TimeUtil.secondsToUpdates(0.083);
+    // The burst grows for this long, then blasts: it digs the rock and hurts enemies. It keeps growing and fades for a
+    // while after, with a shockwave spreading out
+    private static double DURATION = TimeUtil.secondsToUpdates(0.083), FADE = TimeUtil.secondsToUpdates(0.35);
     // A whole stalker or worm segment
     private static final int DAMAGE = 5;
+    private static final int SHOCKWAVE = Color.rgb(255, 214, 140);
 
-    private float maxRadius;
-    private Paint paint = new Paint();
+    private float maxRadius, blastRadius;
+    private boolean blasted = false;
+    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final BurstArt art = new BurstArt();
 
     public ExplosionObject(double xPos, double yPos, float maxRadius, boolean addToGameObjectsList, boolean addToDynamicObjectsList) {
         super(xPos, yPos, 0, 0, 0, addToGameObjectsList, addToDynamicObjectsList);
@@ -40,11 +44,15 @@ public class ExplosionObject extends GameDynamicObject {
     @Override
     public void update() {
         updateFrame();
-        if (getFrame() > DURATION) {
-            this.destroy();
-            MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
+        if (!blasted && getFrame() > DURATION) {
+            blasted = true;
+            blastRadius = getRadius();
+            MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), blastRadius);
             hurtEnemies();
             burst();
+        }
+        if (getFrame() > DURATION + FADE) {
+            this.destroy();
         }
     }
 
@@ -62,7 +70,7 @@ public class ExplosionObject extends GameDynamicObject {
         for (GameEnemy enemy : new ArrayList<GameEnemy>(MyActivity.enemies)) {
             if (enemy instanceof ClickableEnemy) {
                 ClickableEnemy target = (ClickableEnemy) enemy;
-                if (distanceTo(target) < getRadius() + target.getBodyRadius()) {
+                if (distanceTo(target) < blastRadius + target.getBodyRadius()) {
                     target.knockBack(new MathVector(getPositionInRoom(), target.getPositionInRoom()));
                     target.getHurt(DAMAGE);
                 }
@@ -70,11 +78,24 @@ public class ExplosionObject extends GameDynamicObject {
         }
     }
 
+    // The burst of the bomb power-up's icon, spinning as it grows
     @Override
     public void draw(Canvas canvas) {
-        paint.setAlpha((int) GameMath.linealValue(0,255,DURATION,50,getFrame()));
-        DrawUtil.drawRadialGradient(canvas, paint, (float) getxPosInScreen(), (float) getyPosInScreen(), getRadius(), Color.YELLOW, Color.RED, Shader.TileMode.MIRROR);
-//        MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), getRadius());
+        float x = (float) getxPosInScreen(), y = (float) getyPosInScreen(), spin = getFrame() * 6;
+        if (!blasted) {
+            art.draw(canvas, x, y, getRadius() * 1.15f, getFrame(), spin);
+            return;
+        }
+        float t = (float) Math.min(1, (getFrame() - DURATION) / FADE);
+        float shockwave = blastRadius * (1.1f + 0.9f * t);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(blastRadius * 0.14f * (1 - t) + 1);
+        paint.setColor(DrawUtil.withAlpha(SHOCKWAVE, (int) (200 * (1 - t))));
+        canvas.drawCircle(x, y, shockwave, paint);
+        float reach = blastRadius * 1.5f;
+        canvas.saveLayerAlpha(x - reach, y - reach, x + reach, y + reach, (int) (255 * (1 - t) * (1 - t)));
+        art.draw(canvas, x, y, blastRadius * (1.15f + 0.25f * t), getFrame(), spin);
+        canvas.restore();
     }
 
     public float getRadius() {
