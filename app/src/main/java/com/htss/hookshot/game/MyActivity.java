@@ -394,7 +394,9 @@ public class MyActivity extends Activity {
     private Choreographer.FrameCallback frameUpdate = new Choreographer.FrameCallback() {
         @Override
         public void doFrame(long frameTimeNanos) {
-            if (framePacer.shouldUpdate(frameTimeNanos)) {
+            int updates = framePacer.updatesDue(frameTimeNanos);
+            if (updates > 0) {
+                canvas.queueUpdates(updates);
                 canvas.invalidate();
             }
             Choreographer.getInstance().postFrameCallback(this);

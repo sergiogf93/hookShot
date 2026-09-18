@@ -9,7 +9,6 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
@@ -52,20 +51,17 @@ public class GameBoard extends View{
     public static Vector<GameObject> gameObjects = new Vector<GameObject>();
     public static Vector<GameObject> debugObjects = new Vector<GameObject>();
     private final ArrayList<GameObject> objectsThisFrame = new ArrayList<GameObject>();
+    // The updates due for the frames since the last draw, run before drawing it
+    private int pendingUpdates = 0;
 
     public static String debugText = "";
 
-    private Bitmap screenBitmap;
-    private Canvas screenCanvas;
-    private final Rect visibleMap = new Rect(), screenRect = new Rect();
-    private final Paint copyPaint = new Paint();
+    private final MapTiles mapTiles = new MapTiles();
     private final Atmosphere atmosphere = new Atmosphere();
     private final Paint digEdgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public GameBoard(Context context, AttributeSet attrs) {
         super(context, attrs);
-        // Replace the previous frame's pixels, so the transparent caves don't keep them
-        copyPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
         // Only drawn over rock, keeping it opaque. No sizes here, as the tile size isn't known yet
         digEdgePaint.setStyle(Paint.Style.STROKE);
         digEdgePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
@@ -98,11 +94,14 @@ public class GameBoard extends View{
 
         MyActivity.applyPendingResize();
 
+        int updates = pendingUpdates;
+        pendingUpdates = 0;
+
         atmosphere.drawBehind(canvas, myActivity.level);
 
         if (MyActivity.roomSwitchEffect == null) {
 
-            ScreenShake.update();
+            runUpdates(updates);
             canvas.save();
             canvas.translate(ScreenShake.getOffsetX(), ScreenShake.getOffsetY());
 
@@ -189,47 +188,60 @@ public class GameBoard extends View{
 
     private void drawGame(Canvas canvas) {
         assertMapMargins();
-
-        // Copy the visible part of the map into a bitmap reused every frame. The whole map is too big to draw on
-        // the screen canvas, and allocating a screen sized bitmap per frame is slow
-        if (screenBitmap == null || screenBitmap.getWidth() != MyActivity.screenWidth || screenBitmap.getHeight() != MyActivity.screenHeight) {
-            if (screenBitmap != null) {
-                screenBitmap.recycle();
-            }
-            screenBitmap = Bitmap.createBitmap(MyActivity.screenWidth, MyActivity.screenHeight, Bitmap.Config.ARGB_8888);
-            screenCanvas = new Canvas(screenBitmap);
-        }
-        visibleMap.set((int) -dx, (int) -dy, (int) -dx + MyActivity.screenWidth, (int) -dy + MyActivity.screenHeight);
-        screenRect.set(0, 0, MyActivity.screenWidth, MyActivity.screenHeight);
-        screenCanvas.drawBitmap(mapBitmap, visibleMap, screenRect, copyPaint);
-
-        canvas.drawBitmap(screenBitmap, 0, 0, paint);
+        // The whole map is too big to draw on the screen canvas, so it's drawn from tiles
+        mapTiles.draw(canvas, (int) -dx, (int) -dy, MyActivity.screenWidth, MyActivity.screenHeight);
     }
 
-    private void drawObjects(Canvas canvas) {
-        if (!MyActivity.paused) {
-            Particles.update();
-            // Before the character and its chain update, so both see whether the chain is being reeled in
-            MyActivity.updateHold();
+    public void queueUpdates(int updates) {
+        pendingUpdates += updates;
+    }
+
+    // Runs the given updates, several when frames were dropped so the game keeps its speed, and stops early if one
+    // pauses the game or leaves the level. The game is drawn once they're all done, so everything is drawn where it
+    // ended up, with the camera where the character left it
+    private void runUpdates(int updates) {
+        boolean updated = false;
+        for (int i = 0; i < updates && !MyActivity.paused && MyActivity.roomSwitchEffect == null; i++) {
+            updateGame();
+            updated = true;
         }
+        if (!updated) {
+            // Nothing moved, but objects placed since, like while paused, are drawn
+            objectsThisFrame.clear();
+            objectsThisFrame.addAll(gameObjects);
+        }
+    }
+
+    private void updateGame() {
+        ScreenShake.update();
+        Particles.update();
+        // Before the character and its chain update, so both see whether the chain is being reeled in
+        MyActivity.updateHold();
         // Objects leave the list while others update, like picked up coins or enemies killed by a bomb, which shifts
         // the rest and skipped the next one. So a copy is walked instead, passing over objects that left. Objects that
-        // join start on the next frame
+        // join start on the next update
         objectsThisFrame.clear();
         objectsThisFrame.addAll(gameObjects);
         for (GameObject gameObject : objectsThisFrame) {
             if (!gameObjects.contains(gameObject)) {
                 continue;
             }
-            if (!MyActivity.paused) {
-                if (gameObject instanceof GameDynamicObject) {
-                    ((GameDynamicObject) gameObject).update();
-                }
-                if (gameObject instanceof Interactable) {
-                    ((Interactable) gameObject).detect();
-                }
+            if (gameObject instanceof GameDynamicObject) {
+                ((GameDynamicObject) gameObject).update();
             }
-            gameObject.draw(canvas);
+            if (gameObject instanceof Interactable) {
+                ((Interactable) gameObject).detect();
+            }
+        }
+    }
+
+    // The objects the last update went over that are still there, so objects that joined during it are drawn once
+    // they've been updated
+    private void drawObjects(Canvas canvas) {
+        for (GameObject gameObject : objectsThisFrame) {
+            if (gameObjects.contains(gameObject)) {
+                gameObject.draw(canvas);
+            }
         }
         for (GameObject object : debugObjects) {
             object.draw(canvas);
@@ -250,7 +262,7 @@ public class GameBoard extends View{
         Canvas mapCanvas = new Canvas(mapBitmap);
 
         MyActivity.currentMap.draw(mapCanvas, CavePalette.forLevel(myActivity.level));
-
+        mapTiles.setMap(mapBitmap);
     }
 
     private void drawInfo(Canvas canvas) {
@@ -299,6 +311,9 @@ public class GameBoard extends View{
         digEdgePaint.setColor(CavePalette.forLevel(myActivity.level).outline);
         digEdgePaint.setStrokeWidth((float) (Map.SQUARE_SIZE / 4));
         cnv.drawCircle(cx, cy, radius, digEdgePaint);
+        if (bitmap == mapBitmap) {
+            mapTiles.changed(cx, cy, radius + digEdgePaint.getStrokeWidth());
+        }
     }
 
 }
