@@ -9,16 +9,15 @@ import android.graphics.RectF;
 import com.htss.hookshot.util.TimeUtil;
 
 /**
- * How portals look, placed in the cave and as the power-up's icon: a round ring, half red and half blue, lit from the
- * top left, around a dark middle with a swirl in it. The split turns back and forth and the swirl spins. Drawn from a
- * design 100 units wide, with the ring's outline 36 units from the middle.
+ * How portals look, placed in the cave and as the power-up's icon: a round ring, half red and half blue, around a dark
+ * middle with a swirl in it. The split turns back and forth and the swirl spins. Drawn from a design 100 units wide,
+ * with the ring's outline 36 units from the middle.
  */
 public class PortalArt {
 
     public static final int RED = Color.rgb(232, 57, 47), BLUE = Color.rgb(47, 111, 240);
     private static final int OUTLINE = Color.rgb(18, 12, 28), DEPTH = Color.rgb(13, 10, 24),
-            SWIRL_BLUE = Color.rgb(92, 141, 255), SWIRL_RED = Color.rgb(255, 106, 90),
-            LIGHT = Color.argb(120, 255, 255, 255), SHADE = Color.argb(90, 0, 0, 20), GLINT = Color.argb(210, 255, 240, 240);
+            SWIRL_BLUE = Color.rgb(92, 141, 255), SWIRL_RED = Color.rgb(255, 106, 90);
     private static final float DESIGN_RADIUS = 36;
     private static final double SPLIT_PERIOD = TimeUtil.secondsToUpdates(1.667);
 
@@ -57,19 +56,6 @@ public class PortalArt {
             stroke(OUTLINE, 1.5f);
             canvas.drawCircle(50, 50, 24, paint);
         }
-        path.reset();
-        path.moveTo(23, 38);
-        path.quadTo(29, 22, 44, 17);
-        stroke(LIGHT, 4);
-        canvas.drawPath(path, paint);
-        path.reset();
-        path.moveTo(77, 62);
-        path.quadTo(71, 78, 56, 83);
-        stroke(SHADE, 4);
-        canvas.drawPath(path, paint);
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(GLINT);
-        canvas.drawCircle(29, 27, 2.5f, paint);
         canvas.restore();
     }
 

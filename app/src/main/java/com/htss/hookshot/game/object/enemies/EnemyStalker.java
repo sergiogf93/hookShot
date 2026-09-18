@@ -170,7 +170,7 @@ public class EnemyStalker extends ClickableEnemy {
 
     @Override
     public int getDamageDone() {
-        return 10;
+        return 5;
     }
 
     @Override
@@ -185,6 +185,11 @@ public class EnemyStalker extends ClickableEnemy {
     @Override
     public double getBodyRadius() {
         return MAX_RADIUS;
+    }
+
+    @Override
+    protected int getCoinsDropped() {
+        return 2;
     }
 }
 

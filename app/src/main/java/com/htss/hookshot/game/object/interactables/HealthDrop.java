@@ -16,8 +16,10 @@ import com.htss.hookshot.util.DrawUtil;
 public class HealthDrop extends GameDynamicObject implements Interactable {
 
     private static final float RADIUS = MyActivity.TILE_WIDTH / 7;
-    private static final double HEALTH = 10;
+    private static final double HEALTH = 20;
     private Paint paint = new Paint(), glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    // Dropped by an enemy, so it flies to the character once it's close
+    private boolean dropped = false, flying = false;
 
     public HealthDrop(double xPos, double yPos, boolean addToGameObjectsList, boolean addToDynamicObjectsList) {
         super(xPos, yPos, 0,0,0, addToGameObjectsList, addToDynamicObjectsList);
@@ -43,8 +45,15 @@ public class HealthDrop extends GameDynamicObject implements Interactable {
         return (int) (RADIUS*2);
     }
 
+    public void setDropped() {
+        dropped = true;
+    }
+
     @Override
     public void detect() {
+        if (dropped) {
+            flying = Loot.pull(this, flying);
+        }
         if (distanceTo(MyActivity.character) < MyActivity.TILE_WIDTH /2){
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.character.addHealth(HEALTH);

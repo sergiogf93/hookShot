@@ -5,16 +5,20 @@ import android.graphics.Color;
 import android.graphics.Rect;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.enemies.EnemyDeepWorm;
+import com.htss.hookshot.game.object.enemies.GameEnemy;
+import com.htss.hookshot.game.object.interactables.Coin;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
+import com.htss.hookshot.util.TimeUtil;
 
 import java.util.HashMap;
 
 /**
- * The level and health in the top left corner, and the equipped power-up in the top right one.
+ * The level, coins and health in the top left corner, and the equipped power-up in the top right one.
  */
 public class HUDStatus extends HUDElement {
 
@@ -26,10 +30,15 @@ public class HUDStatus extends HUDElement {
 
     // The bar slides to the health, and a lighter trail shows what was just lost
     private static final double BAR_EASING = 0.2, TRAIL_DRAIN = 0.006;
+    private static final int BOSS_BAR = Color.rgb(255, 150, 40);
+    // The coins swell for a moment when some are picked up
+    private static final int COIN_POP = (int) TimeUtil.secondsToUpdates(0.25);
+    private static final float COIN_RADIUS = TEXT_SIZE * 0.4f;
 
     private HashMap<Integer, GamePowerUp> icons = new HashMap<Integer, GamePowerUp>();
     private Rect bar = new Rect();
     private double shownFill = -1, trailFill = -1;
+    private int shownCoins = -1, coinPop = 0;
 
     public HUDStatus() {
         super(0, 0, 0, 0);
@@ -48,9 +57,30 @@ public class HUDStatus extends HUDElement {
         if (MyActivity.paused) {
             return;
         }
-        drawText(canvas, "LEVEL " + MyActivity.canvas.myActivity.level, MARGIN, MARGIN + TEXT_SIZE);
+        String level = "LEVEL " + MyActivity.canvas.myActivity.level;
+        drawText(canvas, level, MARGIN, MARGIN + TEXT_SIZE);
         drawHealth(canvas);
+        drawCoins(canvas, MARGIN * 2 + getPaint().measureText(level));
         drawPowerUp(canvas);
+        drawBoss(canvas);
+    }
+
+    // The deep worm's name and what's left of it, at the top in the middle, once the character met it
+    private void drawBoss(Canvas canvas) {
+        for (GameEnemy enemy : MyActivity.enemies) {
+            if (enemy instanceof EnemyDeepWorm && ((EnemyDeepWorm) enemy).isAwake()) {
+                String name = "DEEP WORM";
+                int middle = MyActivity.screenWidth / 2;
+                drawText(canvas, name, middle - getPaint().measureText(name) / 2, MARGIN + TEXT_SIZE);
+                bar.set(middle - BAR_WIDTH / 2, BOTTOM - BAR_HEIGHT, middle + BAR_WIDTH / 2, BOTTOM);
+                setColor(Color.BLACK);
+                canvas.drawRect(bar, getPaint());
+                bar.right = (int) (bar.left + BAR_WIDTH * ((EnemyDeepWorm) enemy).getHealthShare());
+                setColor(BOSS_BAR);
+                canvas.drawRect(bar, getPaint());
+                return;
+            }
+        }
     }
 
     private void drawHealth(Canvas canvas) {
@@ -70,6 +100,25 @@ public class HUDStatus extends HUDElement {
         bar.right = (int) (MARGIN + BAR_WIDTH * shownFill);
         setColor(HUDBar.getHealthColor(fill));
         canvas.drawRect(bar, getPaint());
+    }
+
+    // A coin and how many there are, on the level's line from the given point
+    private void drawCoins(Canvas canvas, float left) {
+        int coins = MyActivity.character.getCoins();
+        if (shownCoins >= 0 && coins > shownCoins) {
+            coinPop = COIN_POP;
+        }
+        shownCoins = coins;
+        float middle = MARGIN + TEXT_SIZE * 0.62f, coinX = left + COIN_RADIUS;
+        canvas.save();
+        if (coinPop > 0) {
+            float swell = 1 + 0.3f * coinPop / COIN_POP;
+            canvas.scale(swell, swell, coinX, middle);
+            coinPop--;
+        }
+        Coin.drawCoin(canvas, coinX, middle, COIN_RADIUS, 1);
+        canvas.restore();
+        drawText(canvas, String.valueOf(coins), coinX + COIN_RADIUS + MARGIN / 3f, MARGIN + TEXT_SIZE);
     }
 
     private void drawPowerUp(Canvas canvas) {

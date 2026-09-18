@@ -60,6 +60,59 @@ public abstract class GameEnemy extends GameCharacter {
         return true;
     }
 
+    // Rock, or outside the cave, which enemies don't leave
+    public static boolean isRock(double x, double y) {
+        return !MyActivity.isInRoom(x, y) || Color.alpha(MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y)) == 255;
+    }
+
+    // No rock on the straight line between two points in the room
+    public static boolean isClearBetween(MathVector from, MathVector to) {
+        MathVector line = new MathVector(from, to);
+        double length = line.magnitude(), step = Math.max(2, MyActivity.TILE_WIDTH / 12.0);
+        for (double along = step; along < length; along += step) {
+            double t = along / length;
+            if (isRock(from.x + line.x * t, from.y + line.y * t)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // The way out of the rock at a point, from which points in a circle around it are free. Null with no rock around,
+    // or nothing but rock
+    public static MathVector getSurfaceNormal(MathVector point, double radius) {
+        double x = 0, y = 0;
+        int free = 0;
+        for (int i = 0; i < 16; i++) {
+            double angle = i * Math.PI / 8, dx = Math.cos(angle), dy = Math.sin(angle);
+            if (!isRock(point.x + dx * radius, point.y + dy * radius)) {
+                x += dx;
+                y += dy;
+                free++;
+            }
+        }
+        if (free == 0 || free == 16 || (x == 0 && y == 0)) {
+            return null;
+        }
+        return new MathVector(x, y).getUnitVector();
+    }
+
+    // How far rock is from a point, looking the given way, or -1 if it's further than the given distance
+    public static double getDistanceToRock(MathVector point, MathVector direction, double max) {
+        MathVector unit = direction.getUnitVector();
+        for (double along = 0; along <= max; along += 1) {
+            if (isRock(point.x + unit.x * along, point.y + unit.y * along)) {
+                return along;
+            }
+        }
+        return -1;
+    }
+
+    // Seen by the enemy, closer than the given distance and with no rock in between
+    protected boolean canSeeCharacter(double distance) {
+        return distanceTo(MyActivity.character) < distance && isClearBetween(getPositionInRoom(), MyActivity.character.getPositionInRoom());
+    }
+
     public void randomNewDirection () {
         Random random = new Random();
         MathVector v = new MathVector(1,0);

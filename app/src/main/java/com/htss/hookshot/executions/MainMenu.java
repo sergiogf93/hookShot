@@ -58,7 +58,7 @@ public class MainMenu implements Execution {
                 @Override
                 public double execute() {
                     Coord entrance = new Coord(Integer.parseInt(MyActivity.canvas.myActivity.entranceString.split(" ")[0]), Integer.parseInt(MyActivity.canvas.myActivity.entranceString.split(" ")[1]));
-                    MyActivity.gameEffects.add(new FadeEffect(Color.BLACK, new LaunchGame(entrance, MyActivity.canvas.myActivity.portals, MyActivity.canvas.myActivity.compass, MyActivity.canvas.myActivity.bombs, MyActivity.canvas.myActivity.jumps, MyActivity.canvas.myActivity.explosionsUsed, MyActivity.canvas.myActivity.health)));
+                    MyActivity.gameEffects.add(new FadeEffect(Color.BLACK, new LaunchGame(entrance, MyActivity.canvas.myActivity.portals, MyActivity.canvas.myActivity.compass, MyActivity.canvas.myActivity.bombs, MyActivity.canvas.myActivity.jumps, MyActivity.canvas.myActivity.explosionsUsed, MyActivity.canvas.myActivity.health, MyActivity.canvas.myActivity.coins)));
                     return 0;
                 }
             });

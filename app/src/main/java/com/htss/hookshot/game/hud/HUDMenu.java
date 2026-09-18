@@ -8,6 +8,7 @@ import android.graphics.RectF;
 import com.htss.hookshot.executions.LaunchGame;
 import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.interactables.Coin;
 import com.htss.hookshot.interfaces.Execution;
 
 import java.util.Vector;
@@ -43,9 +44,16 @@ public class HUDMenu extends HUDElement {
         UiStyle.drawPanel(canvas, getPaint(), this.background, MyActivity.TILE_WIDTH / 3f);
     }
 
+    // The level, then a coin and how many there are, together in the middle
     private void drawLevel(Canvas canvas) {
-        String text = "LEVEL " + MyActivity.canvas.myActivity.level;
-        UiStyle.drawText(canvas, getPaint(), text, getxCenter() - getPaint().measureText(text) / 2, getyCenter() - getHeight() / 2 - getPaint().getTextSize(), UiStyle.TEXT);
+        String level = "LEVEL " + MyActivity.canvas.myActivity.level, coins = String.valueOf(MyActivity.character.getCoins());
+        float size = getPaint().getTextSize(), radius = size * 0.4f, levelWidth = getPaint().measureText(level);
+        float width = levelWidth + size * 0.75f + radius * 2 + size / 4 + getPaint().measureText(coins);
+        float left = getxCenter() - width / 2, baseline = getyCenter() - getHeight() / 2f - size;
+        UiStyle.drawText(canvas, getPaint(), level, left, baseline, UiStyle.TEXT);
+        float coinX = left + levelWidth + size * 0.75f + radius;
+        Coin.drawCoin(canvas, coinX, baseline - size * 0.38f, radius, 1);
+        UiStyle.drawText(canvas, getPaint(), coins, coinX + radius + size / 4, baseline, UiStyle.TEXT);
     }
 
     private void drawHealth(Canvas canvas) {

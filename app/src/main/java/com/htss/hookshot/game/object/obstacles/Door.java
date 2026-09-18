@@ -12,6 +12,7 @@ import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.HUDNotification;
 import com.htss.hookshot.game.object.GameDynamicObject;
+import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.game.object.shapes.RectShape;
 import com.htss.hookshot.math.MathVector;
@@ -34,6 +35,8 @@ public class Door extends GameDynamicObject {
 
     private int width, height;
     private Vector<WallButton> buttons;
+    // An enemy that has to be beaten too, like the deep worm, which gets its own light on the lock
+    private GameEnemy guardian;
     private MathVector vector;
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG), glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RectF rect = new RectF();
@@ -59,6 +62,9 @@ public class Door extends GameDynamicObject {
         boolean allOn = true;
         for (WallButton button : buttons){
             allOn = allOn && button.isOn();
+        }
+        if (guardian != null && MyActivity.enemies.contains(guardian)) {
+            allOn = false;
         }
         if (allOn){
             // Out of the objects that block and can be hooked, but still drawn while it slides open
@@ -136,7 +142,7 @@ public class Door extends GameDynamicObject {
 
     // The lights are red, pulsing, until their button is pressed, and then green
     private void drawLock(Canvas canvas, float half, float thick) {
-        int n = buttons.size();
+        int n = buttons.size() + ((guardian != null) ? 1 : 0);
         float spacing = Math.min(thick * 0.8f, (half * 2 - thick * 4) / Math.max(1, n));
         float light = Math.min(thick * 0.22f, spacing * 0.35f);
         float first = -(n - 1) * spacing / 2;
@@ -152,7 +158,7 @@ public class Door extends GameDynamicObject {
         float pulse = 0.55f + 0.45f * (float) Math.sin(getFrame() * 0.15);
         for (int i = 0; i < n; i++) {
             float x = first + i * spacing;
-            boolean on = buttons.get(i).isOn();
+            boolean on = (i < buttons.size()) ? buttons.get(i).isOn() : !MyActivity.enemies.contains(guardian);
             int color = on ? LIGHT_ON : LIGHT_OFF;
             DrawUtil.drawGlow(canvas, glowPaint, x, 0, light * 3, DrawUtil.withAlpha(color, on ? 150 : (int) (150 * pulse)));
             paint.setStyle(Paint.Style.FILL);
@@ -205,6 +211,10 @@ public class Door extends GameDynamicObject {
     @Override
     public int getHeight() {
         return height;
+    }
+
+    public void setGuardian(GameEnemy guardian) {
+        this.guardian = guardian;
     }
 
     public MathVector getVector() {

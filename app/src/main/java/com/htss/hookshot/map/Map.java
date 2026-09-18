@@ -21,6 +21,12 @@ import android.graphics.Shader;
 
 import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.enemies.EnemyBat;
+import com.htss.hookshot.game.object.enemies.EnemyBeetle;
+import com.htss.hookshot.game.object.enemies.EnemyDeepWorm;
+import com.htss.hookshot.game.object.enemies.EnemySnipper;
+import com.htss.hookshot.game.object.enemies.EnemySpitter;
+import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
 import com.htss.hookshot.game.object.enemies.EnemyTerraWorm;
 import com.htss.hookshot.game.object.interactables.HealthDrop;
@@ -45,6 +51,12 @@ import java.util.Vector;
 public class Map {
 
     private static final int MAX_BUTTONS = 7, MIN_BUTTONS = 2;
+    // Every tenth level is the deep worm's, in a cavern this many tiles wide and tall from its middle
+    private static final int BOSS_EVERY = 10, BOSS_CAVERN_X = 22, BOSS_CAVERN_Y = 13;
+    // The levels new enemies start appearing at, how many groups of enemies a level can have, and how many tiles away
+    // from the entrance new kinds of enemy are placed
+    private static final int BAT_LEVEL = 3, SPITTER_LEVEL = 6, SNIPPER_LEVEL = 8, BEETLE_LEVEL = 12, MAX_ENEMY_GROUPS = 3,
+            SAFE_FROM_ENTRANCE = 18;
     private static final int SMOOTH_ITERATIONS = 2,  //5, 4, 3, 5, 5, 3
             WALL_COUNT_SMOOTH_THRESHOLD = 4,
             BORDER_SIZE = 3,
@@ -121,7 +133,9 @@ public class Map {
             roomRegions.remove(entranceRoom);
             roomRegions.remove(exitRoom);
         }
-        if (MyActivity.canvas.myActivity.level > 0) {
+        if (isBossLevel(MyActivity.canvas.myActivity.level)) {
+            addBoss();
+        } else if (MyActivity.canvas.myActivity.level > 0) {
             double r = addingRandom.nextDouble();
             if (r < 0.4) {
                 addPassageDoor(2);
@@ -146,6 +160,10 @@ public class Map {
 
         for (int i=0; i < SMOOTH_ITERATIONS; i++){
             smoothMap();
+        }
+
+        if (isBossLevel(MyActivity.canvas.myActivity.level)) {
+            carveBossCavern();
         }
 
         manageEntranceAndExit(random);
@@ -949,6 +967,11 @@ public class Map {
     // centred on the exit left a gap there
     private void addExitDoor(Random random, int maxButtons) {
         int nButtons = getNButtons(random, maxButtons);
+//      Set the WallButtons
+        addExitGate(createWallButtons(roomRegions, nButtons, random, true), null);
+    }
+
+    private Door addExitGate(Vector<WallButton> buttons, GameEnemy guardian) {
         boolean onSide = getExit().tileX == 0 || getExit().tileX == xTiles - 1;
         int length = onSide ? yTiles : xTiles;
         int start = onSide ? getExit().tileY : getExit().tileX;
@@ -961,14 +984,14 @@ public class Map {
         }
         double middle = (start + end) / 2.0 * SQUARE_SIZE;
         int width = (int) ((end - start + 3) * SQUARE_SIZE), thickness = (int) (1.5 * SQUARE_SIZE);
-
-//      Set the WallButtons
-        Vector<WallButton> buttons = createWallButtons(roomRegions, nButtons, random, true);
+        Door gate;
         if (onSide) {
-            addDoor(getExit().tileX * SQUARE_SIZE, middle, width, thickness, new MathVector(0, 1), buttons);
+            gate = new Door(getExit().tileX * SQUARE_SIZE, middle, width, thickness, new MathVector(0, 1), buttons, true);
         } else {
-            addDoor(middle, getExit().tileY * SQUARE_SIZE, width, thickness, new MathVector(1, 0), buttons);
+            gate = new Door(middle, getExit().tileY * SQUARE_SIZE, width, thickness, new MathVector(1, 0), buttons, true);
         }
+        gate.setGuardian(guardian);
+        return gate;
     }
 
     // Whether a tile of the border line the exit is in, counted along that line, is open
@@ -1101,17 +1124,156 @@ public class Map {
         return position;
     }
 
+    public static boolean isBossLevel(int level) {
+        return level > 0 && level % BOSS_EVERY == 0;
+    }
+
+    // A wide cavern in the middle of the cave, where the deep worm lives
+    private void carveBossCavern() {
+        int centerX = xTiles / 2, centerY = yTiles / 2;
+        for (int x = 0; x < xTiles; x++) {
+            for (int y = 0; y < yTiles; y++) {
+                double dx = (x - centerX) / (double) BOSS_CAVERN_X, dy = (y - centerY) / (double) BOSS_CAVERN_Y;
+                if (dx * dx + dy * dy <= 1) {
+                    map[x][y] = 0;
+                }
+            }
+        }
+    }
+
+    // The deep worm, and no other enemies. The exit stays shut until it's beaten
+    private void addBoss() {
+        EnemyDeepWorm worm = new EnemyDeepWorm(xTiles / 2 * SQUARE_SIZE, yTiles / 2 * SQUARE_SIZE,
+                Math.max(BOSS_CAVERN_X, BOSS_CAVERN_Y) * SQUARE_SIZE * 1.4);
+        addExitGate(new Vector<WallButton>(), worm);
+    }
+
+    // More groups of enemies come as the cave gets deeper, and new kinds of enemy join them
     public void addEnemies (Random random) {
-        if (random.nextBoolean()) {
-        int N = getNEnemies(random);
-        for (int i = 0; i < N; i++) {
-            MathVector p = getRandomEmptyPoint(0, random);
-            new EnemyStalker(p.x, p.y, true);
+        int level = MyActivity.canvas.myActivity.level;
+        int groups = Math.min(MAX_ENEMY_GROUPS, 1 + level / BOSS_EVERY);
+        for (int i = 0; i < groups; i++) {
+            addEnemyGroup(random, level);
         }
-    } else {
-            MathVector p = getRandomEmptyPoint(0, random);
-            new EnemyTerraWorm(p.x, p.y, 5, true, true);
+    }
+
+    private void addEnemyGroup(Random random, int level) {
+        int kinds = (level >= BEETLE_LEVEL) ? 6 : (level >= SNIPPER_LEVEL) ? 5 : (level >= SPITTER_LEVEL) ? 4 : (level >= BAT_LEVEL) ? 3 : 2;
+        switch (random.nextInt(kinds)) {
+            case 0:
+                int N = getNEnemies(random);
+                for (int i = 0; i < N; i++) {
+                    MathVector p = getRandomEmptyPoint(0, random);
+                    new EnemyStalker(p.x, p.y, true);
+                }
+                break;
+            case 1:
+                MathVector p = getRandomEmptyPoint(0, random);
+                new EnemyTerraWorm(p.x, p.y, 5, true, true);
+                break;
+            case 2:
+                addBats(random);
+                break;
+            case 3:
+                addSpitters(random);
+                break;
+            case 4:
+                addSnipper(random);
+                break;
+            default:
+                addBeetle(random);
         }
+    }
+
+    // Two or three on the same ceiling, a few tiles apart
+    private void addBats(Random random) {
+        Coord open = getOpenTile(random);
+        if (open == null) {
+            return;
+        }
+        int bats = 2 + random.nextInt(2), placed = 0;
+        int[] offsets = {0, 3, -3, 6, -6};
+        for (int offset : offsets) {
+            int x = open.tileX + offset;
+            if (placed < bats && isInMapRange(x, open.tileY) && map[x][open.tileY] == 0) {
+                Coord ceiling = getLastEmptyTile(new Coord(x, open.tileY), 0, -1, 30);
+                if (ceiling != null) {
+                    new EnemyBat(ceiling.tileX * SQUARE_SIZE, ceiling.tileY * SQUARE_SIZE);
+                    placed++;
+                }
+            }
+        }
+    }
+
+    // One or two, on walls and ceilings with room in front of them
+    private void addSpitters(Random random) {
+        int[][] directions = {{-1, 0}, {1, 0}, {0, -1}};
+        int spitters = 1 + random.nextInt(2);
+        for (int i = 0; i < spitters; i++) {
+            for (int attempt = 0; attempt < 20; attempt++) {
+                Coord open = getOpenTile(random);
+                int[] direction = directions[random.nextInt(directions.length)];
+                Coord wall = (open == null) ? null : getLastEmptyTile(open, direction[0], direction[1], 20);
+                if (wall != null && Math.abs(wall.tileX - open.tileX) + Math.abs(wall.tileY - open.tileY) >= 3) {
+                    new EnemySpitter(wall.tileX * SQUARE_SIZE, wall.tileY * SQUARE_SIZE, new MathVector(-direction[0], -direction[1]));
+                    break;
+                }
+            }
+        }
+    }
+
+    // On any rock
+    private void addSnipper(Random random) {
+        int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+        for (int attempt = 0; attempt < 20; attempt++) {
+            Coord open = getOpenTile(random);
+            int[] direction = directions[random.nextInt(directions.length)];
+            Coord rock = (open == null) ? null : getLastEmptyTile(open, direction[0], direction[1], 20);
+            if (rock != null) {
+                new EnemySnipper(rock.tileX * SQUARE_SIZE, rock.tileY * SQUARE_SIZE);
+                return;
+            }
+        }
+    }
+
+    // On a floor
+    private void addBeetle(Random random) {
+        for (int attempt = 0; attempt < 20; attempt++) {
+            Coord open = getOpenTile(random);
+            Coord floor = (open == null) ? null : getLastEmptyTile(open, 0, 1, 30);
+            if (floor != null) {
+                new EnemyBeetle(floor.tileX * SQUARE_SIZE, floor.tileY * SQUARE_SIZE);
+                return;
+            }
+        }
+    }
+
+    // An empty tile with nothing but empty tiles around it, away from the entrance and the top and bottom borders
+    private Coord getOpenTile(Random random) {
+        for (int attempt = 0; attempt < 200; attempt++) {
+            Coord tile = new Coord(random.nextInt(xTiles), random.nextInt(yTiles));
+            if (map[tile.tileX][tile.tileY] == 0 && getSurroundingCount(tile.tileX, tile.tileY) == 0 && !isUpOrDown(tile)
+                    && Math.hypot(tile.tileX - entrance.tileX, tile.tileY - entrance.tileY) > SAFE_FROM_ENTRANCE) {
+                return tile;
+            }
+        }
+        return null;
+    }
+
+    // Walks from a tile in a direction, and gives the last empty tile before rock, if rock is that close
+    private Coord getLastEmptyTile(Coord from, int dx, int dy, int maxTiles) {
+        int x = from.tileX, y = from.tileY;
+        for (int i = 0; i < maxTiles; i++) {
+            if (!isInMapRange(x + dx, y + dy)) {
+                return null;
+            }
+            if (map[x + dx][y + dy] == 1) {
+                return new Coord(x, y);
+            }
+            x += dx;
+            y += dy;
+        }
+        return null;
     }
 
     private int getNEnemies(Random random) {

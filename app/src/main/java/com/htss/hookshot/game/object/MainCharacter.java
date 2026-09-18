@@ -89,7 +89,7 @@ public class MainCharacter extends GameCharacter {
     private int currentPowerUp = -1, prevPowerUp = -1;
     private LinkedList<PortalObject> portals = new LinkedList<PortalObject>();
     private CompassObject compass;
-    private int explosionsUsed = 0;
+    private int explosionsUsed = 0, coins = 0;
     private TimerObject infiniteJumpsTimer;
     private double invulnerableUntilFrame = 0;
     // Above 0 squashed, below 0 stretched
@@ -562,6 +562,18 @@ public class MainCharacter extends GameCharacter {
 
     public void setExplosionsUsed(int explosionsUsed) {
         this.explosionsUsed = explosionsUsed;
+    }
+
+    public int getCoins() {
+        return coins;
+    }
+
+    public void setCoins(int coins) {
+        this.coins = coins;
+    }
+
+    public void addCoins(int coins) {
+        this.coins += coins;
     }
 
     public boolean isHooked(){

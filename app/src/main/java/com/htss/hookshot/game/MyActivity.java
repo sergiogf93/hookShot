@@ -102,7 +102,7 @@ public class MyActivity extends Activity {
     public Long seed;
     public int level = 0;
     public String entranceString = "";
-    public int portals = 0, bombs = 0, compass = 0, jumps = 0, explosionsUsed = 0;
+    public int portals = 0, bombs = 0, compass = 0, jumps = 0, explosionsUsed = 0, coins = 0;
     public double health = MainCharacter.MAX_HEALTH;
     public int portalsAdvice = 0, compassAdvice = 0, bombAdvice = 0, jumpsAdvice = 0;
 
@@ -130,6 +130,7 @@ public class MyActivity extends Activity {
         bombs = preferences.getInt("Bombs", 0);
         jumps = preferences.getInt("Jumps", 0);
         explosionsUsed = preferences.getInt("ExplosionsUsed", 0);
+        coins = preferences.getInt("Coins", 0);
         health = preferences.getFloat("Health", MainCharacter.MAX_HEALTH);
         portalsAdvice = preferences.getInt("PortalsAdvice", 0);
         compassAdvice = preferences.getInt("CompassAdvice", 0);
@@ -634,7 +635,7 @@ public class MyActivity extends Activity {
         }
         ClickableEnemy closest = null;
         for (GameEnemy enemy : enemies) {
-            if (enemy instanceof ClickableEnemy) {
+            if (enemy instanceof ClickableEnemy && ((ClickableEnemy) enemy).isClickable()) {
                 ClickableEnemy target = (ClickableEnemy) enemy;
                 boolean inTheWay = GameMath.distanceToSegment(target.getPositionInRoom(), start, end) <= target.getBodyRadius() + Hook.RADIUS;
                 if (inTheWay && (closest == null || character.distanceTo(target) < character.distanceTo(closest))) {
@@ -727,7 +728,7 @@ public class MyActivity extends Activity {
         return closest;
     }
 
-    private static boolean checkIfDoorsContain(MathVector point) {
+    public static boolean checkIfDoorsContain(MathVector point) {
         for (GameDynamicObject dynamicObject : dynamicObjects) {
             if (dynamicObject instanceof Door) {
                 if (dynamicObject.getBounds().contains(point)) {
@@ -873,6 +874,7 @@ public class MyActivity extends Activity {
         editor.putInt("Bombs", character.getPowerUps().get(GamePowerUp.BOMB));
         editor.putInt("Jumps", character.getPowerUps().get(GamePowerUp.INFINITE_JUMPS));
         editor.putInt("ExplosionsUsed", character.getExplosionsUsed());
+        editor.putInt("Coins", character.getCoins());
         saveHealth();
         editor.commit();
     }

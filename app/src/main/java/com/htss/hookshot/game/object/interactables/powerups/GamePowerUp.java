@@ -9,6 +9,7 @@ import android.graphics.RectF;
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.GameDynamicObject;
+import com.htss.hookshot.game.object.interactables.Loot;
 import com.htss.hookshot.interfaces.Interactable;
 import com.htss.hookshot.util.DrawUtil;
 
@@ -28,6 +29,8 @@ public abstract class GamePowerUp extends GameDynamicObject implements Interacta
     protected final RectF iconOval = new RectF();
     // Items in the cave glow, their icons in the HUD and the pause menu don't
     private boolean glowing;
+    // Dropped by an enemy, so it flies to the character once it's close
+    private boolean dropped = false, flying = false;
 
     public GamePowerUp(double xPos, double yPos, int width, int height, int type, boolean addToGameObjects, boolean addToDynamicObjects) {
         super(xPos, yPos, 0, 0, 0, addToGameObjects, addToDynamicObjects);
@@ -130,8 +133,15 @@ public abstract class GamePowerUp extends GameDynamicObject implements Interacta
         return height;
     }
 
+    public void setDropped() {
+        dropped = true;
+    }
+
     @Override
     public void detect() {
+        if (dropped) {
+            flying = Loot.pull(this, flying);
+        }
         if (distanceTo(MyActivity.character) < MyActivity.TILE_WIDTH /2){
             MyActivity.canvas.gameObjects.remove(this);
             MyActivity.character.addPowerUp(this.type);

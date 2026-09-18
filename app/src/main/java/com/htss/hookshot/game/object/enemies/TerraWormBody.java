@@ -132,6 +132,16 @@ public class TerraWormBody extends ClickableEnemy {
     }
 
     @Override
+    protected double getHealthDropChance() {
+        return 0.05;
+    }
+
+    @Override
+    protected double getPowerUpDropChance() {
+        return 0.02;
+    }
+
+    @Override
     public void knockBack(MathVector direction) {
         // The whole worm is pushed
         terraWorm.knockBack(direction);
@@ -155,7 +165,7 @@ public class TerraWormBody extends ClickableEnemy {
 
     @Override
     public int getDamageDone() {
-        return 10;
+        return 5;
     }
 
     @Override
