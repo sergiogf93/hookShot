@@ -522,8 +522,7 @@ public class MyActivity extends Activity {
                 // The chain hits the enemy instead of going past it, so the hook never pulls you towards one
                 strikeAt(enemyInTheWay);
             } else if (character.distanceTo(objectiveInRoom) <= getHookReach()) {
-                int pixel = canvas.mapBitmap.getPixel((int) objectiveInRoom.x, (int) objectiveInRoom.y);
-                if (Color.alpha(pixel) == 255 || checkIfDoorsContain(objectiveInRoom)) {
+                if (isHookable(objectiveInRoom)) {
                     decideBetweenFastReloadOrShoot(objective);
                 } else {
                     if (character.isHooked()) {
@@ -589,7 +588,22 @@ public class MyActivity extends Activity {
         }
     }
 
-    // The first rock or door on the straight line between two points in the room, if any
+    // Rock, a door, or the edge of the cave the character came in through
+    private static boolean isHookable(MathVector point) {
+        if (!isInRoom(point.x, point.y)) {
+            return isEntranceWall(point.x, point.y);
+        }
+        return Color.alpha(canvas.mapBitmap.getPixel((int) point.x, (int) point.y)) == 255 || checkIfDoorsContain(point);
+    }
+
+    // Beyond the top of the cave, and beyond the side the character came in from, it can't go back, as if there was
+    // rock. So the hook grips there too, when it's thrown through the entrance. The exits stay open
+    private static boolean isEntranceWall(double x, double y) {
+        int entranceX = currentMap.getEntrance().tileX;
+        return y < 0 || (x < 0 && entranceX == 0) || (x >= currentMap.getWidth() && entranceX == mapXTiles - 1);
+    }
+
+    // The first rock, door or wall of the entrance on the straight line between two points in the room, if any
     private static MathVector getObstacle(MathVector from, MathVector to) {
         MathVector direction = new MathVector(from, to);
         int length = (int) direction.magnitude();
@@ -603,7 +617,7 @@ public class MyActivity extends Activity {
                 return point;
             }
             if (!isInRoom(point.x, point.y)) {
-                return null;
+                return isEntranceWall(point.x, point.y) ? point : null;
             }
             if (Color.alpha(canvas.mapBitmap.getPixel((int) point.x, (int) point.y)) == 255) {
                 return point;
@@ -661,9 +675,6 @@ public class MyActivity extends Activity {
                     clickable.reset();
                 }
             }
-        }
-        if (currentMap == null) {
-            MyActivity.character.setPositionInRoom(MyActivity.character.getHook().getLastNode().getPositionInRoom());
         }
     }
 

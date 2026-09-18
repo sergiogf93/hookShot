@@ -44,8 +44,6 @@ public class MainCharacter extends GameCharacter {
 
     // Speed tuned on 720 px tall screens, where TILE_WIDTH is 100
     public static final int MAX_HEALTH = 100, MAX_VELOCITY = 15 * MyActivity.TILE_WIDTH / 100;
-    // Reeling the chain in moves half a link per update, so a link is reeled in every two updates
-    private static final double REEL_VELOCITY = Hook.SEPARATION / 2.0;
     private static final int MAX_EXPLOSIONS = 5;
     private static final int MASS = 1, COLLISION_PRIORITY = 5;
     // How much speed is kept every update on the ground
@@ -73,6 +71,8 @@ public class MainCharacter extends GameCharacter {
     public static final int BODY_RADIUS = 10*MyActivity.TILE_WIDTH /50, FIST_RADIUS = MyActivity.TILE_WIDTH /8,
                             FOOT_RADIUS = 10*MyActivity.TILE_WIDTH /100, EYE_RADIUS = MyActivity.TILE_WIDTH /25,
                             MIN_HOOSKSHOT_NODES = 3;
+    // How far above its body the character holds the chain
+    private static final int GRIP = BODY_RADIUS * 2;
 
     private Paint paint = new Paint();
     private double hookVelocity = 300;
@@ -107,8 +107,9 @@ public class MainCharacter extends GameCharacter {
         rightFoot = new CircleShape(xPos,yPos,FOOT_RADIUS,Color.RED, false);
         leftEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
         rightEye = new BiCircleShape(xPos,yPos,EYE_RADIUS*0.8,new MathVector(0,1),EYE_RADIUS,Color.YELLOW);
-        // Slows down being thrown by the chain once on the ground. Walking sets the speed on every update anyway
-        friction = GROUND_FRICTION;
+        // Slows down being thrown by the chain once on the ground. Walking sets the speed on every update anyway. In the
+        // main menu, nothing slows it down, so the character walking along the bottom keeps going
+        friction = (MyActivity.currentMap == null) ? 1 : GROUND_FRICTION;
         this.healthBar = new HUDBar((int) getxPosInScreen(),(int) getyPosInScreen(), (int) (MyActivity.TILE_WIDTH *1.5),MyActivity.TILE_WIDTH /10,Color.GREEN,new Execution() {
             @Override
             public double execute() {
@@ -214,18 +215,18 @@ public class MainCharacter extends GameCharacter {
     public void update(){
         boolean wasOnFloor = isOnFloor();
         double fallSpeed = getP().y;
+        if (MyActivity.currentMap == null && isHooked()) {
+            // Hanging in the main menu, where there's no gravity, it only moves when dragged
+            setP(new MathVector(0, 0));
+        }
         steer();
-        if (getHook() != null){
-            if (getHook().isHooked()){
-                manageHookUpdate();
-            }
-            if (getHook().isFastReloading()) {
-                if (distanceTo(rightHand) > BODY_RADIUS * 5) {
-                    removeHook();
-                }
-            }
+        if (isHooked()) {
+            setMaxVelocity(getHook().isFastReloading() ? MAX_VELOCITY * 5 : getWalkingSpeed());
         }
         super.update();
+        if (isHooked()) {
+            getHook().updateChain(getPositionInRoom(), getHandsPosition());
+        }
         if (isOnFloor()) {
             flying = false;
         }
@@ -291,11 +292,12 @@ public class MainCharacter extends GameCharacter {
         return super.getGravity() * GRAVITY_SCALE;
     }
 
-    // Swinging on the chain, and flying once let go of it, the character can go faster than walking, in any direction
+    // On the chain, and flying once let go of it, the character can go faster than walking, in any direction. After a
+    // double tap, the top speed is higher still
     @Override
     protected void limitSpeed() {
-        boolean swinging = isHooked() && !getHook().isReloading() && !getHook().isFastReloading();
-        if (swinging || flying) {
+        boolean onChain = isHooked() && !getHook().isFastReloading();
+        if (onChain || flying) {
             double limit = getWalkingSpeed() * SWING_SPEED;
             if (getP().magnitude() > limit) {
                 setP(getP().rescaled(limit));
@@ -330,29 +332,34 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
-    public void manageHookUpdate () {
-        if (getHook().isFastReloading()) {
-            setMaxVelocity(MAX_VELOCITY*5);
-        } else if (getHook().isReloading()) {
-            setMaxVelocity(REEL_VELOCITY);
-        } else {
-            setMaxVelocity(getWalkingSpeed());
+    // Right before moving, the chain holds the character: it can't get further from what it swings around than the
+    // chain between them. Only the speed away from it is lost, so swings keep going, and reeling the chain in pulls
+    // the character. While the extend button is held, the chain is let out instead, as far as it goes
+    @Override
+    public void manageConstraints() {
+        super.manageConstraints();
+        if (!isHooked()) {
+            return;
         }
-        if (getHook().isReloading()){
-            MathVector vectorToLastNode = new MathVector(getPositionInRoom(),getHook().getLastNode().getPositionInRoom());
-            setP(vectorToLastNode);
-        } else {
-            int maxSeparation = getWidth();
-            if (distanceTo(getHook().getLastNode()) > maxSeparation) {
-                MathVector v = new MathVector(getHook().getLastNode().getPositionInRoom(), getFuturePositionInRoom());
-                v.rescale(maxSeparation);
-                if (getHook().getNodesNumber() > 1) {
-                    getHook().getLastNode().addP(getP());
-                }
-                MathVector newP = new MathVector(getPositionInRoom(), v.applyTo(getHook().getLastNode().getPositionInRoom()));
-                setP(newP);
-            }
+        MathVector pivot = getHook().getPivotNode().getPositionInRoom();
+        MathVector fromPivot = new MathVector(pivot, getFuturePositionInRoom());
+        double distance = fromPivot.magnitude(), reach = getHook().getLengthToPivot() + GRIP;
+        if (distance > reach && getHook().isExtending()) {
+            getHook().letOut(distance - reach);
+            reach = getHook().getLengthToPivot() + GRIP;
         }
+        if (distance > reach) {
+            setP(new MathVector(getPositionInRoom(), fromPivot.scaled(reach / distance).applyTo(pivot)));
+        }
+    }
+
+    // Holding the chain above its head, towards what it swings around
+    private MathVector getHandsPosition() {
+        MathVector toPivot = new MathVector(getPositionInRoom(), getHook().getPivotNode().getPositionInRoom());
+        if (toPivot.isNull()) {
+            return getPositionInRoom();
+        }
+        return toPivot.rescaled(Math.min(GRIP, toPivot.magnitude())).applyTo(getPositionInRoom());
     }
 
     @Override
@@ -372,14 +379,14 @@ public class MainCharacter extends GameCharacter {
             separationFoot = new MathVector(getFacing() * BODY_RADIUS / 3, BODY_RADIUS + FOOT_RADIUS / 3);
             axisForFeet = new MathVector(0,-1);
             if (!isOnFloor()){
-                axisForFeet = new MathVector(getHook().getFirstNode().getPositionInRoom(), getPositionInRoom());
+                axisForFeet = new MathVector(getHook().getPivotNode().getPositionInRoom(), getPositionInRoom());
                 axisForFeet.normalize();
                 double angle = separationFoot.angleDeg(new MathVector(0, 1));
                 separationFoot = axisForFeet.rotatedDeg(angle).rescaled(separationFoot.magnitude());
             } else {
                 separationFoot.x += MainCharacterAnimation.getFootAnimatedMovingX(getFrame());
             }
-            positionFromHands = getHook().getLastNode().getPositionInRoom();
+            positionFromHands = getHook().getGripNode().getPositionInRoom();
             vectorForEyes = new MathVector(0,-1);
         } else {
             separationHand = new MathVector(getFacing()*BODY_RADIUS,FIST_RADIUS);
@@ -623,7 +630,7 @@ public class MainCharacter extends GameCharacter {
         MathVector initP = new MathVector(getPositionInScreen(),downPoint);
         int nNodes = (int) (initP.magnitude()/Hook.SEPARATION) + 2;
         nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
-        setHook(new Hook(getxPosInRoom(), getyPosInRoom(), nNodes, Color.GRAY, this, new MathVector(0, 0)));
+        setHook(new Hook(getxPosInRoom(), getyPosInRoom(), nNodes, Color.GRAY));
         getHook().hook(downPoint.screenToRoom());
         flying = false;
         // Sparks where the hook bites

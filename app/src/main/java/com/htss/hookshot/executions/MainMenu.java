@@ -89,7 +89,7 @@ public class MainMenu implements Execution {
         // Hanging to the right, so its chain doesn't cross the menu
         int hangingX = MyActivity.screenWidth * 4 / 5;
         MyActivity.character = new MainCharacter(hangingX, n * Hook.SEPARATION);
-        Hook hook = new Hook(hangingX, n * Hook.SEPARATION, n, Color.GRAY, MyActivity.character, new MathVector(0, 0));
+        Hook hook = new Hook(hangingX, n * Hook.SEPARATION, n, Color.GRAY);
         MyActivity.character.setHook(hook);
         hook.hook(new MathVector(hangingX, MyActivity.screenHeight / 10));
 
