@@ -67,6 +67,12 @@ public class HUDCircleButton extends HUDElement implements Clickable {
         int textSize = (int) (2 * getRadius() / 3);
         getPaint().setTypeface(MyActivity.canvas.arcadeClassicFont);
         getPaint().setTextSize(textSize);
+        // Longer labels shrink to fit inside the button
+        float fit = getRadius() * 1.5f, width = getPaint().measureText(getText());
+        if (width > fit) {
+            textSize = (int) (textSize * fit / width);
+            getPaint().setTextSize(textSize);
+        }
         float textX = getxCenter() - getPaint().measureText(getText()) / 2;
         UiStyle.drawText(canvas, getPaint(), getText(), textX, getyCenter() + textSize / 3f, isOn() ? UiStyle.getAccent() : UiStyle.TEXT);
     }
@@ -81,8 +87,9 @@ public class HUDCircleButton extends HUDElement implements Clickable {
                 setTimeWhenOn(0);
                 getExecDoubleOn().execute();
             } else {
+                // Remembered whether or not a single press does anything, for the second press to count as double
+                setTimeWhenOn(SystemClock.uptimeMillis());
                 if (getExecOn() != null){
-                    setTimeWhenOn(SystemClock.uptimeMillis());
                     getExecOn().execute();
                 }
             }

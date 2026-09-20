@@ -41,8 +41,14 @@ public class HUDButton extends HUDElement implements Clickable {
         } else {
             UiStyle.drawPanel(canvas, getPaint(), this.background, getHeight() / 2f);
         }
-        getPaint().setTextSize(TEXT_SIZE);
-        UiStyle.drawText(canvas, getPaint(), getText(), getxCenter() - getTextWidth() / 2, getyCenter() + TEXT_SIZE / 4, isOn() ? UiStyle.getAccent() : UiStyle.TEXT);
+        // Longer labels shrink to fit inside the button
+        float size = TEXT_SIZE;
+        getPaint().setTextSize(size);
+        if (getTextWidth() > getWidth() * 0.88f) {
+            size = size * getWidth() * 0.88f / getTextWidth();
+            getPaint().setTextSize(size);
+        }
+        UiStyle.drawText(canvas, getPaint(), getText(), getxCenter() - getTextWidth() / 2, getyCenter() + size / 4, isOn() ? UiStyle.getAccent() : UiStyle.TEXT);
     }
 
     public String getText() {
@@ -51,6 +57,11 @@ public class HUDButton extends HUDElement implements Clickable {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    // For a button whose action needs the button itself, like one that shows what it last switched to
+    public void setExecOff(Execution execOff) {
+        this.execOff = execOff;
     }
 
     public int getTextWidth() {

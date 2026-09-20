@@ -2,9 +2,12 @@ package com.htss.hookshot.game.object.hook;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.hud.HUDCircleButton;
+import com.htss.hookshot.game.hud.UiStyle;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.obstacles.Door;
@@ -25,17 +28,31 @@ public class Hook extends Chain {
 
     public static final int MIN_RELOADING_NODES = 2;
 
-    // How much of the chain is reeled in every update: holding a finger on the screen, and after a double tap
-    public static final double REEL_SPEED = SEPARATION / 2.0, FAST_REEL_SPEED = SEPARATION;
+    // How much chain is taken in every update while reeling and while zipping, and let out while paying it out
+    public static final double REEL_SPEED = SEPARATION / 2.0, FAST_REEL_SPEED = SEPARATION, LET_OUT_SPEED = SEPARATION / 4.0;
     // How much of their speed the links keep every update, and how many times the links are pulled back together
     private static final double DAMPING = 0.99;
     private static final int ITERATIONS = 10;
+    // How many updates in a row a zip can go without taking chain in before it gives up
+    private static final int ZIP_GIVES_UP = (int) TimeUtil.secondsToUpdates(0.3);
     // Reeled in all the way, the chain keeps this much of its last link
     private static final double SHORTEST_LINK = RADIUS;
     // How far apart the points checked along a line of sight are
     private static final double SIGHT_STEP = Math.max(2, MyActivity.TILE_WIDTH / 40.0);
 
     private boolean hooked = false, reloading = false, extending = false, fastReloading = false;
+    // How long the finger sliding on the screen wants the chain to be. Below zero, the chain is left as it is
+    private double targetLength = -1;
+    // How long the chain was when it was thrown, which the gauge fills up to
+    private double lengthWhenHooked = SEPARATION;
+    // For how many updates in a row a zip hasn't been able to take any chain in
+    private int zipStalled = 0;
+    // Whether the chain has just been coming in (-1) or going out (1), and for how many more updates that shows
+    private int motion = 0, motionShown = 0;
+    private double lengthLastUpdate = 0;
+    private static final int MOTION_SHOWN = 8;
+    private final Paint markPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path markPath = new Path();
     private MathVector hookedPoint;
     private GameDynamicObject hookedObject;
     private int prevHookedMass = 0;
@@ -63,6 +80,9 @@ public class Hook extends Chain {
                 direction.normalize();
                 drawClaw(canvas, (float) claw.getxPosInScreen(), (float) claw.getyPosInScreen(), (float) direction.x, (float) direction.y, claw.getRadius());
             }
+            if (motionShown > 0 && hooked && MyActivity.currentMap != null) {
+                drawMotion(canvas);
+            }
         }
     }
 
@@ -73,23 +93,35 @@ public class Hook extends Chain {
         manageHooking();
     }
 
+    // Hooked with every link at its full length
     public void hook(MathVector position) {
-        if (MyActivity.currentMap != null) {
+        hook(position, (getNodesNumber() - 1) * (double) SEPARATION);
+    }
+
+    // Hooked with this much chain out, which the link the character holds makes up for, being the only one that can
+    // be shorter than the rest
+    public void hook(MathVector position, double length) {
+        if (MyActivity.currentMap != null && MyActivity.controls == MyActivity.CONTROLS_CLASSIC) {
             addExtendButton();
         }
         hookedPoint = position;
         hooked = true;
         setDirection(-1);
-        // Laid straight from the character to where it's hooked, and left to fall into shape
+        // Laid straight back from where it's hooked, a link apart, and left to fall into shape
         MathVector start = getGripNode().getPositionInRoom();
         MathVector toHook = new MathVector(start, position);
-        for (int i = 0; i < getNodesNumber(); i++) {
+        double distance = toHook.magnitude();
+        int last = getNodesNumber() - 1;
+        for (int i = 0; i <= last; i++) {
             Circle node = getNode(i);
-            node.setPositionInRoom(toHook.scaled(i / (double) (getNodesNumber() - 1)).applyTo(start));
+            double along = (i == 0 || distance == 0) ? 0 : Math.max(0, distance - (last - i) * SEPARATION) / distance;
+            node.setPositionInRoom(toHook.scaled(along).applyTo(start));
             node.setP(new MathVector(0, 0));
         }
-        pivot = getNodesNumber() - 1;
-        firstLinkLength = SEPARATION;
+        pivot = last;
+        firstLinkLength = Math.max(SHORTEST_LINK, Math.min(SEPARATION, length - (last - 1) * SEPARATION));
+        lengthWhenHooked = getChainLength();
+        lengthLastUpdate = lengthWhenHooked;
     }
 
     // Moves the chain after the character has: the first node to the character's hands, the last to where it's
@@ -99,13 +131,30 @@ public class Hook extends Chain {
         // Reeled in only as fast as the character follows, so it doesn't run out while the character is caught on
         // rock and then yank it
         double behind = body.distanceTo(getPivotNode().getPositionInRoom()) - body.distanceTo(hands) - getLengthToPivot();
-        boolean following = behind < SEPARATION / 2.0;
+        // Nor while the chain ahead leads into rock, out of sight. Caught under a ledge, the character stays where it is
+        // but the chain kept coming in through the rock, until it was far shorter than the way to where it's hooked
+        boolean following = behind < SEPARATION / 2.0 && canSee(body, getPivotNode().getPositionInRoom());
+        // Pulling on the chain, so chain let out goes to the character instead of piling up slack
+        boolean taut = behind > -SEPARATION / 2.0;
         if (isFastReloading()) {
             if (following) {
                 reelIn(FAST_REEL_SPEED);
+                zipStalled = 0;
+            } else {
+                zipStalled++;
             }
-            if (getNodesNumber() <= MIN_RELOADING_NODES) {
+            // It also gives up when the character is caught on rock. Otherwise it stayed on for as long as that took,
+            // and dragged the character off at full speed whenever it came free, with nobody asking for it
+            if (getNodesNumber() <= MIN_RELOADING_NODES || zipStalled > ZIP_GIVES_UP) {
                 setFastReloading(false);
+            }
+        } else if (isReeling()) {
+            // Towards the length asked for, a step at a time, so the character is never yanked
+            double difference = targetLength - getChainLength();
+            if (difference < 0 && following) {
+                reelIn(Math.min(REEL_SPEED, -difference));
+            } else if (difference > 0 && taut) {
+                letOut(Math.min(LET_OUT_SPEED, difference));
             }
         } else if (isReloading() && following) {
             reelIn(REEL_SPEED);
@@ -144,6 +193,48 @@ public class Hook extends Chain {
         }
         for (int i = 1; i < last; i++) {
             getNode(i).setP(new MathVector(previous[i], getNode(i).getPositionInRoom()));
+        }
+        // Whatever changed its length since the last update, here or as the character pulled it out
+        double length = getChainLength();
+        if (Math.abs(length - lengthLastUpdate) > 0.5) {
+            motion = (length < lengthLastUpdate) ? -1 : 1;
+            motionShown = MOTION_SHOWN;
+        } else if (motionShown > 0) {
+            motionShown--;
+        }
+        lengthLastUpdate = length;
+    }
+
+    // Small arrowheads sliding along the chain by the character's hands while it's coming in or going out: gold and
+    // towards where it's hooked as it's reeled in, grey and towards the character as it's let out
+    private void drawMotion(Canvas canvas) {
+        MathVector from = getGripNode().getPositionInScreen();
+        MathVector along = new MathVector(from, getPivotNode().getPositionInScreen());
+        double room = along.magnitude();
+        if (room < SEPARATION) {
+            return;
+        }
+        along.normalize();
+        float tile = MyActivity.TILE_WIDTH, size = tile * 0.1f, spacing = tile * 0.3f;
+        float dx = (float) along.x * -motion, dy = (float) along.y * -motion;
+        float slide = (getFrame() * tile * 0.03f) % spacing;
+        markPaint.setStyle(Paint.Style.STROKE);
+        markPaint.setStrokeCap(Paint.Cap.ROUND);
+        markPaint.setStrokeJoin(Paint.Join.ROUND);
+        markPaint.setStrokeWidth(tile * 0.035f);
+        markPaint.setColor(motion < 0 ? UiStyle.GOLD : UiStyle.IDLE);
+        markPaint.setAlpha(255 * motionShown / MOTION_SHOWN);
+        for (int i = 0; i < 3; i++) {
+            float distance = tile * 0.45f + i * spacing + (motion < 0 ? slide : spacing - slide);
+            if (distance > room) {
+                break;
+            }
+            float x = (float) (from.x + along.x * distance), y = (float) (from.y + along.y * distance);
+            markPath.reset();
+            markPath.moveTo(x - dx * size - dy * size, y - dy * size + dx * size);
+            markPath.lineTo(x + dx * size, y + dy * size);
+            markPath.lineTo(x - dx * size + dy * size, y - dy * size - dx * size);
+            canvas.drawPath(markPath, markPaint);
         }
     }
 
@@ -268,7 +359,7 @@ public class Hook extends Chain {
         firstLinkLength = Math.max(firstLinkLength, SHORTEST_LINK);
     }
 
-    // Lets out as much chain as the character pulls, while the extend button is held, up to the longest chain
+    // Lets out chain, up to the longest the character can hold
     public void letOut(double length) {
         firstLinkLength += length;
         while (firstLinkLength > SEPARATION) {
@@ -306,7 +397,7 @@ public class Hook extends Chain {
     }
 
     // The chain is reeled in by holding a finger on the screen, and let out by holding this button, which follows the
-    // character
+    // character. Only the classic controls have it: the others pay the chain out by sliding the finger
     private void addExtendButton(){
         int buttonRadius = (int) (MyActivity.TILE_WIDTH*0.4);
         MyActivity.extendButton = new HUDCircleButton((int) getGripNode().getxPosInScreen(), (int) getGripNode().getyPosInScreen(), buttonRadius, "E", true, new Execution() {
@@ -332,34 +423,48 @@ public class Hook extends Chain {
         MyActivity.hudElements.add(MyActivity.extendButton);
     }
 
-    private void manageHooking() {
-        if (!isHooked()){
-            for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects){
-                if (dynamicObject instanceof Hookable){
-                    if (dynamicObject.inContactWith(getAnchorNode())){
-                        hook(dynamicObject.getPositionInRoom());
-                        hookedObject = dynamicObject;
-                        prevHookedMass = dynamicObject.getMass();
-                        hookedObject.setMass(1);
-                    }
-                }
-            }
-            if (getFrame() > TimeUtil.secondsToUpdates(0.333)){
-                MyActivity.character.removeHook();
-            }
-        } else {
-            if (MyActivity.extendButton != null) {
-                MyActivity.extendButton.setCenter(getGripNode().getPositionInScreen());
-            }
+    // How far it is along the chain as it lies, node to node, from the character's hands to where it's hooked. Longer
+    // than the chain itself when it's stretched, like round a corner of rock with the character held back
+    public double getPathLength() {
+        double length = 0;
+        for (int i = 0; i < getNodesNumber() - 1; i++) {
+            length += getNode(i).getPositionInRoom().distanceTo(getNode(i + 1).getPositionInRoom());
         }
+        return length;
     }
 
-    public boolean isHooked() {
-        return hooked;
+    // From the character's hands to where the chain is hooked
+    public double getChainLength() {
+        return firstLinkLength + (getNodesNumber() - 2) * SEPARATION;
     }
 
-    public void setHooked(boolean hooked) {
-        this.hooked = hooked;
+    // The longest chain the character can hold out
+    public double getLongestChain() {
+        return (MyActivity.character.getMaxHookNodes() - 1) * SEPARATION;
+    }
+
+    // The most chain this one has had out, which is as far as the gauge goes
+    public double getChainWhenHooked() {
+        return Math.max(lengthWhenHooked, getChainLength());
+    }
+
+    // Reels towards this length, however far the finger slides. Sliding up asks for less chain, down for more
+    public void reelTo(double length) {
+        targetLength = Math.max(SHORTEST_LINK, Math.min(length, getLongestChain()));
+    }
+
+    // The finger was lifted: the chain stays as long as it is, and the character stays hooked
+    public void stopReeling() {
+        targetLength = -1;
+    }
+
+    public boolean isReeling() {
+        return targetLength >= 0;
+    }
+
+    // Asked for more chain than is out
+    public boolean isLettingOut() {
+        return targetLength > getChainLength();
     }
 
     public boolean isReloading() {
@@ -376,6 +481,34 @@ public class Hook extends Chain {
 
     public void setExtending(boolean extending) {
         this.extending = extending;
+    }
+
+    private void manageHooking() {
+        if (!isHooked()){
+            for (GameDynamicObject dynamicObject : MyActivity.dynamicObjects){
+                if (dynamicObject instanceof Hookable){
+                    if (dynamicObject.inContactWith(getAnchorNode())){
+                        hook(dynamicObject.getPositionInRoom());
+                        hookedObject = dynamicObject;
+                        prevHookedMass = dynamicObject.getMass();
+                        hookedObject.setMass(1);
+                    }
+                }
+            }
+            if (getFrame() > TimeUtil.secondsToUpdates(0.333)){
+                MyActivity.character.removeHook();
+            }
+        } else if (MyActivity.extendButton != null) {
+            MyActivity.extendButton.setCenter(getGripNode().getPositionInScreen());
+        }
+    }
+
+    public boolean isHooked() {
+        return hooked;
+    }
+
+    public void setHooked(boolean hooked) {
+        this.hooked = hooked;
     }
 
     public MathVector getHookedPoint() {
@@ -408,5 +541,6 @@ public class Hook extends Chain {
 
     public void setFastReloading(boolean fastReloading) {
         this.fastReloading = fastReloading;
+        zipStalled = 0;
     }
 }

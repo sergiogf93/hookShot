@@ -57,10 +57,24 @@ public class MainCharacter extends GameCharacter {
     // How far up the joystick is pushed to jump, as a share of its reach. About 12 degrees above level
     private static final double JUMP_PUSH = 0.2;
     // The character falls faster than other objects, so jumps rise and fall quickly: 0.7 tiles high in a third of a
-    // second, and infinite jumps, with twice the top speed, 2.7 tiles high
+    // second
     private static final double GRAVITY_SCALE = 5 / 3.0;
+    // With swiftness the character runs at twice its speed, and the power's own jumps, in the air, leave at that
+    // doubled speed, 2.7 tiles high. An ordinary jump off the ground used to as well, only because a jump is as fast as
+    // the top speed allows, so the slightest push up on the joystick while running threw the character four times as
+    // high as usual. It now leaves a quarter faster than without the power: 0.9 tiles high, a bit more than the usual
+    // 0.6, to clear at a run what a walk would have time to climb
+    private static final double SWIFT_SPEED = 2, SWIFT_JUMP = 1.25;
+    // How long swiftness lasts, in seconds. Twice what it used to, which was over before it got anywhere
+    private static final double SWIFT_SECONDS = 16.67;
     // How hard the joystick pushes a swing, as a share of gravity. Pushing the way it swings builds it up
     private static final double SWING_PUSH = 0.5;
+    // How firmly the joystick is pushed up or down to work the chain, so pumping a swing sideways doesn't pay it out
+    private static final double CHAIN_PUSH = 0.6;
+    // With the second twin stick controls the joystick works the chain by where it's hooked: pushed this firmly, and
+    // this much along the chain rather than across it, it reels in towards the hook and lets out away from it. On
+    // the ground any push away lets the chain out, as walking off pulls on it
+    private static final double CHAIN_PUSH_FIRMLY = 0.5, ALONG_CHAIN = 0.75, AWAY_ON_GROUND = 0.15;
     // As long as the red flash of the HurtEffect
     private static final double INVULNERABLE_DURATION = TimeUtil.secondsToUpdates(0.833);
     // Falling faster than this kicks up dust on landing
@@ -255,13 +269,18 @@ public class MainCharacter extends GameCharacter {
     }
 
     // The joystick sets the walking speed, also while jumping, and jumps when pushed up. Swinging, it pushes the swing
-    // instead. Thrown by the chain, it steers, but pushing the way the character already goes faster doesn't slow it
-    // down, and letting go keeps it going. With the chain reeled in all the way, it climbs around where it's hooked
+    // instead, and with the new controls pushing it firmly down pays the chain out and up takes it in. Thrown by the
+    // chain, it steers, but pushing the way the character already goes faster doesn't slow it down, and letting go
+    // keeps it going. With the chain reeled in all the way, it climbs around where it's hooked
     private void steer() {
         Joystick joystick = MyActivity.joystick;
         if (!joystick.isOn() || MyActivity.currentMap == null) {
+            workChainWithJoystick(0);
+            workChainTowardsHook(null);
             return;
         }
+        workChainWithJoystick(joystick.getSteerY());
+        workChainTowardsHook(joystick.getPush());
         double x = joystick.getSteerX() * getWalkingSpeed();
         if (isHooked() && getHook().getNodesNumber() <= MIN_HOOSKSHOT_NODES) {
             if (joystick.getSteerX() != 0 || joystick.getSteerY() != 0) {
@@ -281,8 +300,51 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
+    // Pays the chain out or takes it in while swinging, as long as the joystick is pushed firmly up or down. It runs
+    // at the same speed however long the push, and stops as soon as the joystick comes back towards the middle
+    private void workChainWithJoystick(double push) {
+        if (MyActivity.controls != MyActivity.CONTROLS_NEW || !isSwinging()) {
+            return;
+        }
+        if (Math.abs(push) < CHAIN_PUSH) {
+            getHook().stopReeling();
+        } else {
+            // A target a step ahead every update, so the chain keeps moving while the joystick is held
+            getHook().reelTo(getHook().getChainLength() + Math.signum(push) * Hook.REEL_SPEED * 2);
+        }
+    }
+
+    // With the second twin stick controls: pushing the joystick towards where the chain is hooked reels it in, and
+    // away from it lets it out, while pushing across the chain still pumps the swing. In the air the chain is let out
+    // at a steady pace; on the ground, and climbing around the hook, it's let out as far as the character pulls it
+    private void workChainTowardsHook(MathVector push) {
+        if (MyActivity.controls != MyActivity.CONTROLS_TWIN_2 || !isHooked()) {
+            return;
+        }
+        Hook chain = getHook();
+        boolean in = false, out = false, pulled = false;
+        MathVector toHook = new MathVector(getPositionInRoom(), chain.getPivotNode().getPositionInRoom());
+        if (push != null && push.magnitude() > CHAIN_PUSH_FIRMLY && !toHook.isNull()) {
+            double along = push.getUnitVector().dotProduct(toHook.getUnitVector());
+            boolean grounded = isOnFloor() || chain.getNodesNumber() <= MIN_HOOSKSHOT_NODES;
+            in = along > ALONG_CHAIN;
+            pulled = grounded && along < -AWAY_ON_GROUND;
+            out = !grounded && along < -ALONG_CHAIN;
+        }
+        chain.setReloading(in);
+        chain.setExtending(pulled);
+        if (out) {
+            // A target a step ahead every update, so the chain keeps coming out while the joystick is held
+            chain.reelTo(chain.getChainLength() + Hook.LET_OUT_SPEED * 2);
+        } else {
+            chain.stopReeling();
+        }
+    }
+
     // Letting go of the joystick stops walking and jumping sideways, but not swinging or being thrown by the chain
     public void releaseJoystick() {
+        workChainWithJoystick(0);
+        workChainTowardsHook(null);
         if (!flying && !isSwinging()) {
             setP(new MathVector(0, getP().y));
         }
@@ -298,8 +360,8 @@ public class MainCharacter extends GameCharacter {
         return super.getGravity() * GRAVITY_SCALE;
     }
 
-    // On the chain, and flying once let go of it, the character can go faster than walking, in any direction. After a
-    // double tap, the top speed is higher still
+    // On the chain, and flying once let go of it, the character can go faster than walking, in any direction. Zipping
+    // up the chain, the top speed is higher still
     @Override
     protected void limitSpeed() {
         boolean onChain = isHooked() && !getHook().isFastReloading();
@@ -314,7 +376,7 @@ public class MainCharacter extends GameCharacter {
     }
 
     private double getWalkingSpeed() {
-        return (getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) ? MAX_VELOCITY * 2 : MAX_VELOCITY;
+        return isSwift() ? MAX_VELOCITY * SWIFT_SPEED : MAX_VELOCITY;
     }
 
     private void kickUpDust() {
@@ -340,7 +402,7 @@ public class MainCharacter extends GameCharacter {
 
     // Right before moving, the chain holds the character: it can't get further from what it swings around than the
     // chain between them. Only the speed away from it is lost, so swings keep going, and reeling the chain in pulls
-    // the character. While the extend button is held, the chain is let out instead, as far as it goes
+    // the character
     @Override
     public void manageConstraints() {
         super.manageConstraints();
@@ -351,11 +413,23 @@ public class MainCharacter extends GameCharacter {
         MathVector fromPivot = new MathVector(pivot, getFuturePositionInRoom());
         double distance = fromPivot.magnitude(), reach = getHook().getLengthToPivot() + GRIP;
         if (distance > reach && getHook().isExtending()) {
+            // The classic extend button pays out chain as the character pulls away
             getHook().letOut(distance - reach);
             reach = getHook().getLengthToPivot() + GRIP;
         }
         if (distance > reach) {
-            setP(new MathVector(getPositionInRoom(), fromPivot.scaled(reach / distance).applyTo(pivot)));
+            MathVector pull = new MathVector(getPositionInRoom(), fromPivot.scaled(reach / distance).applyTo(pivot));
+            // No faster than the character may go on the chain. The chain can end up a good deal shorter than the way
+            // to where it's hooked, like reeled in round a corner while the character was caught on rock, and taking
+            // all of that up at once threw the character across the cave the moment it came free
+            double limit = getHook().isFastReloading() ? getMaxVelocity() : getWalkingSpeed() * SWING_SPEED;
+            if (pull.magnitude() > limit) {
+                pull.rescale(limit);
+            }
+            setP(pull);
+            // The pull comes after the collisions were handled, so it's stopped at rock here. Unchecked, it dragged a
+            // character caught on rock through it, a reel's worth every update, all the way to where it's hooked
+            stopAtRock(getMargin());
         }
     }
 
@@ -515,9 +589,19 @@ public class MainCharacter extends GameCharacter {
         canvas.drawCircle((float) limb.getxPosInScreen(), (float) limb.getyPosInScreen(), limb.getRadius(), outlinePaint);
     }
 
-    // Pushes the character up, never faster than its top speed, even while swinging, when it can go faster
+    // An ordinary jump: pushes the character up, never faster than a jump leaves the ground, even while swinging or
+    // swift, when it can go faster
     public void jump(double push) {
-        p.y = Math.max(p.y + push, -getMaxVelocity());
+        p.y = Math.max(p.y + push, -MAX_VELOCITY * (isSwift() ? SWIFT_JUMP : 1));
+    }
+
+    // The swiftness power's jump, in the air, which leaves as fast as the character runs with it
+    private void jumpWithPower() {
+        p.y = Math.max(p.y - MyActivity.TILE_WIDTH * 2, -MAX_VELOCITY * SWIFT_SPEED);
+    }
+
+    private boolean isSwift() {
+        return getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS;
     }
 
     @Override
@@ -645,10 +729,12 @@ public class MainCharacter extends GameCharacter {
         }
         MathVector downPoint = new MathVector(xDown,yDown);
         MathVector initP = new MathVector(getPositionInScreen(),downPoint);
-        int nNodes = (int) (initP.magnitude()/Hook.SEPARATION) + 2;
-        nNodes = Math.max(nNodes + 1,MIN_HOOSKSHOT_NODES);
+        // Exactly as much chain as reaches from the hands, held out in front of the body, to where it's hooked. Any
+        // more would hang slack in front of the character
+        double length = Math.max(0, initP.magnitude() - GRIP);
+        int nNodes = Math.max((int) Math.ceil(length / Hook.SEPARATION) + 1, MIN_HOOSKSHOT_NODES);
         setHook(new Hook(getxPosInRoom(), getyPosInRoom(), nNodes, Color.GRAY));
-        getHook().hook(downPoint.screenToRoom());
+        getHook().hook(downPoint.screenToRoom(), length);
         flying = false;
         // Sparks where the hook bites
         MathVector bite = downPoint.screenToRoom();
@@ -675,6 +761,10 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public void die() {
+        if (MyActivity.playground) {
+            MyActivity.respawnInPlayground();
+            return;
+        }
         if (isHooked()) {
             removeHook();
         }
@@ -700,8 +790,9 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     public void getHurt(int damage) {
-        // Enemy contact is checked every update, so without this window it hits 60 times a second
-        if (getFrame() < invulnerableUntilFrame) {
+        // Enemy contact is checked every update, so without this window it hits 60 times a second. And nothing hurts
+        // in the playground's god mode
+        if (getFrame() < invulnerableUntilFrame || MyActivity.godMode) {
             return;
         }
         invulnerableUntilFrame = getFrame() + INVULNERABLE_DURATION;
@@ -760,10 +851,10 @@ public class MainCharacter extends GameCharacter {
                 }
                 break;
             case GamePowerUp.INFINITE_JUMPS:
-                setMaxVelocity(MAX_VELOCITY * 2);
+                setMaxVelocity(MAX_VELOCITY * SWIFT_SPEED);
                 setColors(Color.CYAN, Color.BLACK, Color.WHITE, Color.WHITE, Color.BLUE, Color.BLUE);
                 powerUps.put(GamePowerUp.INFINITE_JUMPS, powerUps.get(GamePowerUp.INFINITE_JUMPS) - 1);
-                setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.secondsToUpdates(8.333),SWIFTNESS_TIMER,true,true, new Execution() {
+                setInfiniteJumpsTimer(new TimerObject(this, (int) (getWidth()*2/1.5),TimeUtil.secondsToUpdates(SWIFT_SECONDS),SWIFTNESS_TIMER,true,true, new Execution() {
                     @Override
                     public double execute() {
                         setMaxVelocity(MAX_VELOCITY);
@@ -804,7 +895,7 @@ public class MainCharacter extends GameCharacter {
             case GamePowerUp.COMPASS:
                 setCompass(new CompassObject(this, true, true));
                 if (prevPowerUp == GamePowerUp.INFINITE_JUMPS) {
-                    setMaxVelocity(MAX_VELOCITY * 2);
+                    setMaxVelocity(MAX_VELOCITY * SWIFT_SPEED);
                 }
                 setCurrentPowerUp(prevPowerUp);
                 powerUps.put(GamePowerUp.COMPASS, powerUps.get(GamePowerUp.COMPASS) - 1);
@@ -818,7 +909,7 @@ public class MainCharacter extends GameCharacter {
                 }
                 break;
             case GamePowerUp.INFINITE_JUMPS:
-                jump( -1 * MyActivity.TILE_WIDTH * 2);
+                jumpWithPower();
                 new JumpEffect(getxPosInRoom(), getyPosInRoom() + getHeight() / 2, MyActivity.TILE_WIDTH, (int) (MyActivity.TILE_WIDTH * 0.25), true, true);
         }
     }

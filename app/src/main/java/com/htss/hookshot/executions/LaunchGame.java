@@ -39,6 +39,8 @@ public class LaunchGame implements Execution {
 
     @Override
     public double execute() {
+        MyActivity.playground = false;
+        MyActivity.godMode = false;
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
         Particles.clear();

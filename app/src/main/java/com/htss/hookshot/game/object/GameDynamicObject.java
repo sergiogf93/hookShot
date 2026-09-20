@@ -108,6 +108,37 @@ public abstract class GameDynamicObject extends GameObject {
         }
     }
 
+    // Stops the speed at rock in its way, along each axis, as a collision does, but without the falling and the getting
+    // out of walls that come with one. For speed that's set once the collisions have been handled, like the chain's
+    // pull, which nothing checked: it dragged the character straight through rock
+    protected void stopAtRock(int margin) {
+        if (MyActivity.currentMap == null || isGhost()) {
+            return;
+        }
+        if (p.x > 0) {
+            double right = checkRightCollision(margin);
+            if (right >= 0) {
+                p.x = right;
+            }
+        } else if (p.x < 0) {
+            double left = checkLeftCollision(margin);
+            if (left <= 0) {
+                p.x = left;
+            }
+        }
+        if (p.y < 0) {
+            double up = checkUpCollision(margin);
+            if (up <= 0) {
+                p.y = up;
+            }
+        } else if (p.y > 0) {
+            double down = checkDownCollision(margin);
+            if (down >= 0) {
+                p.y = down;
+            }
+        }
+    }
+
     public boolean manageCollisions(int margin){
         boolean up = manageUpCollision(margin);
         boolean down = manageDownCollision(margin);

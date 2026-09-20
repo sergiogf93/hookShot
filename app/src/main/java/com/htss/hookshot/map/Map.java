@@ -51,7 +51,9 @@ import java.util.Vector;
 public class Map {
 
     private static final int MAX_BUTTONS = 7, MIN_BUTTONS = 2;
-    // Every tenth level is the deep worm's, in a cavern this many tiles wide and tall from its middle
+    // Every tenth level is the deep worm's, in a cavern this many tiles wide and tall from its middle. Switched off for
+    // now, while the controls are being tried out: the worm can still be placed from the playground's menu
+    private static final boolean BOSS_LEVELS = false;
     private static final int BOSS_EVERY = 10, BOSS_CAVERN_X = 22, BOSS_CAVERN_Y = 13;
     // The levels new enemies start appearing at, how many groups of enemies a level can have, and how many tiles away
     // from the entrance new kinds of enemy are placed
@@ -88,6 +90,14 @@ public class Map {
     private Vector<Room> roomsWithInterest = new Vector<Room>();
 
     private Vector<Passage> passages = new Vector<Passage>();
+    // Where the character starts in the playground, which has no entrance to start from
+    private MathVector playgroundStart = null;
+
+    // The kinds of enemy the playground can place
+    public static final int SPAWN_STALKER = 0, SPAWN_TERRA_WORM = 1, SPAWN_BAT = 2, SPAWN_SPITTER = 3, SPAWN_SNIPPER = 4,
+            SPAWN_BEETLE = 5, SPAWN_DEEP_WORM = 6;
+    // The playground's size in tiles, and how far from the character, in tiles, enemies are placed there
+    private static final int PLAYGROUND_X = 100, PLAYGROUND_Y = 56, SPAWN_NEAREST = 6, SPAWN_FURTHEST = 14;
 
     public Map (int xTiles, int yTiles, int fillPercent, Coord entrance){
         this.map = new int[xTiles][yTiles];
@@ -103,6 +113,130 @@ public class Map {
         manageAddingFunctions();
 
         generateMesh();
+    }
+
+    // The playground: a cave laid out by hand, the same every time, to try the controls in. Closed all round, with ledges
+    // at different heights on the left, rock hanging from the ceiling and an island to swing around in the middle, and
+    // a tall room on the right. No enemies or powers of its own; they're placed from its menu
+    private Map(int xTiles, int yTiles) {
+        this.map = new int[xTiles][yTiles];
+        this.xTiles = xTiles;
+        this.yTiles = yTiles;
+        // It's never left, but other parts of the game ask where the way in and out are
+        this.entrance = new Coord(xTiles / 2, 0);
+        this.exit = new Coord(xTiles / 2, yTiles - 1);
+        for (int x = 0; x < xTiles; x++) {
+            for (int y = 0; y < yTiles; y++) {
+                boolean border = x <= BORDER_SIZE || x >= xTiles - BORDER_SIZE - 1 || y <= BORDER_SIZE || y >= yTiles - BORDER_SIZE - 1;
+                map[x][y] = border ? 1 : 0;
+            }
+        }
+        // Ledges on the left, to jump between and hook under
+        fillRock(8, 40, 20, 42);
+        fillRock(22, 30, 32, 32);
+        fillRock(8, 20, 16, 22);
+        // Rock hanging from the ceiling, and an island, in the hall in the middle
+        fillRock(44, 4, 47, 16);
+        fillRock(56, 4, 59, 12);
+        fillRock(48, 26, 56, 30);
+        // A pillar on the floor
+        fillRock(62, 44, 65, 52);
+        // The tall room on the right, behind a wall that's open at the bottom, with ledges up its walls
+        fillRock(71, 4, 74, 44);
+        fillRock(86, 18, 95, 20);
+        fillRock(75, 34, 82, 36);
+        smoothMap();
+        playgroundStart = new MathVector(12 * SQUARE_SIZE, 49 * SQUARE_SIZE);
+        generateMesh();
+    }
+
+    public static Map playground() {
+        return new Map(PLAYGROUND_X, PLAYGROUND_Y);
+    }
+
+    private void fillRock(int fromX, int fromY, int toX, int toY) {
+        for (int x = fromX; x <= toX; x++) {
+            for (int y = fromY; y <= toY; y++) {
+                if (isInMapRange(x, y)) {
+                    map[x][y] = 1;
+                }
+            }
+        }
+    }
+
+    // Places an enemy of the given kind a few tiles from a point in the room, where that kind lives: bats on the
+    // ceiling, spitters on a wall, beetles on the floor. Tells whether there was somewhere to put it
+    public boolean spawnNear(int kind, MathVector at, Random random) {
+        if (kind == SPAWN_DEEP_WORM) {
+            for (GameEnemy enemy : MyActivity.enemies) {
+                if (enemy instanceof EnemyDeepWorm) {
+                    return false;
+                }
+            }
+            new EnemyDeepWorm(xTiles / 2 * SQUARE_SIZE, yTiles / 2 * SQUARE_SIZE, Math.max(xTiles, yTiles) / 2 * SQUARE_SIZE);
+            return true;
+        }
+        int[][] sides = {{-1, 0}, {1, 0}, {0, -1}};
+        int[][] anyway = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+        for (int attempt = 0; attempt < 40; attempt++) {
+            Coord open = getOpenTileNear(at, random);
+            if (open == null) {
+                continue;
+            }
+            switch (kind) {
+                case SPAWN_STALKER:
+                    new EnemyStalker(open.tileX * SQUARE_SIZE, open.tileY * SQUARE_SIZE, true);
+                    return true;
+                case SPAWN_TERRA_WORM:
+                    new EnemyTerraWorm(open.tileX * SQUARE_SIZE, open.tileY * SQUARE_SIZE, 5, true, true);
+                    return true;
+                case SPAWN_BAT:
+                    Coord ceiling = getLastEmptyTile(open, 0, -1, 40);
+                    if (ceiling != null) {
+                        new EnemyBat(ceiling.tileX * SQUARE_SIZE, ceiling.tileY * SQUARE_SIZE);
+                        return true;
+                    }
+                    break;
+                case SPAWN_SPITTER:
+                    int[] side = sides[random.nextInt(sides.length)];
+                    Coord wall = getLastEmptyTile(open, side[0], side[1], 30);
+                    if (wall != null && Math.abs(wall.tileX - open.tileX) + Math.abs(wall.tileY - open.tileY) >= 3) {
+                        new EnemySpitter(wall.tileX * SQUARE_SIZE, wall.tileY * SQUARE_SIZE, new MathVector(-side[0], -side[1]));
+                        return true;
+                    }
+                    break;
+                case SPAWN_SNIPPER:
+                    int[] direction = anyway[random.nextInt(anyway.length)];
+                    Coord rock = getLastEmptyTile(open, direction[0], direction[1], 30);
+                    if (rock != null) {
+                        new EnemySnipper(rock.tileX * SQUARE_SIZE, rock.tileY * SQUARE_SIZE);
+                        return true;
+                    }
+                    break;
+                case SPAWN_BEETLE:
+                    Coord floor = getLastEmptyTile(open, 0, 1, 40);
+                    if (floor != null) {
+                        new EnemyBeetle(floor.tileX * SQUARE_SIZE, floor.tileY * SQUARE_SIZE);
+                        return true;
+                    }
+                    break;
+            }
+        }
+        return false;
+    }
+
+    // An empty tile with nothing but empty tiles around it, not too close to a point in the room and not too far
+    private Coord getOpenTileNear(MathVector at, Random random) {
+        int centerX = (int) (at.x / SQUARE_SIZE), centerY = (int) (at.y / SQUARE_SIZE);
+        for (int attempt = 0; attempt < 100; attempt++) {
+            double angle = random.nextDouble() * 2 * Math.PI;
+            double distance = SPAWN_NEAREST + random.nextDouble() * (SPAWN_FURTHEST - SPAWN_NEAREST);
+            int x = centerX + (int) Math.round(Math.cos(angle) * distance), y = centerY + (int) Math.round(Math.sin(angle) * distance);
+            if (isInMapRange(x, y) && map[x][y] == 0 && getSurroundingCount(x, y) == 0) {
+                return new Coord(x, y);
+            }
+        }
+        return null;
     }
 
     public void extend(){
@@ -756,6 +890,9 @@ public class Map {
     }
 
     public MathVector startPosition () {
+        if (playgroundStart != null) {
+            return playgroundStart;
+        }
         if (MyActivity.canvas.myActivity.level == 0) {
             for (int yTile = 0; yTile < yTiles; yTile++) {
                 for (int xTile = 0; xTile < xTiles; xTile++) {
@@ -1125,7 +1262,7 @@ public class Map {
     }
 
     public static boolean isBossLevel(int level) {
-        return level > 0 && level % BOSS_EVERY == 0;
+        return BOSS_LEVELS && level > 0 && level % BOSS_EVERY == 0;
     }
 
     // A wide cavern in the middle of the cave, where the deep worm lives

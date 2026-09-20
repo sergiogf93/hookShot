@@ -34,6 +34,8 @@ public class MainMenu implements Execution {
         ScreenShake.clear();
         MyActivity.enemies.clear();
         MyActivity.advices.clear();
+        MyActivity.playground = false;
+        MyActivity.godMode = false;
         MyActivity.canvas.myActivity.load();
         // The items sit a bit below the middle, leaving room for the title
         MyActivity.hudElements.add(new HUDTitle(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 5, MyActivity.canvas.fontSize * 26 / 10));
@@ -64,6 +66,16 @@ public class MainMenu implements Execution {
             });
             MyActivity.hudElements.add(continueButton);
         }
+        // A cave to try the controls in, which never touches the saved game
+        HUDText playgroundButton = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 + yExitButton * MyActivity.canvas.fontSize, true, "PLAYGROUND", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
+            @Override
+            public double execute() {
+                MyActivity.gameEffects.add(new FadeEffect(Color.BLACK, new LaunchPlayground()));
+                return 0;
+            }
+        });
+        MyActivity.hudElements.add(playgroundButton);
+        yExitButton += 2;
         HUDText exitGame = new HUDText(MyActivity.screenWidth/2, MyActivity.screenHeight / 2 + yExitButton * MyActivity.canvas.fontSize, true, "EXIT GAME", MyActivity.TILE_WIDTH * 8 /10, new Execution() {
             @Override
             public double execute() {

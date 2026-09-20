@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Clickable;
@@ -39,14 +40,45 @@ public class Joystick extends HUDElement implements Clickable {
     @Override
     public void draw(Canvas canvas){
         drawBase(canvas);
+        drawMarks(canvas);
         drawHandle(canvas);
     }
 
-    private void drawBase(Canvas canvas) {
+    protected void drawBase(Canvas canvas) {
         UiStyle.drawControl(canvas, getPaint(), getxCenter(), getyCenter(), getRadius(), false);
     }
 
-    private void drawHandle(Canvas canvas) {
+    // Four ticks round the rim, which tell it apart from the stick that works the chain. And with the controls that
+    // reel with it, a gold notch on the side where the chain is hooked, to push towards to reel in, and a grey one
+    // across from it, to let out. Each grows while it's doing its job
+    protected void drawMarks(Canvas canvas) {
+        float r = getRadius(), x = getxCenter(), y = getyCenter();
+        getPaint().setStyle(Paint.Style.STROKE);
+        getPaint().setStrokeCap(Paint.Cap.ROUND);
+        getPaint().setStrokeWidth(r * 0.04f);
+        getPaint().setColor(DrawUtil.withAlpha(UiStyle.getAccent(), 170));
+        canvas.drawLine(x, y - r * 0.93f, x, y - r * 0.84f, getPaint());
+        canvas.drawLine(x, y + r * 0.93f, x, y + r * 0.84f, getPaint());
+        canvas.drawLine(x - r * 0.93f, y, x - r * 0.84f, y, getPaint());
+        canvas.drawLine(x + r * 0.93f, y, x + r * 0.84f, y, getPaint());
+        getPaint().setStyle(Paint.Style.FILL);
+        if (MyActivity.controls != MyActivity.CONTROLS_TWIN_2 || MyActivity.character == null || !MyActivity.character.isHooked()) {
+            return;
+        }
+        Hook hook = MyActivity.character.getHook();
+        MathVector toHook = new MathVector(MyActivity.character.getPositionInRoom(), hook.getPivotNode().getPositionInRoom());
+        if (toHook.isNull()) {
+            return;
+        }
+        toHook.normalize();
+        getPaint().setColor(UiStyle.GOLD);
+        canvas.drawCircle(x + (float) toHook.x * r, y + (float) toHook.y * r, r * (hook.isReloading() ? 0.14f : 0.09f), getPaint());
+        boolean lettingOut = hook.isExtending() || hook.isLettingOut();
+        getPaint().setColor(lettingOut ? UiStyle.TEXT : UiStyle.IDLE);
+        canvas.drawCircle(x - (float) toHook.x * r, y - (float) toHook.y * r, r * (lettingOut ? 0.11f : 0.06f), getPaint());
+    }
+
+    protected void drawHandle(Canvas canvas) {
         // Filled like a pressed button, so it stands out from the base
         UiStyle.drawControl(canvas, getPaint(), getxCenter() + getxJ(), getyCenter() + getyJ(), getHandleRadius(), true);
     }
@@ -65,6 +97,11 @@ public class Joystick extends HUDElement implements Clickable {
     // The furthest the handle goes from the centre
     private float getReach() {
         return getHeight() / 3f;
+    }
+
+    // Which way and how far the handle is pushed, as shares of its reach: nothing in the middle, 1 long at its furthest
+    public MathVector getPush() {
+        return new MathVector(getxJ() / getReach(), getyJ() / getReach());
     }
 
     // How far the handle is pushed up or down, from -1 (up) to 1

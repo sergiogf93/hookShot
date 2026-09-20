@@ -57,11 +57,14 @@ public class HUDStatus extends HUDElement {
         if (MyActivity.paused) {
             return;
         }
-        String level = "LEVEL " + MyActivity.canvas.myActivity.level;
+        String level = MyActivity.playground ? "PLAYGROUND" : "LEVEL " + MyActivity.canvas.myActivity.level;
         drawText(canvas, level, MARGIN, MARGIN + TEXT_SIZE);
         drawHealth(canvas);
         drawCoins(canvas, MARGIN * 2 + getPaint().measureText(level));
-        drawPowerUp(canvas);
+        // With the other controls, the button that uses the power shows which one is picked
+        if (MyActivity.controls == MyActivity.CONTROLS_CLASSIC) {
+            drawPowerUp(canvas);
+        }
         drawBoss(canvas);
     }
 

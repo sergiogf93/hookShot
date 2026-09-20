@@ -68,14 +68,25 @@ public class HUDMenu extends HUDElement {
 
     public void addMenuButtons() {
         buttons.clear();
-        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + buttonSeparation + buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "MAIN MENU", new Execution() {
+        // Switching the controls takes effect as soon as the game carries on, so a change can be tried straight away
+        final HUDButton controls = new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + buttonSeparation + buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, controlsText(), null);
+        controls.setExecOff(new Execution() {
+            @Override
+            public double execute() {
+                MyActivity.setControls((MyActivity.controls + 1) % MyActivity.CONTROL_NAMES.length);
+                controls.setText(controlsText());
+                return 0;
+            }
+        });
+        buttons.add(controls);
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 2 * buttonSeparation + 3 * buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "MAIN MENU", new Execution() {
             @Override
             public double execute() {
                 (new MainMenu()).execute();
                 return 0;
             }
         }));
-        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 2*buttonSeparation + 3* buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "EXIT GAME", new Execution() {
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 3 * buttonSeparation + 5 * buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "EXIT GAME", new Execution() {
             @Override
             public double execute() {
                 MyActivity.canvas.myActivity.finish();
@@ -83,6 +94,10 @@ public class HUDMenu extends HUDElement {
             }
         }));
         MyActivity.hudElements.addAll(buttons);
+    }
+
+    private static String controlsText() {
+        return "CONTROLS: " + MyActivity.CONTROL_NAMES[MyActivity.controls];
     }
 
     public void removeButtons(){
