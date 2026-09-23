@@ -230,6 +230,8 @@ public class MyActivity extends Activity {
             public double execute() {
                 if (MyActivity.character.isOnFloor()) {
                     MyActivity.character.jump( -1 * MyActivity.TILE_WIDTH);
+                } else if (MyActivity.character.isSwimming()) {
+                    MyActivity.character.swim();
                 } else if (MyActivity.character.getCurrentPowerUp() == GamePowerUp.INFINITE_JUMPS) {
                     MyActivity.character.usePowerUp();
                 }

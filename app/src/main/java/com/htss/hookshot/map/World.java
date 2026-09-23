@@ -53,6 +53,8 @@ public class World {
     private static volatile Cave made;
     private static int makingLevel = -1, run = 0;
     private static final Paint rockPaint = new Paint(), deepPaint = new Paint();
+    // Counts the frames the pools are drawn in, which ripple and flicker with it
+    private static int fluidFrame = 0;
     private static CavePalette rockPalette;
 
     // Starts over with a cave, with everything already in the game taken as being in it
@@ -283,6 +285,20 @@ public class World {
     public static boolean isSolid(int x, int y) {
         Cave cave = getCaveAt(x, y);
         return cave == null || cave.isSolid(x - cave.x, y - cave.y);
+    }
+
+    // Water, lava or neither at a point. Beyond the caves there's none
+    public static int getFluidAt(double x, double y) {
+        Cave cave = getCaveAt(x, y);
+        return (cave == null) ? FluidPool.NONE : cave.getFluid(x - cave.x, y - cave.y);
+    }
+
+    // Draws the pools in the part of the world that starts at a point and fills the given size, over everything in them
+    public static void drawFluids(Canvas canvas, int viewLeft, int viewTop, int width, int height) {
+        fluidFrame++;
+        for (int i = 0; i < caves.size(); i++) {
+            caves.get(i).drawFluids(canvas, viewLeft, viewTop, width, height, fluidFrame);
+        }
     }
 
     // Digs a round hole in whichever caves it reaches

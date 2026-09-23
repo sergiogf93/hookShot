@@ -58,6 +58,15 @@ public class Map {
     private static final double CHUNK_VAULTS = 0.6;
     static final int VAULT_RADIUS = 4, VAULT_CORRIDOR = 2;
     private static final int VAULT_REACH = 8, VAULT_EDGE = BORDER_SIZE + 1, VAULT_TRIES = 300, VAULT_WAYS = 16;
+    // Pools: the most a piece has, the fewest a cave has, which can be twice as many, the depth in tiles lava starts at,
+    // how far from the way in and out of a cave they stay, and how many of the pools from the lava's depth on are lava.
+    // They're found with a random of their own, so the rest of the cave stays as it was
+    private static final int CHUNK_POOLS = 3, LEVEL_POOLS = 2, LAVA_DEPTH = 60, POOL_FROM_ENTRANCE = 12, POOL_FROM_EXIT = 8;
+    private static final double LAVA_SHARE = 0.6;
+    private static final long POOL_SEED_SPREAD = 0x9E3779B97F4A7C15L;
+    // What's in each tile, water, lava or neither, and the pools themselves
+    private byte[][] fluid;
+    private Vector<FluidPool> pools = new Vector<FluidPool>();
     // Where the cave's corner is in the world, which everything placed in it is placed from
     double originX = 0, originY = 0;
     Coord entrance;
@@ -87,6 +96,7 @@ public class Map {
     // game. The line to copy is the last cave's edge by the exit, which this one's entrance carries on from
     private Map(int xTiles, int yTiles, int fillPercent, Coord entrance, int level, long seed, int[] lineToCopy) {
         this.map = new int[xTiles][yTiles];
+        this.fluid = new byte[xTiles][yTiles];
         this.xTiles = xTiles;
         this.yTiles = yTiles;
         this.fillPercent = fillPercent;
@@ -99,6 +109,16 @@ public class Map {
         if (lineToCopy != null) {
             copyLine(lineToCopy, 3);
         }
+        // Only water, away from the way in and the way out
+        Random poolRandom = new Random(seed * 71 + level * POOL_SEED_SPREAD + 29);
+        pools = FluidPool.find(map, fluid, poolRandom, LEVEL_POOLS + poolRandom.nextInt(LEVEL_POOLS + 1), new FluidPool.Allowed() {
+            @Override
+            public boolean allows(int tileX, int tileY) {
+                return isWellInside(tileX, tileY, BORDER_SIZE + 1)
+                        && Math.hypot(tileX - Map.this.entrance.tileX, tileY - Map.this.entrance.tileY) > POOL_FROM_ENTRANCE
+                        && Math.hypot(tileX - exit.tileX, tileY - exit.tileY) > POOL_FROM_EXIT;
+            }
+        }, Integer.MAX_VALUE, 0);
         generateMesh();
     }
 
@@ -116,6 +136,7 @@ public class Map {
         this.xTiles = CHUNK_X;
         this.yTiles = CHUNK_Y;
         this.map = new int[xTiles][yTiles];
+        this.fluid = new byte[xTiles][yTiles];
         this.fillPercent = CHUNK_FILL;
         this.chunk = true;
         this.chunkX = chunkX;
@@ -161,6 +182,15 @@ public class Map {
         if (!(chunkX == 0 && chunkY == 0) && new Random(seed * 11 + 5).nextDouble() < CHUNK_VAULTS) {
             carveVault(new Random(seed * 7 + 3));
         }
+        // Well inside the piece, so none lies against the ways through, which the next piece carries on from, nor in
+        // the vault. Lava from a certain depth down in the world
+        Random poolRandom = new Random(seed * 71 + 29);
+        pools = FluidPool.find(map, fluid, poolRandom, poolRandom.nextInt(CHUNK_POOLS + 1), new FluidPool.Allowed() {
+            @Override
+            public boolean allows(int tileX, int tileY) {
+                return isWellInside(tileX, tileY, BORDER_SIZE + 1) && !isBehindVaultDoor(tileX, tileY);
+            }
+        }, LAVA_DEPTH - chunkY * (CHUNK_Y - 1), LAVA_SHARE);
         generateMesh();
     }
 
@@ -289,7 +319,8 @@ public class Map {
             for (int x = xTiles / 2 - distance; x <= xTiles / 2 + distance; x++) {
                 for (int y = yTiles / 2 - distance; y <= yTiles / 2 + distance; y++) {
                     if (isInMapRange(x, y) && isInMapRange(x, y + 2) && map[x][y] == 0 && getSurroundingCount(x, y) == 0
-                            && map[x][y + 2] == 1 && !isBehindVaultDoor(x, y)) {
+                            && map[x][y + 2] == 1 && !isBehindVaultDoor(x, y) && fluid[x][y] == FluidPool.NONE
+                            && fluid[x][y + 1] == FluidPool.NONE) {
                         return at(x, y);
                     }
                 }
@@ -346,6 +377,7 @@ public class Map {
     // a tall room on the right. No enemies or powers of its own; they're placed from its menu
     private Map(int xTiles, int yTiles) {
         this.map = new int[xTiles][yTiles];
+        this.fluid = new byte[xTiles][yTiles];
         this.xTiles = xTiles;
         this.yTiles = yTiles;
         this.level = MyActivity.canvas.myActivity.level;
@@ -1048,6 +1080,15 @@ public class Map {
         roomB.connectedRooms.add(roomA);
     }
 
+
+    public Vector<FluidPool> getPools() {
+        return pools;
+    }
+
+    // Water, lava or neither in a tile
+    public int getFluid(int tileX, int tileY) {
+        return isInMapRange(tileX, tileY) ? fluid[tileX][tileY] : FluidPool.NONE;
+    }
 
     public Vector<Point> getVertices() {
         return mesh.getVertices();

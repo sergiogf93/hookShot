@@ -3,6 +3,8 @@ package com.htss.hookshot.map;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -12,6 +14,8 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.os.Build;
+
+import com.htss.hookshot.util.DrawUtil;
 
 import java.util.ArrayList;
 import java.util.Vector;
@@ -34,6 +38,10 @@ public class Cave {
     // Tiles kept at most, more than cover the biggest screen and the ring around it, and how many of that ring are
     // drawn each frame before they're seen
     private static final int MAX_KEPT = 160, AHEAD_PER_FRAME = 2;
+    // Water is clear at the top and darker and bluer deep down, and lava hardly lets anything through
+    private static final int WATER_TOP = Color.argb(110, 90, 170, 230), WATER_BOTTOM = Color.argb(190, 16, 44, 100),
+            WATER_SURFACE = Color.rgb(200, 235, 255), LAVA_TOP = Color.argb(240, 255, 176, 48), LAVA_BOTTOM = Color.argb(250, 170, 34, 12),
+            LAVA_SURFACE = Color.rgb(255, 236, 140), LAVA_GLOW = Color.argb(110, 255, 120, 30);
 
     public final Map map;
     public final int level;
@@ -57,6 +65,9 @@ public class Cave {
     public final ArrayList<Object> objects = new ArrayList<Object>();
     // Every hole dug in it
     private final ArrayList<float[]> allDigs = new ArrayList<float[]>();
+    // Its pools, as they're drawn
+    private final ArrayList<PoolShape> poolShapes = new ArrayList<PoolShape>();
+    private final Paint surfacePaint = new Paint(Paint.ANTI_ALIAS_FLAG), lavaGlowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public Cave(Map map, int level, int x, int y) {
         this.map = map;
@@ -108,6 +119,9 @@ public class Cave {
         digEdgePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
 
         findSolid();
+        for (FluidPool pool : map.getPools()) {
+            poolShapes.add(new PoolShape(pool));
+        }
     }
 
     // Every triangle of rock goes to the tiles it touches. Each tile's are one path, as filling them apart leaves
@@ -228,6 +242,42 @@ public class Cave {
 
     public boolean contains(double worldX, double worldY) {
         return worldX >= x && worldX < x + width && worldY >= y && worldY < y + height;
+    }
+
+    // Water, lava or neither at a point of the cave, counted from its own corner. A tile of a pool is filled from half
+    // a tile above its middle, which is where the surface is on its top row
+    public int getFluid(double localX, double localY) {
+        return map.getFluid((int) Math.round(localX / Map.SQUARE_SIZE), (int) Math.round(localY / Map.SQUARE_SIZE));
+    }
+
+    // Draws the pools that show in a part of the world, which starts at the canvas' top left corner. Over the rock and
+    // everything in the cave, so what's in the water is seen through it, tinted, and what's in lava hardly at all
+    public void drawFluids(Canvas canvas, int left, int top, int viewWidth, int viewHeight, int frame) {
+        int localLeft = left - x, localTop = top - y;
+        for (PoolShape shape : poolShapes) {
+            if (shape.area.right < localLeft || shape.area.left > localLeft + viewWidth || shape.area.bottom < localTop
+                    || shape.surface - Map.SQUARE_SIZE * 3 > localTop + viewHeight) {
+                continue;
+            }
+            canvas.save();
+            canvas.translate(-localLeft, -localTop);
+            boolean lava = shape.pool.type == FluidPool.LAVA;
+            if (lava) {
+                // A glow over lava, which flickers
+                float flicker = 1 + 0.08f * (float) Math.sin(frame * 0.13 + shape.area.left);
+                for (float[] run : shape.surfaceRuns) {
+                    DrawUtil.drawGlow(canvas, lavaGlowPaint, run[0], shape.surface, run[1] * flicker, LAVA_GLOW);
+                }
+            }
+            canvas.drawPath(shape.body, shape.paint);
+            // A lighter line along the surface, drawn from the body itself so it ends where the rock does
+            float line = (float) Map.SQUARE_SIZE * 0.08f;
+            int pulse = (int) (40 * Math.sin(frame * 0.05 + shape.area.left * 0.01));
+            surfacePaint.setColor(lava ? DrawUtil.withAlpha(LAVA_SURFACE, 220 + pulse / 2) : DrawUtil.withAlpha(WATER_SURFACE, 130 + pulse));
+            canvas.clipRect(shape.area.left, shape.surface, shape.area.right, shape.surface + line * (lava ? 2.5f : 1.5f));
+            canvas.drawPath(shape.body, surfacePaint);
+            canvas.restore();
+        }
     }
 
     // Whether there's rock at a point of the cave, counted from its own corner
@@ -378,6 +428,59 @@ public class Cave {
                 return;
             }
             drop(oldest);
+        }
+    }
+
+    // A pool's water or lava, cut out of the rock around it so its sides follow the rock's smooth edge. The rock's edge
+    // lies between tiles' middles, so it's everything within a tile of the middles of the tiles it fills, from its
+    // surface down, less the rock. Further out would reach past a thin rim of rock. Worked out once, with the cave. Its
+    // colour darkens with depth
+    private class PoolShape {
+        final FluidPool pool;
+        final Path body = new Path();
+        final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        final RectF area = new RectF();
+        final float surface;
+        // Where the surface runs along each stretch of its top row, as its middle and how wide it is
+        final ArrayList<float[]> surfaceRuns = new ArrayList<float[]>();
+
+        PoolShape(FluidPool pool) {
+            this.pool = pool;
+            float square = (float) Map.SQUARE_SIZE, half = square / 2;
+            surface = pool.surfaceRow * square - half;
+            area.set((pool.left - 1) * square - half, surface, (pool.right + 1) * square + half, (pool.bottom + 1) * square + half);
+            for (Coord tile : pool.tiles) {
+                float middleX = tile.tileX * square, middleY = tile.tileY * square;
+                body.addRect(middleX - square, Math.max(surface, middleY - square), middleX + square, middleY + square, Path.Direction.CW);
+                if (tile.tileY == pool.surfaceRow) {
+                    addToSurface(middleX, square);
+                }
+            }
+            Path rockAround = new Path();
+            for (int column = clampColumn((int) area.left); column <= clampColumn((int) area.right); column++) {
+                for (int row = clampRow((int) area.top); row <= clampRow((int) area.bottom); row++) {
+                    if (rock[row * columns + column] != null) {
+                        rockAround.addPath(rock[row * columns + column]);
+                    }
+                }
+            }
+            body.op(rockAround, Path.Op.DIFFERENCE);
+            boolean lava = pool.type == FluidPool.LAVA;
+            paint.setShader(new LinearGradient(0, surface, 0, area.bottom, lava ? LAVA_TOP : WATER_TOP, lava ? LAVA_BOTTOM : WATER_BOTTOM,
+                    Shader.TileMode.CLAMP));
+        }
+
+        // Joins a surface tile to the stretch it carries on, or starts a new one
+        private void addToSurface(float middle, float square) {
+            for (float[] run : surfaceRuns) {
+                if (Math.abs(run[0] - middle) <= run[1] / 2 + square) {
+                    float from = Math.min(run[0] - run[1] / 2, middle - square / 2), to = Math.max(run[0] + run[1] / 2, middle + square / 2);
+                    run[0] = (from + to) / 2;
+                    run[1] = to - from;
+                    return;
+                }
+            }
+            surfaceRuns.add(new float[]{middle, square});
         }
     }
 

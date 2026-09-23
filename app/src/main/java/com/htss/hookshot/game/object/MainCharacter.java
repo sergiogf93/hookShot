@@ -12,6 +12,8 @@ import com.htss.hookshot.effect.HurtEffect;
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.map.CavePalette;
+import com.htss.hookshot.map.FluidPool;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.animation.MainCharacterAnimation;
@@ -77,6 +79,19 @@ public class MainCharacter extends GameCharacter {
     private static final double CHAIN_PUSH_FIRMLY = 0.5, ALONG_CHAIN = 0.75, AWAY_ON_GROUND = 0.15;
     // As long as the red flash of the HurtEffect
     private static final double INVULNERABLE_DURATION = TimeUtil.secondsToUpdates(0.833);
+    // In water: how much of gravity is left, how much of its speed up it keeps every update, how fast it sinks at most,
+    // how fast a stroke pushes it up, how often it can take one, and how fast it walks and swims across
+    private static final double WATER_GRAVITY = 0.25, WATER_DRAG = 0.93, WATER_SINK = MAX_VELOCITY * 0.35,
+            STROKE = MAX_VELOCITY * 0.75, WATER_WALK = 0.65;
+    private static final int STROKE_UPDATES = (int) TimeUtil.secondsToUpdates(0.3);
+    // How long its breath lasts under water, and how long it takes to get it back once out, in seconds, and how much
+    // drowning and lava hurt each time. Being hurt makes it safe for a moment, which spaces those out
+    private static final double BREATH_SECONDS = 12, BREATHING_IN_SECONDS = 1.5;
+    private static final int DROWNING_DAMAGE = 8, LAVA_DAMAGE = 15, BUBBLES = 5;
+    // How much faster than a jump lava throws it up
+    private static final double LAVA_THROW = 2;
+    private static final int WATER_SPLASH = Color.rgb(170, 215, 245), EMBERS = Color.rgb(255, 150, 40),
+            BUBBLE = Color.argb(220, 200, 235, 255), BUBBLE_EDGE = Color.argb(230, 40, 90, 140);
     // Falling faster than this kicks up dust on landing
     private static final double LANDING_DUST_SPEED = MyActivity.TILE_WIDTH * 0.08;
     // Landing this fast squashes the most, and every update undoes part of the squash or stretch
@@ -110,6 +125,10 @@ public class MainCharacter extends GameCharacter {
     private float squash = 0;
     // Let go of the chain in the air, until landing or hooking again
     private boolean flying = false;
+    // The water or lava it's in, if any, its breath, from 1 to 0, and when it last swam up
+    private int fluid = FluidPool.NONE, lastStroke = Integer.MIN_VALUE / 2;
+    private double breath = 1;
+    private final Paint bubblePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     // The explosions left with the bomb power-up, shown above its head like the explosions
     private final BurstArt explosionsLeftArt = new BurstArt();
     private Paint bodyPaint = new Paint(Paint.ANTI_ALIAS_FLAG), outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -167,6 +186,7 @@ public class MainCharacter extends GameCharacter {
     public void update(){
         boolean wasOnFloor = isOnFloor();
         double fallSpeed = getP().y;
+        manageFluid(fallSpeed);
         if (MyActivity.currentMap == null && isHooked()) {
             // Hanging in the main menu, where there's no gravity, it only moves when dragged
             setP(new MathVector(0, 0));
@@ -200,6 +220,80 @@ public class MainCharacter extends GameCharacter {
         }
     }
 
+    // Water holds it up and slows it down, and it can't breathe with its head under. Lava burns it and throws it out
+    private void manageFluid(double fallSpeed) {
+        int was = fluid;
+        fluid = (MyActivity.currentMap == null) ? FluidPool.NONE : World.getFluidAt(getxPosInRoom(), getyPosInRoom());
+        boolean feetInLava = MyActivity.currentMap != null && World.getFluidAt(getxPosInRoom(), getyPosInRoom() + BODY_RADIUS) == FluidPool.LAVA;
+        if (fluid == FluidPool.WATER) {
+            if (was != FluidPool.WATER) {
+                // Water stops a throw, and a fast fall splashes
+                flying = false;
+                if (fallSpeed > LANDING_DUST_SPEED) {
+                    Particles.burst(getxPosInRoom(), getyPosInRoom() - BODY_RADIUS, 10, WATER_SPLASH, 0.07f, 0.04f, 0.5, 0.003f, -150, -30);
+                }
+            }
+            if (p.y > WATER_SINK) {
+                p.y = WATER_SINK;
+            } else if (p.y < 0) {
+                p.y *= WATER_DRAG;
+            }
+        }
+        boolean headUnder = fluid == FluidPool.WATER && World.getFluidAt(getxPosInRoom(), getyPosInRoom() - BODY_RADIUS) == FluidPool.WATER;
+        if (headUnder) {
+            breath = Math.max(0, breath - 1 / TimeUtil.secondsToUpdates(BREATH_SECONDS));
+            if (breath == 0) {
+                getHurt(DROWNING_DAMAGE);
+            }
+        } else {
+            breath = Math.min(1, breath + 1 / TimeUtil.secondsToUpdates(BREATHING_IN_SECONDS));
+        }
+        if (fluid == FluidPool.LAVA || feetInLava) {
+            getHurt(LAVA_DAMAGE);
+            // Thrown up out of it, as by the chain, so it goes higher than a jump and can be steered to the side
+            flying = true;
+            p.y = Math.min(p.y, -MAX_VELOCITY * LAVA_THROW);
+            if (getFrame() % 3 == 0) {
+                Particles.burst(getxPosInRoom(), getyPosInRoom() + BODY_RADIUS, 3, EMBERS, 0.05f, 0.03f, 0.6, -0.001f, -120, -60);
+            }
+        }
+    }
+
+    // In water, where jumping swims up instead, as often as a stroke allows. With its head out, it jumps as from the
+    // ground, which is how it gets out onto the side
+    public boolean isSwimming() {
+        return fluid == FluidPool.WATER;
+    }
+
+    public void swim() {
+        if (getFrame() - lastStroke < STROKE_UPDATES) {
+            return;
+        }
+        lastStroke = getFrame();
+        boolean headOut = World.getFluidAt(getxPosInRoom(), getyPosInRoom() - BODY_RADIUS) != FluidPool.WATER;
+        p.y = headOut ? -MAX_VELOCITY : -STROKE;
+    }
+
+    // Its breath, while it isn't full: bubbles over its head that burst one by one, drawn over the water it's in
+    public void drawBreath(Canvas canvas) {
+        if (breath >= 1 || MyActivity.currentMap == null) {
+            return;
+        }
+        float radius = BODY_RADIUS * 0.22f, gap = radius * 2.6f;
+        float y = (float) getyPosInScreen() - BODY_RADIUS * 2.2f, left = (float) getxPosInScreen() - gap * (BUBBLES - 1) / 2;
+        int full = (int) Math.ceil(breath * BUBBLES);
+        for (int i = 0; i < BUBBLES; i++) {
+            float x = left + i * gap;
+            bubblePaint.setStyle(Paint.Style.FILL);
+            bubblePaint.setColor(i < full ? BUBBLE : DrawUtil.withAlpha(BUBBLE, 40));
+            canvas.drawCircle(x, y, radius, bubblePaint);
+            bubblePaint.setStyle(Paint.Style.STROKE);
+            bubblePaint.setStrokeWidth(radius * 0.25f);
+            bubblePaint.setColor(i < full ? BUBBLE_EDGE : DrawUtil.withAlpha(BUBBLE_EDGE, 60));
+            canvas.drawCircle(x, y, radius, bubblePaint);
+        }
+    }
+
     // The joystick sets the walking speed, also while jumping, and jumps when pushed up. Swinging, it pushes the swing
     // instead, and with the new controls pushing it firmly down pays the chain out and up takes it in. Thrown by the
     // chain, it steers, but pushing the way the character already goes faster doesn't slow it down, and letting go
@@ -228,6 +322,8 @@ public class MainCharacter extends GameCharacter {
             p.x = x;
             if (isOnFloor() && joystick.getPushY() < -JUMP_PUSH) {
                 jump(-MyActivity.TILE_WIDTH);
+            } else if (isSwimming() && joystick.getPushY() < -JUMP_PUSH) {
+                swim();
             }
         }
     }
@@ -289,7 +385,7 @@ public class MainCharacter extends GameCharacter {
 
     @Override
     protected double getGravity() {
-        return super.getGravity() * GRAVITY_SCALE;
+        return super.getGravity() * GRAVITY_SCALE * (isSwimming() ? WATER_GRAVITY : 1);
     }
 
     // On the chain, and flying once let go of it, the character can go faster than walking, in any direction. Zipping
@@ -308,7 +404,7 @@ public class MainCharacter extends GameCharacter {
     }
 
     private double getWalkingSpeed() {
-        return isSwift() ? MAX_VELOCITY * SWIFT_SPEED : MAX_VELOCITY;
+        return (isSwift() ? MAX_VELOCITY * SWIFT_SPEED : MAX_VELOCITY) * (isSwimming() ? WATER_WALK : 1);
     }
 
     private void kickUpDust() {

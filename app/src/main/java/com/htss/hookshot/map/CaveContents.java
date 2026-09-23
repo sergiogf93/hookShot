@@ -325,7 +325,8 @@ class CaveContents {
                 return false;
             }
             for (int dy = 0; dy <= SHOP_HEADROOM; dy++) {
-                if (map[x + dx][y - dy] != 0) {
+                // Not under water or lava either
+                if (map[x + dx][y - dy] != 0 || cave.getFluid(x + dx, y - dy) != FluidPool.NONE) {
                     return false;
                 }
             }
