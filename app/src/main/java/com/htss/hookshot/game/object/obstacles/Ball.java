@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.game.object.shapes.GameShape;
@@ -36,12 +37,12 @@ public class Ball extends GameDynamicObject implements Hookable {
         int y = (int) (getyPosInRoom() + getHeight()/2 + 3);
         for (int x = margin ; x > 0 ; x--){
             if (MyActivity.isInRoom(getxPosInRoom()-x,y)) {
-                int pixelLeft = MyActivity.canvas.mapBitmap.getPixel((int) (getxPosInRoom() - x), y);
-                if (Color.alpha(pixelLeft) == 0) {
+                boolean pixelLeft = World.isSolid((int) (getxPosInRoom() - x), y);
+                if (!pixelLeft) {
                     voidsLeft++;
                 }
-                int pixelRight = MyActivity.canvas.mapBitmap.getPixel((int) (getxPosInRoom() + x), y);
-                if (Color.alpha(pixelRight) == 0) {
+                boolean pixelRight = World.isSolid((int) (getxPosInRoom() + x), y);
+                if (!pixelRight) {
                     voidsRight++;
                 }
                 if (voidsLeft != voidsRight) {

@@ -19,7 +19,7 @@ public class CaveTextures {
     private static final HashMap<CavePalette, Bitmap> backdrops = new HashMap<CavePalette, Bitmap>();
 
     // The rock's colour with darker and lighter patches, faint wavy layers, and fine grain
-    public static Bitmap getRock(CavePalette palette) {
+    public static synchronized Bitmap getRock(CavePalette palette) {
         Bitmap rock = rocks.get(palette);
         if (rock == null) {
             float[] patches = NoiseUtil.tileableNoise(SIZE, new int[]{4, 8}, 1);
@@ -40,7 +40,7 @@ public class CaveTextures {
     }
 
     // Soft blobs of distant rock, and nothing around them
-    public static Bitmap getBackdrop(CavePalette palette) {
+    public static synchronized Bitmap getBackdrop(CavePalette palette) {
         Bitmap backdrop = backdrops.get(palette);
         if (backdrop == null) {
             float[] noise = NoiseUtil.tileableNoise(SIZE, new int[]{2, 4, 8}, 3);

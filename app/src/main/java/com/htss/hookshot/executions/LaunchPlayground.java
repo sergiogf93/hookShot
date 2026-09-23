@@ -23,15 +23,14 @@ public class LaunchPlayground implements Execution {
         ScreenShake.clear();
         MyActivity.playground = true;
         MyActivity.godMode = false;
+        MyActivity.openWorld = false;
 
         MyActivity.currentMap = Map.playground();
         MyActivity.canvas.generateMap();
         MathVector start = MyActivity.currentMap.startPosition();
-        MyActivity.canvas.dx = (float) -(start.x - MyActivity.screenWidth / 2);
-        MyActivity.canvas.dy = (float) -(start.y - MyActivity.screenHeight / 2);
-        MyActivity.canvas.assertMapMargins();
-        start = start.roomToScreen();
         MyActivity.character = new MainCharacter(start.x, start.y);
+        MyActivity.cameraFollows = true;
+        MyActivity.centerCameraOnCharacter();
 
         MyActivity.hudElements.clear();
         MyActivity.addControls();

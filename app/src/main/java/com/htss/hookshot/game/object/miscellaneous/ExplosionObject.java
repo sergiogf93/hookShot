@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.map.CavePalette;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.enemies.ClickableEnemy;
@@ -47,7 +48,7 @@ public class ExplosionObject extends GameDynamicObject {
         if (!blasted && getFrame() > DURATION) {
             blasted = true;
             blastRadius = getRadius();
-            MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), blastRadius);
+            World.dig((float) getxPosInRoom(), (float) getyPosInRoom(), blastRadius);
             hurtEnemies();
             burst();
         }

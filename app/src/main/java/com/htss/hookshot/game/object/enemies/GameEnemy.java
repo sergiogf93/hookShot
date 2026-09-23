@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.game.object.GameCharacter;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.math.MathVector;
@@ -62,7 +63,7 @@ public abstract class GameEnemy extends GameCharacter {
 
     // Rock, or outside the cave, which enemies don't leave
     public static boolean isRock(double x, double y) {
-        return !MyActivity.isInRoom(x, y) || Color.alpha(MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y)) == 255;
+        return World.isSolid((int) x, (int) y);
     }
 
     // No rock on the straight line between two points in the room
@@ -130,8 +131,8 @@ public abstract class GameEnemy extends GameCharacter {
         for (int i = 1 ; i < distance ; i++){
             MathVector point = vector.rescaled(i).applyTo(this.getPositionInRoom());
             if (MyActivity.isInRoom(point.x,point.y)){
-                int pixel = MyActivity.canvas.mapBitmap.getPixel((int) point.x, (int) point.y);
-                if (Color.alpha(pixel) == 255) {
+                boolean pixel = World.isSolid((int) point.x, (int) point.y);
+                if (pixel) {
                     return vector.applyTo(getPositionInRoom());
                 }
             }
@@ -145,14 +146,14 @@ public abstract class GameEnemy extends GameCharacter {
             MathVector pointPositive = vector.rotatedDeg(angle/2 - i).applyTo(getPositionInRoom());
             MathVector pointNegative = vector.rotatedDeg(-angle/2 + i).applyTo(getPositionInRoom());
             if (MyActivity.isInRoom(pointPositive.x,pointPositive.y)){
-                int pixel = MyActivity.canvas.mapBitmap.getPixel((int)pointPositive.x, (int) pointPositive.y);
-                if (Color.alpha(pixel) == 255){
+                boolean pixel = World.isSolid((int)pointPositive.x, (int) pointPositive.y);
+                if (pixel){
                     return 1;
                 }
             }
             if (MyActivity.isInRoom(pointNegative.x,pointNegative.y)){
-                int pixel = MyActivity.canvas.mapBitmap.getPixel((int)pointNegative.x, (int) pointNegative.y);
-                if (Color.alpha(pixel) == 255){
+                boolean pixel = World.isSolid((int)pointNegative.x, (int) pointNegative.y);
+                if (pixel){
                     return -1;
                 }
             }

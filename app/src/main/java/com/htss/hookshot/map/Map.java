@@ -29,6 +29,7 @@ import com.htss.hookshot.game.object.enemies.EnemySpitter;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.enemies.EnemyStalker;
 import com.htss.hookshot.game.object.enemies.EnemyTerraWorm;
+import com.htss.hookshot.game.object.interactables.CoinBag;
 import com.htss.hookshot.game.object.interactables.HealthDrop;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
@@ -70,12 +71,42 @@ public class Map {
     private static final int MAX_ENEMIES = 2;
     private static final int MAX_HEALTH = 2;
     // How the rock texture is drawn: its pixels per cave square, and how strong its lit edges and deep shadows are
-    private static final int ROCK_TEXELS_PER_SQUARE = 24, RIM_ALPHA = 80, SHADOW_ALPHA = 170;
+    public static final int ROCK_TEXELS_PER_SQUARE = 24;
+    private static final int RIM_ALPHA = 80, SHADOW_ALPHA = 170;
+    // Two points of an outline further apart than this aren't joined: a border was skipped between them
+    public static final double OUTLINE_JUMP = MyActivity.TILE_WIDTH;
     // Large odd number (the golden ratio in 64 bits), so consecutive levels get very different seeds
     private static final long LEVEL_SEED_SPREAD = 0x9E3779B97F4A7C15L;
 
     private int[][] map;
     private int xTiles, yTiles, fillPercent, maxSizeForSusceptible;
+    // Which level this cave is, and the seed of the game it's in, as several caves exist at once: the one being
+    // played, and the next, which is made while the last one still is
+    private int level;
+    private long seed;
+    // Where a piece's vault was hollowed out and where along its corridor the door that bars it goes, both in tiles,
+    // as the piece doesn't know where it is in the world until its objects are placed. Null if the piece has none
+    private Coord vaultCenter, vaultDoorTile;
+    private MathVector vaultDoorVector;
+    // A piece of the open world, and where among the others
+    private boolean chunk = false;
+    private int chunkX, chunkY;
+    private long worldSeed;
+    // The size of the open world's pieces in tiles, and how much of them starts out as rock
+    public static final int CHUNK_X = 48, CHUNK_Y = 32;
+    private static final int CHUNK_FILL = 50;
+    // How many of the worms that would come with the pieces are left out
+    private static final double CHUNK_WORMS_DROPPED = 0.6;
+    // Vaults: how often a piece has one, how big the chamber and its corridor are in tiles, how far out that corridor
+    // will look for the cave, how far from the piece's own sides the whole thing stays, how many tries it gets at
+    // finding rock to sit in, how many buttons open it and how many powers are kept inside
+    private static final double CHUNK_VAULTS = 0.6;
+    private static final int VAULT_RADIUS = 4, VAULT_CORRIDOR = 2, VAULT_REACH = 8, VAULT_EDGE = BORDER_SIZE + 1,
+            VAULT_TRIES = 300, VAULT_WAYS = 16, VAULT_BUTTONS = 2, VAULT_POWERS = 2;
+    // Seals: how many rows apart the barred rows are, and how many buttons break one
+    private static final int SEAL_EVERY = 10, SEAL_BUTTONS = 3;
+    // Where the cave's corner is in the world, which everything placed in it is placed from
+    private double originX = 0, originY = 0;
     private Coord entrance, exit;
     private SquareGrid squareGrid;
     private Vector<Point> vertices;
@@ -99,20 +130,263 @@ public class Map {
     // The playground's size in tiles, and how far from the character, in tiles, enemies are placed there
     private static final int PLAYGROUND_X = 100, PLAYGROUND_Y = 56, SPAWN_NEAREST = 6, SPAWN_FURTHEST = 14;
 
+    // The cave a game starts or carries on in, at the world's corner, with everything in it
     public Map (int xTiles, int yTiles, int fillPercent, Coord entrance){
+        this(xTiles, yTiles, fillPercent, entrance, MyActivity.canvas.myActivity.level, MyActivity.canvas.myActivity.seed, null);
+        addObjects(0, 0);
+    }
+
+    // Only the cave itself. What's in it is added with addObjects, from the main thread, as that puts objects in the
+    // game. The line to copy is the last cave's edge by the exit, which this one's entrance carries on from
+    private Map(int xTiles, int yTiles, int fillPercent, Coord entrance, int level, long seed, int[] lineToCopy) {
         this.map = new int[xTiles][yTiles];
         this.xTiles = xTiles;
         this.yTiles = yTiles;
         this.fillPercent = fillPercent;
         this.maxSizeForSusceptible = (int) ((xTiles*yTiles*(100-fillPercent)/100) * 0.005);
-
+        this.level = level;
+        this.seed = seed;
         this.entrance = entrance;
 
         createMap();
-
-        manageAddingFunctions();
-
+        if (lineToCopy != null) {
+            copyLine(lineToCopy, 3);
+        }
         generateMesh();
+    }
+
+    // A piece of the open world: an endless cave made of pieces like this one, side by side and one below the other,
+    // from the surface down. Each is made from the world's seed and its place alone, so it's the same whenever it's
+    // made and in whatever order. What makes neighbours fit is that the way through each side is placed by that side
+    // itself, which both of them share, and the rock along it is the same from either of them. Everything inside is
+    // joined to those ways through, so the whole world can be reached. Deeper pieces count as higher levels, with more
+    // and nastier enemies and other rock. It touches nothing but itself, so it can be made away from the main thread
+    public static Map chunk(int chunkX, int chunkY, long worldSeed) {
+        return new Map(chunkX, chunkY, worldSeed);
+    }
+
+    private Map(int chunkX, int chunkY, long worldSeed) {
+        this.xTiles = CHUNK_X;
+        this.yTiles = CHUNK_Y;
+        this.map = new int[xTiles][yTiles];
+        this.fillPercent = CHUNK_FILL;
+        this.chunk = true;
+        this.chunkX = chunkX;
+        this.chunkY = chunkY;
+        this.worldSeed = worldSeed;
+        this.level = Math.max(0, chunkY);
+        this.seed = mix(worldSeed, chunkX, chunkY, 7);
+
+        Random random = new Random(seed);
+        randomFillMap(fillPercent, random);
+        for (int i = 0; i < SMOOTH_ITERATIONS; i++) {
+            smoothMap();
+        }
+        // The ways through: down and to the right are this piece's own sides, up and to the left are its neighbours'.
+        // There's none up from the top pieces, which are under the surface
+        int up = along(worldSeed, chunkX, chunkY - 1, 0, xTiles), down = along(worldSeed, chunkX, chunkY, 0, xTiles);
+        int toLeft = along(worldSeed, chunkX - 1, chunkY, 1, yTiles), toRight = along(worldSeed, chunkX, chunkY, 1, yTiles);
+        int radius = (int) (PASSAGE_RADIUS * 1.5);
+        if (chunkY > 0) {
+            drawCircle(new Coord(up, 0), radius);
+        }
+        drawCircle(new Coord(down, yTiles - 1), radius);
+        drawCircle(new Coord(0, toLeft), radius);
+        drawCircle(new Coord(xTiles - 1, toRight), radius);
+        // Nothing here leads anywhere in particular, but the rooms are sorted out with a way in and a way out in mind
+        this.entrance = new Coord(0, toLeft);
+        this.exit = new Coord(down, yTiles - 1);
+        manageRooms();
+        manageRoomConnection();
+        // Rock all along the sides but for the ways through, the same seen from either side
+        for (int i = 0; i < BORDER_SIZE; i++) {
+            for (int x = 0; x < xTiles; x++) {
+                map[x][i] = (chunkY > 0 && Math.abs(x - up) <= radius) ? 0 : 1;
+                map[x][yTiles - 1 - i] = (Math.abs(x - down) <= radius) ? 0 : 1;
+            }
+        }
+        for (int i = 0; i < BORDER_SIZE; i++) {
+            for (int y = BORDER_SIZE; y < yTiles - BORDER_SIZE; y++) {
+                map[i][y] = (Math.abs(y - toLeft) <= radius) ? 0 : 1;
+                map[xTiles - 1 - i][y] = (Math.abs(y - toRight) <= radius) ? 0 : 1;
+            }
+        }
+        if (!(chunkX == 0 && chunkY == 0) && new Random(seed * 11 + 5).nextDouble() < CHUNK_VAULTS) {
+            carveVault(new Random(seed * 7 + 3));
+        }
+        generateMesh();
+    }
+
+    // A chamber hollowed out of solid rock with one short corridor to the cave, for a door to bar. It's carved with
+    // the rest of the piece, before the mesh is made, so it's rock like any other and the same every time
+    private void carveVault(Random random) {
+        for (int tries = 0; tries < VAULT_TRIES; tries++) {
+            int centerX = VAULT_EDGE + VAULT_RADIUS + random.nextInt(xTiles - 2 * (VAULT_EDGE + VAULT_RADIUS));
+            int centerY = VAULT_EDGE + VAULT_RADIUS + random.nextInt(yTiles - 2 * (VAULT_EDGE + VAULT_RADIUS));
+            if (!isRockAround(centerX, centerY, VAULT_RADIUS + 1)) {
+                continue;
+            }
+            double[] way = findWayOut(centerX, centerY, random);
+            if (way == null) {
+                continue;
+            }
+            double angle = way[0];
+            int distance = (int) way[1];
+            drawCircle(new Coord(centerX, centerY), VAULT_RADIUS);
+            for (int d = VAULT_RADIUS - 1; d <= distance; d++) {
+                drawCircle(alongWay(centerX, centerY, angle, d), VAULT_CORRIDOR);
+            }
+            vaultCenter = new Coord(centerX, centerY);
+            vaultDoorTile = alongWay(centerX, centerY, angle, (VAULT_RADIUS + distance) / 2);
+            vaultDoorVector = new MathVector(Math.cos(angle), Math.sin(angle)).getNormal();
+            return;
+        }
+    }
+
+    // The shortest way out of the chamber that reaches the cave without leaving the piece's own ground, as the
+    // direction to dig and how far along it the cave starts. The rock the corridor is dug through has to be thick
+    // enough all the way to the door, or digging it would open a second way in past the door
+    private double[] findWayOut(int centerX, int centerY, Random random) {
+        double bestAngle = 0, offset = random.nextDouble() * Math.PI * 2;
+        int bestDistance = 0;
+        for (int i = 0; i < VAULT_WAYS; i++) {
+            double angle = offset + i * 2 * Math.PI / VAULT_WAYS;
+            for (int d = VAULT_RADIUS + 3; d <= VAULT_RADIUS + VAULT_REACH; d++) {
+                Coord point = alongWay(centerX, centerY, angle, d);
+                if (!isWellInside(point.tileX, point.tileY, VAULT_EDGE + VAULT_CORRIDOR)) {
+                    break;
+                }
+                if (map[point.tileX][point.tileY] == 0) {
+                    if ((bestDistance == 0 || d < bestDistance) && isRockToTheDoor(centerX, centerY, angle, d)) {
+                        bestDistance = d;
+                        bestAngle = angle;
+                    }
+                    break;
+                }
+            }
+        }
+        return (bestDistance == 0) ? null : new double[]{bestAngle, bestDistance};
+    }
+
+    // Rock round the corridor, from where it leaves the chamber to where the door will stand
+    private boolean isRockToTheDoor(int centerX, int centerY, double angle, int distance) {
+        for (int d = VAULT_RADIUS + 1; d <= (VAULT_RADIUS + distance) / 2; d++) {
+            Coord point = alongWay(centerX, centerY, angle, d);
+            if (!isRockAround(point.tileX, point.tileY, VAULT_CORRIDOR + 1)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Coord alongWay(int centerX, int centerY, double angle, int distance) {
+        return new Coord(centerX + (int) Math.round(Math.cos(angle) * distance), centerY + (int) Math.round(Math.sin(angle) * distance));
+    }
+
+    private boolean isRockAround(int centerX, int centerY, int radius) {
+        for (int x = centerX - radius; x <= centerX + radius; x++) {
+            for (int y = centerY - radius; y <= centerY + radius; y++) {
+                if ((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) > radius * radius) {
+                    continue;
+                }
+                if (!isInMapRange(x, y) || map[x][y] == 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean isWellInside(int tileX, int tileY, int margin) {
+        return tileX >= margin && tileY >= margin && tileX < xTiles - margin && tileY < yTiles - margin;
+    }
+
+    // How far along a side the way through it is, in tiles, clear of the corners. The side is the bottom (0) or the
+    // right (1) of the piece at the given place, so that the piece on its other side finds the same
+    private static int along(long worldSeed, int chunkX, int chunkY, int side, int length) {
+        int margin = 9;
+        return margin + (int) ((mix(worldSeed, chunkX, chunkY, side) >>> 1) % (length - 2 * margin));
+    }
+
+    // Scrambles the numbers into one, so that neighbouring places give unrelated results
+    private static long mix(long seed, int a, int b, int c) {
+        long h = seed + 0x9E3779B97F4A7C15L * (a * 73856093L ^ b * 19349663L ^ c * 83492791L);
+        h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        return h ^ (h >>> 31);
+    }
+
+    public boolean isChunk() {
+        return chunk;
+    }
+
+    // Where the way through the bottom (0) or the right side (1) of a piece of the open world is, in tiles along it
+    public int getWayThrough(int side) {
+        return along(worldSeed, chunkX, chunkY, side, (side == 0) ? xTiles : yTiles);
+    }
+
+    // The size of a piece of the open world, in pixels
+    public static int getChunkWidth() {
+        return (int) (CHUNK_X * SQUARE_SIZE - SQUARE_SIZE);
+    }
+
+    public static int getChunkHeight() {
+        return (int) (CHUNK_Y * SQUARE_SIZE - SQUARE_SIZE);
+    }
+
+    public int getChunkX() {
+        return chunkX;
+    }
+
+    public int getChunkY() {
+        return chunkY;
+    }
+
+    // Somewhere to stand, in the world, for a cave with its corner at the given place: open, with nothing close around
+    // it, and rock under it
+    public MathVector getStandingPoint(double originX, double originY) {
+        this.originX = originX;
+        this.originY = originY;
+        for (int distance = 0; distance < Math.max(xTiles, yTiles); distance++) {
+            for (int x = xTiles / 2 - distance; x <= xTiles / 2 + distance; x++) {
+                for (int y = yTiles / 2 - distance; y <= yTiles / 2 + distance; y++) {
+                    if (isInMapRange(x, y) && isInMapRange(x, y + 2) && map[x][y] == 0 && getSurroundingCount(x, y) == 0
+                            && map[x][y + 2] == 1 && !isBehindVaultDoor(x, y)) {
+                        return at(x, y);
+                    }
+                }
+            }
+        }
+        return at(xTiles / 2, yTiles / 2);
+    }
+
+    // The cave after this one, which its exit leads into. It touches nothing but itself, so it can be made away from
+    // the main thread
+    public Map next() {
+        return new Map(xTiles, yTiles, fillPercent, getEntranceFromExit(exit), level + 1, seed, getLineToCopy());
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    // Where the cave after this one goes in the world, given where this one is: below it, or to the side its exit is on
+    public int[] getNextOrigin(int x, int y) {
+        if (exit.tileX == 0) {
+            return new int[]{x - getWidth(), y};
+        } else if (exit.tileX == xTiles - 1) {
+            return new int[]{x + getWidth(), y};
+        }
+        return new int[]{x, y + getHeight()};
+    }
+
+    private MathVector at(Coord tile) {
+        return at(tile.tileX, tile.tileY);
+    }
+
+    // A tile's place in the world
+    private MathVector at(double tileX, double tileY) {
+        return new MathVector(originX + tileX * SQUARE_SIZE, originY + tileY * SQUARE_SIZE);
     }
 
     // The playground: a cave laid out by hand, the same every time, to try the controls in. Closed all round, with ledges
@@ -122,6 +396,8 @@ public class Map {
         this.map = new int[xTiles][yTiles];
         this.xTiles = xTiles;
         this.yTiles = yTiles;
+        this.level = MyActivity.canvas.myActivity.level;
+        this.seed = MyActivity.canvas.myActivity.seed;
         // It's never left, but other parts of the game ask where the way in and out are
         this.entrance = new Coord(xTiles / 2, 0);
         this.exit = new Coord(xTiles / 2, yTiles - 1);
@@ -173,7 +449,7 @@ public class Map {
                     return false;
                 }
             }
-            new EnemyDeepWorm(xTiles / 2 * SQUARE_SIZE, yTiles / 2 * SQUARE_SIZE, Math.max(xTiles, yTiles) / 2 * SQUARE_SIZE);
+            new EnemyDeepWorm(at(xTiles / 2, yTiles / 2).x, at(xTiles / 2, yTiles / 2).y, Math.max(xTiles, yTiles) / 2 * SQUARE_SIZE);
             return true;
         }
         int[][] sides = {{-1, 0}, {1, 0}, {0, -1}};
@@ -185,15 +461,15 @@ public class Map {
             }
             switch (kind) {
                 case SPAWN_STALKER:
-                    new EnemyStalker(open.tileX * SQUARE_SIZE, open.tileY * SQUARE_SIZE, true);
+                    new EnemyStalker(at(open).x, at(open).y, true);
                     return true;
                 case SPAWN_TERRA_WORM:
-                    new EnemyTerraWorm(open.tileX * SQUARE_SIZE, open.tileY * SQUARE_SIZE, 5, true, true);
+                    new EnemyTerraWorm(at(open).x, at(open).y, 5, true, true);
                     return true;
                 case SPAWN_BAT:
                     Coord ceiling = getLastEmptyTile(open, 0, -1, 40);
                     if (ceiling != null) {
-                        new EnemyBat(ceiling.tileX * SQUARE_SIZE, ceiling.tileY * SQUARE_SIZE);
+                        new EnemyBat(at(ceiling).x, at(ceiling).y);
                         return true;
                     }
                     break;
@@ -201,7 +477,7 @@ public class Map {
                     int[] side = sides[random.nextInt(sides.length)];
                     Coord wall = getLastEmptyTile(open, side[0], side[1], 30);
                     if (wall != null && Math.abs(wall.tileX - open.tileX) + Math.abs(wall.tileY - open.tileY) >= 3) {
-                        new EnemySpitter(wall.tileX * SQUARE_SIZE, wall.tileY * SQUARE_SIZE, new MathVector(-side[0], -side[1]));
+                        new EnemySpitter(at(wall).x, at(wall).y, new MathVector(-side[0], -side[1]));
                         return true;
                     }
                     break;
@@ -209,14 +485,14 @@ public class Map {
                     int[] direction = anyway[random.nextInt(anyway.length)];
                     Coord rock = getLastEmptyTile(open, direction[0], direction[1], 30);
                     if (rock != null) {
-                        new EnemySnipper(rock.tileX * SQUARE_SIZE, rock.tileY * SQUARE_SIZE);
+                        new EnemySnipper(at(rock).x, at(rock).y);
                         return true;
                     }
                     break;
                 case SPAWN_BEETLE:
                     Coord floor = getLastEmptyTile(open, 0, 1, 40);
                     if (floor != null) {
-                        new EnemyBeetle(floor.tileX * SQUARE_SIZE, floor.tileY * SQUARE_SIZE);
+                        new EnemyBeetle(at(floor).x, at(floor).y);
                         return true;
                     }
                     break;
@@ -227,7 +503,7 @@ public class Map {
 
     // An empty tile with nothing but empty tiles around it, not too close to a point in the room and not too far
     private Coord getOpenTileNear(MathVector at, Random random) {
-        int centerX = (int) (at.x / SQUARE_SIZE), centerY = (int) (at.y / SQUARE_SIZE);
+        int centerX = (int) ((at.x - originX) / SQUARE_SIZE), centerY = (int) ((at.y - originY) / SQUARE_SIZE);
         for (int attempt = 0; attempt < 100; attempt++) {
             double angle = random.nextDouble() * 2 * Math.PI;
             double distance = SPAWN_NEAREST + random.nextDouble() * (SPAWN_FURTHEST - SPAWN_NEAREST);
@@ -239,37 +515,102 @@ public class Map {
         return null;
     }
 
-    public void extend(){
-        int[] lineToCopy = getLineToCopy();
-
-        MyActivity.canvas.myActivity.level += 1;
-
-        entrance = getEntranceFromExit(exit);
-
-        createMap();
-
-        copyLine(lineToCopy, 3);
-
-        manageAddingFunctions();
-
-        generateMesh();
+    // What's in a piece of the open world, the same every time it's made: often a group of enemies, more often the
+    // deeper it is, and now and then a power or some health. Nothing where the world starts
+    private void addChunkObjects() {
+        Random random = new Random(seed * 31 + 17);
+        boolean start = chunkX == 0 && chunkY == 0;
+        // The vault is hollowed out with the piece, apart from its rooms, so nothing else placed here lands behind its door
+        addVault(random);
+        if (isSealRow()) {
+            addSeal(random);
+        }
+        if (!start && random.nextDouble() < Math.min(0.8, 0.4 + 0.04 * level)) {
+            addEnemyGroup(random, level);
+        }
+        if (random.nextDouble() < 0.25) {
+            MathVector position = getRandomPointInRooms(roomRegions, 0, random);
+            addPowerUp(position, random.nextInt(4));
+        }
+        if (!start && random.nextDouble() < 0.15) {
+            MathVector position = getRandomPointInRooms(roomRegions, 0, random);
+            new HealthDrop(position.x, position.y, true, false);
+        }
     }
 
-    private void manageAddingFunctions() {
+    // What the vault holds, and the door and buttons that keep it: powers, coins and health, worth the trouble of
+    // finding the buttons, which are anywhere in the piece's caves but the chamber, as that was never one of its rooms
+    private void addVault(Random random) {
+        if (vaultCenter == null) {
+            return;
+        }
+        MathVector door = at(vaultDoorTile.tileX, vaultDoorTile.tileY);
+        addDoor(door.x, door.y, (int) ((VAULT_CORRIDOR + 2) * SQUARE_SIZE * 2), (int) (1.5 * SQUARE_SIZE),
+                vaultDoorVector, createWallButtons(roomRegions, VAULT_BUTTONS, random, false));
+        int kept = VAULT_POWERS + 2;
+        for (int i = 0; i < VAULT_POWERS; i++) {
+            addPowerUp(inVault(i, kept), random.nextInt(4));
+        }
+        MathVector coins = inVault(VAULT_POWERS, kept);
+        new CoinBag(coins.x, coins.y);
+        MathVector health = inVault(VAULT_POWERS + 1, kept);
+        new HealthDrop(health.x, health.y, true, false);
+    }
+
+    // One of a number of places spread round the middle of the chamber, well clear of its walls
+    private MathVector inVault(int index, int of) {
+        double angle = index * 2 * Math.PI / of;
+        return at(vaultCenter.tileX + Math.cos(angle) * VAULT_RADIUS * 0.5, vaultCenter.tileY + Math.sin(angle) * VAULT_RADIUS * 0.5);
+    }
+
+    // On the vault's side of its door, where the character is never put down, as the door would have it shut in
+    private boolean isBehindVaultDoor(int tileX, int tileY) {
+        if (vaultCenter == null) {
+            return false;
+        }
+        double reach = Math.hypot(vaultDoorTile.tileX - vaultCenter.tileX, vaultDoorTile.tileY - vaultCenter.tileY) + 1;
+        return Math.hypot(tileX - vaultCenter.tileX, tileY - vaultCenter.tileY) <= reach;
+    }
+
+    // The same, for somewhere in the world rather than a tile of this piece
+    public boolean isBehindVaultDoor(double worldX, double worldY) {
+        return isBehindVaultDoor((int) Math.round((worldX - originX) / SQUARE_SIZE), (int) Math.round((worldY - originY) / SQUARE_SIZE));
+    }
+
+    // Every so many rows down, the way on down is barred. Every piece in the row is, so there's no falling past one
+    // further along: a whole band has to be worked over before it can be left behind
+    private boolean isSealRow() {
+        return chunkY > 0 && chunkY % SEAL_EVERY == SEAL_EVERY - 1;
+    }
+
+    // The seal is on the piece's way down, with its buttons spread over the piece's caves
+    private void addSeal(Random random) {
+        addExitGate(createWallButtons(roomRegions, SEAL_BUTTONS, random, false), null);
+    }
+
+    // Puts what's in the cave into the game: gates and their buttons, enemies, powers and health. From the main thread,
+    // once, with the cave's corner at the given place in the world
+    public void addObjects(double originX, double originY) {
+        this.originX = originX;
+        this.originY = originY;
+        if (chunk) {
+            addChunkObjects();
+            return;
+        }
         Random addingRandom = new Random();
         // Mixed differently from the map's seed + level so the two don't share a sequence. Multiplying by the level
         // gave every first level seed 0, so the same starting power-ups. The level is spread over all the bits, as
         // Random's first number, which picks doors or enemies, barely changes between seeds that differ by 1
-        addingRandom.setSeed(MyActivity.canvas.myActivity.seed * 31 + MyActivity.canvas.myActivity.level * LEVEL_SEED_SPREAD);
+        addingRandom.setSeed(seed * 31 + level * LEVEL_SEED_SPREAD);
         susceptibleRooms.remove(entranceRoom);
         susceptibleRooms.remove(exitRoom);
         if (roomRegions.size() > 2) {
             roomRegions.remove(entranceRoom);
             roomRegions.remove(exitRoom);
         }
-        if (isBossLevel(MyActivity.canvas.myActivity.level)) {
+        if (isBossLevel(level)) {
             addBoss();
-        } else if (MyActivity.canvas.myActivity.level > 0) {
+        } else if (level > 0) {
             double r = addingRandom.nextDouble();
             if (r < 0.4) {
                 addPassageDoor(2);
@@ -289,14 +630,14 @@ public class Map {
 
     private void createMap() {
         Random random = new Random();
-        random.setSeed(MyActivity.canvas.myActivity.seed + MyActivity.canvas.myActivity.level);
+        random.setSeed(seed + level);
         randomFillMap(this.fillPercent, random);
 
         for (int i=0; i < SMOOTH_ITERATIONS; i++){
             smoothMap();
         }
 
-        if (isBossLevel(MyActivity.canvas.myActivity.level)) {
+        if (isBossLevel(level)) {
             carveBossCavern();
         }
 
@@ -647,12 +988,13 @@ public class Map {
         }
     }
 
+    // Along the outline a vertex at a time, in a loop: calling itself for every vertex ran out of stack on the thread
+    // that makes caves in the background, which has less of it than the main one
     private void followOutline(int vertexIndex, int outlineIndex) {
-        outlines.get(outlineIndex).add(vertexIndex);
-        checkedVertices.add(vertexIndex);
-        int nextVertexIndex = getConnectedOutlineVertex(vertexIndex);
-        if (nextVertexIndex != -1){
-            followOutline(nextVertexIndex, outlineIndex);
+        while (vertexIndex != -1) {
+            outlines.get(outlineIndex).add(vertexIndex);
+            checkedVertices.add(vertexIndex);
+            vertexIndex = getConnectedOutlineVertex(vertexIndex);
         }
     }
 
@@ -736,7 +1078,7 @@ public class Map {
         roomRegions.firstElement().isAccessibleFromMainRoom = true;
 
         exitRoom = exit.getRoom(roomRegions);
-        if (MyActivity.canvas.myActivity.level > 0) {
+        if (level > 0) {
             entranceRoom = entrance.getRoom(roomRegions);
         }
 
@@ -893,26 +1235,27 @@ public class Map {
         if (playgroundStart != null) {
             return playgroundStart;
         }
-        if (MyActivity.canvas.myActivity.level == 0) {
+        if (level == 0) {
             for (int yTile = 0; yTile < yTiles; yTile++) {
                 for (int xTile = 0; xTile < xTiles; xTile++) {
                     if (map[xTile][yTile] == 0) {
-                        if (MyActivity.canvas.myActivity.level == 0) {
+                        if (level == 0) {
                             if (getSurroundingCount(xTile, yTile) == 0) {
                                 if (isInMapRange(xTile, yTile + 2)) {
                                     if (map[xTile][yTile + 2] == 1) {
-                                        return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
+                                        return at(xTile, yTile);
                                     }
                                 }
                             }
                         } else {
-                            return new MathVector((xTile) * SQUARE_SIZE, (yTile) * SQUARE_SIZE);
+                            return at(xTile, yTile);
                         }
                     }
                 }
             }
         } else {
-            return new MathVector(getEntrance().tileX * SQUARE_SIZE, getEntrance().tileY * SQUARE_SIZE);
+            // A tile in from the way in, which is on the cave's very edge, and beyond the edge it's rock
+            return at(Math.max(1, Math.min(getEntrance().tileX, xTiles - 2)), Math.max(1, Math.min(getEntrance().tileY, yTiles - 2)));
         }
         return new MathVector(0, 0);
     }
@@ -920,7 +1263,7 @@ public class Map {
     private void manageEntranceAndExit(Random random) {
         // Decide where the exit will be
         boolean exitOnSides = random.nextBoolean();
-        if (MyActivity.canvas.myActivity.level == 0) {
+        if (level == 0) {
             exitOnSides = false;
         }
         if (exitOnSides) {
@@ -944,7 +1287,7 @@ public class Map {
             exit = new Coord(Math.min(random.nextInt(xTiles) + 1, xTiles - 2), yTiles - 1);
             manageDownExit(3);
         }
-        if (MyActivity.canvas.myActivity.level > 0) {
+        if (level > 0) {
             drawCircle(entrance, (int) (PASSAGE_RADIUS * 1.5));
         }
     }
@@ -988,7 +1331,7 @@ public class Map {
             n++;
         } while ((map[coord.tileX][coord.tileY] == 1 || getSurroundingCount(coord.tileX,coord.tileY) > maxWallCount || isUpOrDown(coord)) && n < 1000);
         roomsWithInterest.add(room);
-        return new MathVector(coord.tileX * SQUARE_SIZE, coord.tileY * SQUARE_SIZE);
+        return at(coord);
     }
 
     public MathVector getRandomPointInRoom(Room room, int maxWallCount, Random r) {
@@ -998,7 +1341,7 @@ public class Map {
             coord = room.tiles.get(r.nextInt(room.roomSize));
             n++;
         } while ((map[coord.tileX][coord.tileY] == 1 || getSurroundingCount(coord.tileX,coord.tileY) > maxWallCount || isUpOrDown(coord)) && n < 1000);
-        return new MathVector(coord.tileX * SQUARE_SIZE, coord.tileY * SQUARE_SIZE);
+        return at(coord);
     }
 
     private boolean isUpOrDown(Coord coord) {
@@ -1013,7 +1356,7 @@ public class Map {
             y = r.nextInt(yTiles);
             n++;
         } while ((map[x][y] == 1 || getSurroundingCount(x,y) != wallCount) && n < 1000);
-        return new MathVector(x*SQUARE_SIZE,y*SQUARE_SIZE);
+        return at(x, y);
     }
 
     public void addBallObstacles(int maxObstacles){
@@ -1044,7 +1387,7 @@ public class Map {
                 substituteStructure(startStructure.tileX,startStructure.tileY+6,subsStructure);
                 int xBall = startStructure.tileX + 4;
                 int yBall = startStructure.tileY + 2;
-                Ball ball = new Ball(xBall * SQUARE_SIZE, yBall * SQUARE_SIZE, 100, 6, (float) (2*SQUARE_SIZE), true);
+                Ball ball = new Ball(at(xBall, yBall).x, at(xBall, yBall).y, 100, 6, (float) (2*SQUARE_SIZE), true);
                 added++;
                 xStart = startStructure.tileX;
                 yStart = startStructure.tileY;
@@ -1119,13 +1462,15 @@ public class Map {
         while (end < length - 1 && isOpenAlongExit(onSide, end + 1)) {
             end++;
         }
-        double middle = (start + end) / 2.0 * SQUARE_SIZE;
+        double middle = (start + end) / 2.0;
         int width = (int) ((end - start + 3) * SQUARE_SIZE), thickness = (int) (1.5 * SQUARE_SIZE);
         Door gate;
         if (onSide) {
-            gate = new Door(getExit().tileX * SQUARE_SIZE, middle, width, thickness, new MathVector(0, 1), buttons, true);
+            MathVector place = at(getExit().tileX, middle);
+            gate = new Door(place.x, place.y, width, thickness, new MathVector(0, 1), buttons, true);
         } else {
-            gate = new Door(middle, getExit().tileY * SQUARE_SIZE, width, thickness, new MathVector(1, 0), buttons, true);
+            MathVector place = at(middle, getExit().tileY);
+            gate = new Door(place.x, place.y, width, thickness, new MathVector(1, 0), buttons, true);
         }
         gate.setGuardian(guardian);
         return gate;
@@ -1147,7 +1492,7 @@ public class Map {
 
     public void addPassageDoor(int nButtons) {
         Random obstacleRandom = new Random();
-        obstacleRandom.setSeed(MyActivity.canvas.myActivity.seed + nButtons + MyActivity.canvas.myActivity.level);
+        obstacleRandom.setSeed(seed + nButtons + level);
 
         if (entranceRoom == null || passages.size() == 0) {
             return;
@@ -1225,16 +1570,19 @@ public class Map {
             } else {
                 position = getRandomPointInRooms(roomRegions, 0, random);
             }
-            int powerUpType = random.nextInt(4);
-            if (powerUpType == 0) {
-                new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2, true, false);
-            } else if (powerUpType == 1) {
-                new CompassPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.8), true, false);
-            } else if (powerUpType == 2) {
-                new BombPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.8), true, false);
-            } else if (powerUpType == 3) {
-                new InfiniteJumpsPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.9), (int) (SQUARE_SIZE * 0.8), true, false);
-            }
+            addPowerUp(position, random.nextInt(4));
+        }
+    }
+
+    private void addPowerUp(MathVector position, int powerUpType) {
+        if (powerUpType == 0) {
+            new PortalPowerUp(position.x, position.y, (int) SQUARE_SIZE / 2, true, false);
+        } else if (powerUpType == 1) {
+            new CompassPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.8), true, false);
+        } else if (powerUpType == 2) {
+            new BombPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.8), true, false);
+        } else if (powerUpType == 3) {
+            new InfiniteJumpsPowerUp(position.x, position.y, (int) (SQUARE_SIZE * 0.9), (int) (SQUARE_SIZE * 0.8), true, false);
         }
     }
 
@@ -1280,14 +1628,13 @@ public class Map {
 
     // The deep worm, and no other enemies. The exit stays shut until it's beaten
     private void addBoss() {
-        EnemyDeepWorm worm = new EnemyDeepWorm(xTiles / 2 * SQUARE_SIZE, yTiles / 2 * SQUARE_SIZE,
+        EnemyDeepWorm worm = new EnemyDeepWorm(at(xTiles / 2, yTiles / 2).x, at(xTiles / 2, yTiles / 2).y,
                 Math.max(BOSS_CAVERN_X, BOSS_CAVERN_Y) * SQUARE_SIZE * 1.4);
         addExitGate(new Vector<WallButton>(), worm);
     }
 
     // More groups of enemies come as the cave gets deeper, and new kinds of enemy join them
     public void addEnemies (Random random) {
-        int level = MyActivity.canvas.myActivity.level;
         int groups = Math.min(MAX_ENEMY_GROUPS, 1 + level / BOSS_EVERY);
         for (int i = 0; i < groups; i++) {
             addEnemyGroup(random, level);
@@ -1296,7 +1643,13 @@ public class Map {
 
     private void addEnemyGroup(Random random, int level) {
         int kinds = (level >= BEETLE_LEVEL) ? 6 : (level >= SNIPPER_LEVEL) ? 5 : (level >= SPITTER_LEVEL) ? 4 : (level >= BAT_LEVEL) ? 3 : 2;
-        switch (random.nextInt(kinds)) {
+        int kind = random.nextInt(kinds);
+        // A piece of the open world is a fraction of a cave, and a worm is a match for a whole one, so most of the
+        // pieces that would have one get stalkers instead, and all of those round where the world starts
+        if (chunk && kind == 1 && (random.nextDouble() < CHUNK_WORMS_DROPPED || (Math.abs(chunkX) <= 1 && chunkY <= 1))) {
+            kind = 0;
+        }
+        switch (kind) {
             case 0:
                 int N = getNEnemies(random);
                 for (int i = 0; i < N; i++) {
@@ -1335,7 +1688,7 @@ public class Map {
             if (placed < bats && isInMapRange(x, open.tileY) && map[x][open.tileY] == 0) {
                 Coord ceiling = getLastEmptyTile(new Coord(x, open.tileY), 0, -1, 30);
                 if (ceiling != null) {
-                    new EnemyBat(ceiling.tileX * SQUARE_SIZE, ceiling.tileY * SQUARE_SIZE);
+                    new EnemyBat(at(ceiling).x, at(ceiling).y);
                     placed++;
                 }
             }
@@ -1352,7 +1705,7 @@ public class Map {
                 int[] direction = directions[random.nextInt(directions.length)];
                 Coord wall = (open == null) ? null : getLastEmptyTile(open, direction[0], direction[1], 20);
                 if (wall != null && Math.abs(wall.tileX - open.tileX) + Math.abs(wall.tileY - open.tileY) >= 3) {
-                    new EnemySpitter(wall.tileX * SQUARE_SIZE, wall.tileY * SQUARE_SIZE, new MathVector(-direction[0], -direction[1]));
+                    new EnemySpitter(at(wall).x, at(wall).y, new MathVector(-direction[0], -direction[1]));
                     break;
                 }
             }
@@ -1367,7 +1720,7 @@ public class Map {
             int[] direction = directions[random.nextInt(directions.length)];
             Coord rock = (open == null) ? null : getLastEmptyTile(open, direction[0], direction[1], 20);
             if (rock != null) {
-                new EnemySnipper(rock.tileX * SQUARE_SIZE, rock.tileY * SQUARE_SIZE);
+                new EnemySnipper(at(rock).x, at(rock).y);
                 return;
             }
         }
@@ -1379,7 +1732,7 @@ public class Map {
             Coord open = getOpenTile(random);
             Coord floor = (open == null) ? null : getLastEmptyTile(open, 0, 1, 30);
             if (floor != null) {
-                new EnemyBeetle(floor.tileX * SQUARE_SIZE, floor.tileY * SQUARE_SIZE);
+                new EnemyBeetle(at(floor).x, at(floor).y);
                 return;
             }
         }
@@ -1390,7 +1743,7 @@ public class Map {
         for (int attempt = 0; attempt < 200; attempt++) {
             Coord tile = new Coord(random.nextInt(xTiles), random.nextInt(yTiles));
             if (map[tile.tileX][tile.tileY] == 0 && getSurroundingCount(tile.tileX, tile.tileY) == 0 && !isUpOrDown(tile)
-                    && Math.hypot(tile.tileX - entrance.tileX, tile.tileY - entrance.tileY) > SAFE_FROM_ENTRANCE) {
+                    && (chunk || Math.hypot(tile.tileX - entrance.tileX, tile.tileY - entrance.tileY) > SAFE_FROM_ENTRANCE)) {
                 return tile;
             }
         }
@@ -1462,8 +1815,7 @@ public class Map {
         }
 
         public MathVector getCenterInRoom (){
-            Coord coord = line.get(line.size()/2);
-            return new MathVector(coord.tileX*SQUARE_SIZE,coord.tileY*SQUARE_SIZE);
+            return at(line.get(line.size()/2));
         }
     }
 
@@ -1676,8 +2028,21 @@ public class Map {
         canvas.drawPath(rock, paint);
     }
 
-    private void drawDepth(Canvas canvas, CavePalette palette) {
-        // Rock is lit next to the caves and darker deeper in. Worked out per tile, blurred, and scaled up smoothly
+    public Vector<Point> getVertices() {
+        return vertices;
+    }
+
+    public Vector<Integer> getTriangles() {
+        return triangles;
+    }
+
+    public Vector<Vector<Integer>> getOutlines() {
+        return outlines;
+    }
+
+    // Rock is lit next to the caves and darker deeper in. Worked out per tile and blurred, a pixel for every tile, to
+    // be drawn over the rock scaled up smoothly, with its first pixel's middle on the cave's corner
+    public Bitmap createShading(CavePalette palette) {
         int[][] depth = getDepthInRock();
         float[] light = new float[xTiles * yTiles], shadow = new float[xTiles * yTiles];
         for (int x = 0; x < xTiles; x++) {
@@ -1695,7 +2060,11 @@ public class Map {
             float rimShare = (alpha == 0) ? 0 : (float) lightAlpha / alpha;
             pixels[i] = Color.argb(alpha, (int) (Color.red(palette.rim) * rimShare), (int) (Color.green(palette.rim) * rimShare), (int) (Color.blue(palette.rim) * rimShare));
         }
-        Bitmap shading = Bitmap.createBitmap(pixels, xTiles, yTiles, Bitmap.Config.ARGB_8888);
+        return Bitmap.createBitmap(pixels, xTiles, yTiles, Bitmap.Config.ARGB_8888);
+    }
+
+    private void drawDepth(Canvas canvas, CavePalette palette) {
+        Bitmap shading = createShading(palette);
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
         // Only on the rock already drawn, and keeping it opaque, as collisions look for opaque pixels
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));

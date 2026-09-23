@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.effect.ScreenShake;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.game.hud.HUDNotification;
 import com.htss.hookshot.game.object.interactables.Loot;
 import com.htss.hookshot.map.CavePalette;
@@ -188,7 +189,7 @@ public class EnemyDeepWorm extends GameEnemy {
 
     // Bursts out of the rock, the body behind it still inside
     private void comeOut() {
-        MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) emergence.x, (float) emergence.y, HEAD_RADIUS * 1.35f);
+        World.dig((float) emergence.x, (float) emergence.y, HEAD_RADIUS * 1.35f);
         debris(emergence, direction, 14);
         ScreenShake.shake(0.1f);
         path.clear();
@@ -202,7 +203,7 @@ public class EnemyDeepWorm extends GameEnemy {
     // Its head digs into the far wall and gets stuck there
     private void getStuck() {
         MathVector head = getHead();
-        MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) head.x, (float) head.y, HEAD_RADIUS * 1.15f);
+        World.dig((float) head.x, (float) head.y, HEAD_RADIUS * 1.15f);
         debris(getHeadAhead(), direction.scaled(-1), 12);
         ScreenShake.shake(0.12f);
         changeState(STUCK);

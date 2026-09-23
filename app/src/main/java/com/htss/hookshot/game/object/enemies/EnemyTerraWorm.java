@@ -4,7 +4,9 @@ import android.graphics.Canvas;
 
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.Cave;
 import com.htss.hookshot.map.CavePalette;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
 
@@ -19,15 +21,27 @@ public class EnemyTerraWorm extends GameEnemy {
     private static final int COLLISION_PRIORITY = 0, MASS = 0, MAX_VELOCITY = 8 * MyActivity.TILE_WIDTH / 100;
     private static final float MAX_RADIUS = (float) (MyActivity.TILE_WIDTH * 0.8);
     private static final double DISTANCE_TO_ATTACK = MyActivity.TILE_WIDTH * 60;
+    // A worm hunts the character while it's on the worm's own ground, and heads back there once it has left. In a game
+    // that's the cave the worm was made in. The open world has no such bounds, so there it's this far round where the
+    // worm was made, which keeps worms from trailing after the character from piece to piece, and from being on the
+    // screen when their piece goes. When it isn't hunting it stays within the second distance of there
+    private static final double TERRITORY = MyActivity.TILE_WIDTH * 12, ROAMING = MyActivity.TILE_WIDTH * 6;
+    // In the open world only so many hunt at once, one more every so many levels down. The rest bide their time
+    private static final int MOST_HUNTING = 3, LEVELS_PER_HUNTER = 10;
 
     private int frameWhenChangedDirection = 0;
     private int currentRotation = 0;
     private boolean attacking = false;
     private double maxDurationToChangeDirection = TimeUtil.secondsToUpdates(5);
     private Vector<TerraWormBody> bodyParts = new Vector<TerraWormBody>();
+    private final MathVector home;
+    // The way it's turning to head back home, which it keeps to until it faces there, or the other way if a border is
+    // in the way. Taking the shorter turn each time left it going back and forth between the two, straight along the border
+    private int turnHome = 0;
 
     public EnemyTerraWorm(double xPos, double yPos, int nParts, boolean addToLists, boolean addToEnemyList) {
         super(xPos, yPos, MASS, COLLISION_PRIORITY, MAX_VELOCITY, nParts, addToLists, addToEnemyList);
+        home = new MathVector(xPos, yPos);
         for (int i = 0; i < nParts; i++) {
             bodyParts.add(new TerraWormBody(xPos, yPos, MAX_RADIUS * ((i + 1f) / nParts), this, false, addToEnemyList));
         }
@@ -63,7 +77,7 @@ public class EnemyTerraWorm extends GameEnemy {
             bodyParts.lastElement().setP(movement);
             bodyParts.lastElement().updatePosition();
             setPositionInRoom(bodyParts.lastElement().getPositionInRoom());
-            MyActivity.canvas.clearCircle(MyActivity.canvas.mapBitmap, (float) getxPosInRoom(), (float) getyPosInRoom(), MAX_RADIUS);
+            World.dig((float) getxPosInRoom(), (float) getyPosInRoom(), MAX_RADIUS);
             throwDebris();
         }
     }
@@ -82,26 +96,64 @@ public class EnemyTerraWorm extends GameEnemy {
         if (getFrame() - frameWhenChangedDirection > maxDurationToChangeDirection) {
             currentRotation = changeRotation();
         }
-        if (distanceTo(MyActivity.character) < DISTANCE_TO_ATTACK) {
-            attacking = true;
-        } else {
-            attacking = false;
-        }
+        // One that's hunting already keeps its place among the hunters
+        attacking = distanceTo(MyActivity.character) < DISTANCE_TO_ATTACK && isOnOwnGround(MyActivity.character.getPositionInRoom(), TERRITORY)
+                && (attacking || canJoinTheHunt());
         int r = getRotationToAvoidBorder(getCurrentDirection(), MyActivity.TILE_WIDTH * 5, 90);
         if (r != 0) {
             rotate(r);
             currentRotation = 0;
+            if (turnHome != 0) {
+                turnHome = r;
+            }
         } else {
             if (isAttacking()) {
-                rotate(getRotationToAttack());
+                turnHome = 0;
+                rotate(getRotationTowards(MyActivity.character.getPositionInRoom()));
+            } else if (!isOnOwnGround(getPositionInRoom(), ROAMING)) {
+                double towardsHome = getRotationTowards(home);
+                if (towardsHome == 0 || turnHome == 0) {
+                    turnHome = (int) towardsHome;
+                }
+                rotate(turnHome);
             } else {
+                turnHome = 0;
                 rotate(currentRotation);
             }
         }
     }
 
-    private double getRotationToAttack() {
-        MathVector vector = new MathVector(getPositionInRoom(), MyActivity.character.getPositionInRoom());
+    // In the cave the worm was made in or, in the open world, within the given distance of where it was made
+    private boolean isOnOwnGround(MathVector point, double distance) {
+        if (World.isOpen()) {
+            return point.distanceTo(home) < distance;
+        }
+        Cave cave = World.getCaveAt(home.x, home.y);
+        return cave == null || cave.contains(point.x, point.y);
+    }
+
+    // Worms don't leave the cave they were made in, even with others next to it. The open world is all theirs, as far
+    // as it has been made
+    private boolean isBeyondBorder(MathVector point) {
+        Cave cave = World.isOpen() ? null : World.getCaveAt(home.x, home.y);
+        return (cave != null) ? !cave.contains(point.x, point.y) : !World.contains(point.x, point.y);
+    }
+
+    private boolean canJoinTheHunt() {
+        if (!World.isOpen()) {
+            return true;
+        }
+        int hunting = 0;
+        for (GameEnemy enemy : MyActivity.enemies) {
+            if (enemy != this && enemy instanceof EnemyTerraWorm && ((EnemyTerraWorm) enemy).isAttacking()) {
+                hunting++;
+            }
+        }
+        return hunting < Math.min(MOST_HUNTING, 1 + MyActivity.canvas.myActivity.level / LEVELS_PER_HUNTER);
+    }
+
+    private double getRotationTowards(MathVector point) {
+        MathVector vector = new MathVector(getPositionInRoom(), point);
         double angle = getCurrentDirection().signedAngleDeg(vector);
         if (Math.abs(angle) > 5) {
             return -5 * Math.signum(getCurrentDirection().signedAngleDeg(vector));
@@ -133,10 +185,10 @@ public class EnemyTerraWorm extends GameEnemy {
         for (int i = 0 ; i < angle/2 ; i++){
             MathVector pointPositive = vector.rotatedDeg(angle/2 - i).applyTo(getPositionInRoom());
             MathVector pointNegative = vector.rotatedDeg(-angle/2 + i).applyTo(getPositionInRoom());
-            if (!MyActivity.isInRoom(pointPositive.x,pointPositive.y)){
+            if (isBeyondBorder(pointPositive)){
                 return -5;
             }
-            if (!MyActivity.isInRoom(pointNegative.x,pointNegative.y)){
+            if (isBeyondBorder(pointNegative)){
                 return +5;
             }
         }

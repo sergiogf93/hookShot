@@ -59,23 +59,37 @@ public class Door extends GameDynamicObject {
             openingUpdates = Math.min(openingUpdates + 1, OPEN_UPDATES);
             return;
         }
-        boolean allOn = true;
-        for (WallButton button : buttons){
-            allOn = allOn && button.isOn();
-        }
-        if (guardian != null && MyActivity.enemies.contains(guardian)) {
-            allOn = false;
-        }
-        if (allOn){
-            // Out of the objects that block and can be hooked, but still drawn while it slides open
-            MyActivity.dynamicObjects.remove(this);
-            setGhost(true);
+        if (isUnlocked()){
+            letThrough();
             openingUpdates = 0;
             MyActivity.notifications.add(new HUDNotification("DOOR OPENED!", TimeUtil.secondsToUpdates(1.667)));
             // Sparks where it splits
             Particles.burst(getxPosInRoom(), getyPosInRoom(), 16, Color.rgb(255, 220, 140), 0.1f, 0.03f, 0.5, 0.004f);
             ScreenShake.shake(0.05f);
         }
+    }
+
+    // Every button pressed, and whatever guards it beaten
+    public boolean isUnlocked() {
+        for (WallButton button : buttons){
+            if (!button.isOn()) {
+                return false;
+            }
+        }
+        return guardian == null || !MyActivity.enemies.contains(guardian);
+    }
+
+    // Already open, without the sparks or the word of it: a door in a piece of the open world that's come back with
+    // its buttons pressed the way they were left
+    public void openAtOnce() {
+        letThrough();
+        openingUpdates = OPEN_UPDATES;
+    }
+
+    // Out of the objects that block and can be hooked, but still drawn while it slides open
+    private void letThrough() {
+        MyActivity.dynamicObjects.remove(this);
+        setGhost(true);
     }
 
     // Banded iron plates between two anchors bolted into the rock, with a lock in the middle that has a light for

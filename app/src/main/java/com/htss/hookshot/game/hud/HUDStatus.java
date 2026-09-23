@@ -57,7 +57,7 @@ public class HUDStatus extends HUDElement {
         if (MyActivity.paused) {
             return;
         }
-        String level = MyActivity.playground ? "PLAYGROUND" : "LEVEL " + MyActivity.canvas.myActivity.level;
+        String level = MyActivity.getPlaceName();
         drawText(canvas, level, MARGIN, MARGIN + TEXT_SIZE);
         drawHealth(canvas);
         drawCoins(canvas, MARGIN * 2 + getPaint().measureText(level));

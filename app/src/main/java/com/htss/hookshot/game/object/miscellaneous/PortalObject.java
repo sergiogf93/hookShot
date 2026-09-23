@@ -43,7 +43,9 @@ public class PortalObject extends GameDynamicObject {
             MyActivity.canvas.gameObjects.remove(MyActivity.character);
             MyActivity.canvas.gameObjects.remove(MyActivity.character.getCompass());
             MyActivity.canvas.gameObjects.remove(MyActivity.character.getInfiniteJumpsTimer());
-            MyActivity.character.setPositionInRoom(getTwinPortal().getxPortal(), getTwinPortal().getyPortal());
+            MyActivity.character.setPositionInRoom(getTwinPortal().getxPosInRoom(), getTwinPortal().getyPosInRoom());
+            // The camera travels to the twin on its own, rather than following the character there at once
+            MyActivity.cameraFollows = false;
             state = STATE_MOVING;
         }
     }
@@ -76,8 +78,7 @@ public class PortalObject extends GameDynamicObject {
             // The camera the twin was placed with may not fit anymore if the screen size changed since
             MyActivity.canvas.dx = GameBoard.clampDx(getTwinPortal().getDx());
             MyActivity.canvas.dy = GameBoard.clampDy(getTwinPortal().getDy());
-            MyActivity.character.setxPosInScreen(getTwinPortal().getxPosInRoom() + MyActivity.canvas.dx);
-            MyActivity.character.setyPosInScreen(getTwinPortal().getyPosInRoom() + MyActivity.canvas.dy);
+            MyActivity.cameraFollows = true;
             MyActivity.character.update();
             state = STATE_REST;
         }

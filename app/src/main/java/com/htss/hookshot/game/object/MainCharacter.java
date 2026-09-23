@@ -142,79 +142,17 @@ public class MainCharacter extends GameCharacter {
     }
 
     @Override
-    public double getxPosInRoom(){
-        return this.xPos - MyActivity.canvas.dx;
-    }
-
-    @Override
-    public double getyPosInRoom(){
-        return this.yPos - MyActivity.canvas.dy;
-    }
-
-    @Override
-    public double getxPosInScreen(){
-        return this.xPos;
-    }
-
-    @Override
-    public double getyPosInScreen(){
-        return this.yPos;
-    }
-
-    public void setyPosInScreen(double yPos){
-        this.yPos = yPos;
-    }
-    public void setxPosInScreen(double xPos){
-        this.xPos = xPos;
-    }
-
-    @Override
     public void updatePosition() {
+        super.updatePosition();
         if (MyActivity.currentMap != null) {
-            managePositionRelativeToMap();
             this.healthBar.setxCenter((int) this.getxPosInScreen());
             int yDirection = (getyPosInScreen() < MyActivity.VERTICAL_MARGIN) ? -1 : 1;
             this.healthBar.setyCenter((int) (getyPosInScreen() + yDirection * getHeight()));
-        } else {
-            super.updatePosition();
         }
     }
 
-    private void managePositionRelativeToMap() {
-        MathVector futurePosition = getFuturePositionInScreen();
-        if (getP().x > 0){
-            if (futurePosition.x > MyActivity.screenWidth - MyActivity.HORIZONTAL_MARGIN && MyActivity.canvas.dx > - (MyActivity.currentMap.getWidth() - MyActivity.screenWidth)){
-                MyActivity.canvas.dx -= getP().x;
-            } else {
-                this.xPos = getxPosInScreen() + getP().x;
-            }
-        } else if (getP().x < 0){
-            if (futurePosition.x < MyActivity.HORIZONTAL_MARGIN && MyActivity.canvas.dx < 0){
-                MyActivity.canvas.dx -= getP().x;
-            } else {
-                this.xPos = getxPosInScreen() + getP().x;
-            }
-        }
-        if (getP().y > 0){
-            if (futurePosition.y > MyActivity.screenHeight - MyActivity.VERTICAL_MARGIN && MyActivity.canvas.dy > - (MyActivity.currentMap.getHeight() - MyActivity.screenHeight)){
-                MyActivity.canvas.dy -= getP().y;
-            } else {
-                this.yPos = getyPosInScreen() + getP().y;
-            }
-        } else if (getP().y < 0){
-            if (futurePosition.y < MyActivity.VERTICAL_MARGIN && MyActivity.canvas.dy < 0) {
-                MyActivity.canvas.dy -= getP().y;
-            } else {
-                this.yPos = getyPosInScreen() + getP().y;
-            }
-        }
-        if (getyPosInScreen() > MyActivity.screenHeight + getHeight() || getxPosInScreen() < 0 || getxPosInScreen() > MyActivity.screenWidth) {
-            manageExitMap();
-        }
-    }
-
-    private void manageExitMap() {
-        MyActivity.switchMap();
+    // Portals only work in pairs, so when a cave that had one goes, they all go
+    public void losePortals() {
         for (PortalObject portal : getPortals()) {
             portal.destroy();
         }
@@ -222,14 +160,8 @@ public class MainCharacter extends GameCharacter {
         if (getCurrentPowerUp() == GamePowerUp.PORTAL){
             equipPowerUp(GamePowerUp.PORTAL);
         }
-        getPortals().clear();
-        if (isHooked()) {
-            removeHook();
-        }
-        if (compass != null) {
-            compass.clearInterests();
-        }
     }
+
 
     @Override
     public void update(){

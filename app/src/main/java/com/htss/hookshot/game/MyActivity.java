@@ -24,8 +24,6 @@ import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.effect.GameEffect;
 import com.htss.hookshot.effect.Particles;
 import com.htss.hookshot.effect.ScreenShake;
-import com.htss.hookshot.effect.SwitchMapHorizontalEffect;
-import com.htss.hookshot.effect.SwitchMapVerticalEffect;
 import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.hud.HUDNotification;
 import com.htss.hookshot.game.hud.advices.HUDAdvice;
@@ -62,7 +60,10 @@ import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.interfaces.Clickable;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.interfaces.Hookable;
+import com.htss.hookshot.map.Cave;
 import com.htss.hookshot.map.Map;
+import com.htss.hookshot.map.OpenWorld;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.math.GameMath;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.FramePacer;
@@ -113,7 +114,6 @@ public class MyActivity extends Activity {
     private static int BUTTON_A_BOTTOM_PADDING,BUTTON_A_RIGHT_PADDING,BUTTON_B_BOTTOM_PADDING,BUTTON_B_RIGHT_PADDING;
 
     public static GameBoard canvas;
-    public static GameEffect roomSwitchEffect;
     private final FramePacer framePacer = new FramePacer(UPDATES_PER_SECOND);
     public static int screenHeight, screenWidth; //Default 110 80, for screen size 30 20
     private static int pendingScreenWidth, pendingScreenHeight;
@@ -132,6 +132,11 @@ public class MyActivity extends Activity {
     public static boolean paused = false, handleTouch = true, debugging = false;
     // In the playground, which never saves and has its own menu, and whether the character can be hurt there
     public static boolean playground = false, godMode = false;
+    // In the open world, which is saved apart from the game of caves one after another, and the seed it's made from
+    public static boolean openWorld = false;
+    public long openSeed = 0;
+    // Whether the camera goes after the character. Not while a portal carries it, which moves the camera itself
+    public static boolean cameraFollows = true;
     public static HUDPlaygroundMenu playgroundMenu;
     public static long lastTap = 0;
     // Where a shot found nothing to grip, and the character's frame then
@@ -185,7 +190,6 @@ public class MyActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // The game state lives in static fields, which outlive the activity when Android keeps the process
-        roomSwitchEffect = null;
         handleTouch = true;
         gameEffects.clear();
         notifications.clear();
@@ -382,10 +386,22 @@ public class MyActivity extends Activity {
         pendingScreenHeight = height;
     }
 
+    // Whether the character is still in the game. It leaves it as it dies
+    public static boolean isCharacterAlive() {
+        return character != null && canvas.gameObjects.contains(character);
+    }
+
+    // The camera jumps to the character, as when a game starts or the screen changes size
+    public static void centerCameraOnCharacter() {
+        canvas.dx = (float) (screenWidth / 2 - character.getxPosInRoom());
+        canvas.dy = (float) (screenHeight / 2 - character.getyPosInRoom());
+        canvas.assertMapMargins();
+    }
+
     public static void applyPendingResize() {
-        // Room switches and portal travel move the character and camera for the old size, so let them finish
+        // Portal travel moves the camera for the old size, so it's left to finish
         boolean sizeChanged = pendingScreenWidth != screenWidth || pendingScreenHeight != screenHeight;
-        if (sizeChanged && roomSwitchEffect == null && handleTouch) {
+        if (sizeChanged && handleTouch) {
             resize(pendingScreenWidth, pendingScreenHeight);
         }
     }
@@ -398,13 +414,7 @@ public class MyActivity extends Activity {
             (new MainMenu()).execute();
             return;
         }
-        // Keep the character where it is in the cave and center the camera on it
-        MathVector characterInRoom = character.getPositionInRoom();
-        canvas.dx = (float) (screenWidth / 2 - characterInRoom.x);
-        canvas.dy = (float) (screenHeight / 2 - characterInRoom.y);
-        canvas.assertMapMargins();
-        character.setxPosInScreen(characterInRoom.x + canvas.dx);
-        character.setyPosInScreen(characterInRoom.y + canvas.dy);
+        centerCameraOnCharacter();
         for (HUDAdvice advice : advices) {
             advice.layoutForScreen();
         }
@@ -436,6 +446,10 @@ public class MyActivity extends Activity {
     @Override
     protected void onPause() {
         stopFrameUpdates();
+        // The game may not be opened again before Android closes it
+        if (openWorld && character != null) {
+            saveOpenWorld(isCharacterAlive());
+        }
         // Come back to the pause menu instead of straight into the action
         if (canPause()) {
             pause();
@@ -543,7 +557,7 @@ public class MyActivity extends Activity {
     }
 
     public static boolean isInRoom(double x, double y){
-        return x >= 0 && x < MyActivity.currentMap.getWidth() && y >= 0 && y < MyActivity.currentMap.getHeight();
+        return World.contains(x, y);
     }
 
     public static boolean isInScreen(double x, double y){
@@ -563,51 +577,49 @@ public class MyActivity extends Activity {
     }
 
     private void handleTouch(MotionEvent ev) {
-        if (roomSwitchEffect == null) {
-            switch (ev.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                case MotionEvent.ACTION_POINTER_DOWN: {
-                    // Only the finger that went down presses. Pressing again under the fingers already on the
-                    // screen would repeat their A and B actions
-                    int index = ev.getActionIndex();
-                    double xDown = ev.getX(index);
-                    double yDown = ev.getY(index);
-                    boolean nothingPressed = manageDownTouch(xDown, yDown, ev.getPointerId(index), index);
-                    // With the twin sticks the chain is only worked from its stick, so the cave itself isn't tapped
-                    if (nothingPressed && !paused && currentMap != null && !isTwin()) {
-                        touchScreen(xDown, yDown, ev.getPointerId(index));
-                    }
-                    break;
+        switch (ev.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN: {
+                // Only the finger that went down presses. Pressing again under the fingers already on the
+                // screen would repeat their A and B actions
+                int index = ev.getActionIndex();
+                double xDown = ev.getX(index);
+                double yDown = ev.getY(index);
+                boolean nothingPressed = manageDownTouch(xDown, yDown, ev.getPointerId(index), index);
+                // With the twin sticks the chain is only worked from its stick, so the cave itself isn't tapped
+                if (nothingPressed && !paused && currentMap != null && !isTwin()) {
+                    touchScreen(xDown, yDown, ev.getPointerId(index));
                 }
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_POINTER_UP: {
-                    manageUpTouch(ev.getPointerId(ev.getActionIndex()));
-                    break;
+                break;
+            }
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP: {
+                manageUpTouch(ev.getPointerId(ev.getActionIndex()));
+                break;
+            }
+            case MotionEvent.ACTION_CANCEL: {
+                // The system took the gesture, so the fingers are gone without being lifted, and the chain stays
+                cancelChainTouch();
+                for (int i = 0; i < ev.getPointerCount(); i++) {
+                    manageUpTouch(ev.getPointerId(i));
                 }
-                case MotionEvent.ACTION_CANCEL: {
-                    // The system took the gesture, so the fingers are gone without being lifted, and the chain stays
-                    cancelChainTouch();
-                    for (int i = 0; i < ev.getPointerCount(); i++) {
-                        manageUpTouch(ev.getPointerId(i));
-                    }
-                    break;
-                }
-                case MotionEvent.ACTION_MOVE: {
-                    for (int i = 0; i < ev.getPointerCount(); i++) {
-                        if (currentMap != null) {
-                            // Match fingers by id, as their index changes when another finger lifts
-                            if (joystick.isClickable() && joystick.isOn() && joystick.getTouchId() == ev.getPointerId(i)) {
-                                joystick.moveJoystick(ev.getX(i), ev.getY(i));
-                            }
-                            if (hookStick.isClickable() && hookStick.isOn() && hookStick.getTouchId() == ev.getPointerId(i)) {
-                                hookStick.moveHandle(ev.getX(i), ev.getY(i));
-                            }
-                        } else {
-                            character.setPositionInRoom(ev.getX(i), ev.getY(i));
+                break;
+            }
+            case MotionEvent.ACTION_MOVE: {
+                for (int i = 0; i < ev.getPointerCount(); i++) {
+                    if (currentMap != null) {
+                        // Match fingers by id, as their index changes when another finger lifts
+                        if (joystick.isClickable() && joystick.isOn() && joystick.getTouchId() == ev.getPointerId(i)) {
+                            joystick.moveJoystick(ev.getX(i), ev.getY(i));
                         }
+                        if (hookStick.isClickable() && hookStick.isOn() && hookStick.getTouchId() == ev.getPointerId(i)) {
+                            hookStick.moveHandle(ev.getX(i), ev.getY(i));
+                        }
+                    } else {
+                        character.setPositionInRoom(ev.getX(i), ev.getY(i));
                     }
-                    break;
                 }
+                break;
             }
         }
     }
@@ -822,14 +834,19 @@ public class MyActivity extends Activity {
         if (!isInRoom(point.x, point.y)) {
             return isEntranceWall(point.x, point.y);
         }
-        return Color.alpha(canvas.mapBitmap.getPixel((int) point.x, (int) point.y)) == 255 || checkIfDoorsContain(point);
+        return World.isSolid((int) point.x, (int) point.y) || checkIfDoorsContain(point);
     }
 
     // Beyond the top of the cave, and beyond the side the character came in from, it can't go back, as if there was
     // rock. So the hook grips there too, when it's thrown through the entrance. The exits stay open
     private static boolean isEntranceWall(double x, double y) {
+        Cave cave = World.getCurrent();
+        // The open world has no way in: beyond its pieces there's only what hasn't been made yet
+        if (cave == null || openWorld) {
+            return false;
+        }
         int entranceX = currentMap.getEntrance().tileX;
-        return y < 0 || (x < 0 && entranceX == 0) || (x >= currentMap.getWidth() && entranceX == mapXTiles - 1);
+        return y < cave.y || (x < cave.x && entranceX == 0) || (x >= cave.x + cave.width && entranceX == mapXTiles - 1);
     }
 
     // The first rock, door or wall of the entrance on the straight line between two points in the room, if any
@@ -848,7 +865,7 @@ public class MyActivity extends Activity {
             if (!isInRoom(point.x, point.y)) {
                 return isEntranceWall(point.x, point.y) ? point : null;
             }
-            if (Color.alpha(canvas.mapBitmap.getPixel((int) point.x, (int) point.y)) == 255) {
+            if (World.isSolid((int) point.x, (int) point.y)) {
                 return point;
             }
         }
@@ -1104,45 +1121,6 @@ public class MyActivity extends Activity {
         }
     }
 
-    public static void resetObjectsLists(){
-        canvas.gameObjects.clear();
-        dynamicObjects.clear();
-        enemies.clear();
-        Particles.clear();
-        ScreenShake.clear();
-        canvas.gameObjects.add(character);
-        dynamicObjects.add(character);
-    }
-
-    public static void switchMap() {
-        if (playground) {
-            respawnInPlayground();
-            return;
-        }
-        if (roomSwitchEffect == null) {
-            setHUDUnclickable();
-
-            resetObjectsLists();
-
-            Bitmap currentMapInScreen = canvas.getMapInScreen();
-            currentMap.extend();
-            canvas.generateMap();
-            if (currentMap.getEntrance().tileX == 0) {
-                canvas.dx = 0;
-                Bitmap nextMapInScreen = canvas.getMapInScreen();
-                roomSwitchEffect = new SwitchMapHorizontalEffect(currentMapInScreen, nextMapInScreen, 1);
-            } else if (currentMap.getEntrance().tileX == mapXTiles - 1) {
-                canvas.dx = MyActivity.screenWidth - MyActivity.currentMap.getWidth();
-                Bitmap nextMapInScreen = canvas.getMapInScreen();
-                roomSwitchEffect = new SwitchMapHorizontalEffect(currentMapInScreen, nextMapInScreen, -1);
-            } else {
-                canvas.dy = 0;
-                Bitmap nextMapInScreen = canvas.getMapInScreen();
-                roomSwitchEffect = new SwitchMapVerticalEffect(currentMapInScreen, nextMapInScreen, 1);
-            }
-        }
-    }
-
     public static void pause() {
         MyActivity.paused = true;
         hideControls();
@@ -1201,12 +1179,8 @@ public class MyActivity extends Activity {
         }
         character.setHealth(character.getMaxHealth());
         character.setP(new MathVector(0, 0));
-        MathVector start = currentMap.startPosition();
-        canvas.dx = (float) (screenWidth / 2 - start.x);
-        canvas.dy = (float) (screenHeight / 2 - start.y);
-        canvas.assertMapMargins();
-        character.setxPosInScreen(start.x + canvas.dx);
-        character.setyPosInScreen(start.y + canvas.dy);
+        character.setPositionInRoom(currentMap.startPosition());
+        centerCameraOnCharacter();
     }
 
     // A few of every power, to try them all
@@ -1241,21 +1215,61 @@ public class MyActivity extends Activity {
         editor.putInt("ExplosionsUsed", character.getExplosionsUsed());
         editor.putInt("Coins", character.getCoins());
         saveHealth();
-        editor.commit();
+        editor.apply();
+    }
+
+    // Where the character is in the open world and what it has, under names of their own, so the game of caves is left
+    // as it was, and what it changed in the world. Every time the character crosses into another piece of it
+    public void saveOpenWorld() {
+        saveOpenWorld(true);
+    }
+
+    // The same, but for where the character is if not the place, as when it died and goes back to where it was last saved
+    public void saveOpenWorld(boolean place) {
+        OpenWorld.save();
+        SharedPreferences.Editor editor = getPreferences(MODE_PRIVATE).edit();
+        editor.putLong("OpenSeed", openSeed);
+        if (place) {
+            editor.putFloat("OpenX", (float) character.getxPosInRoom());
+            editor.putFloat("OpenY", (float) character.getyPosInRoom());
+        }
+        editor.putInt("OpenPortals", getPowerUpCount(GamePowerUp.PORTAL));
+        editor.putInt("OpenCompass", getPowerUpCount(GamePowerUp.COMPASS));
+        editor.putInt("OpenBombs", getPowerUpCount(GamePowerUp.BOMB));
+        editor.putInt("OpenJumps", getPowerUpCount(GamePowerUp.INFINITE_JUMPS));
+        editor.putInt("OpenExplosionsUsed", character.getExplosionsUsed());
+        editor.putInt("OpenCoins", character.getCoins());
+        editor.apply();
+    }
+
+    // What the top of the screen calls where the character is: the level, or in the open world how deep it is, in tiles
+    // under the surface
+    public static String getPlaceName() {
+        if (playground) {
+            return "PLAYGROUND";
+        } else if (openWorld) {
+            return "DEPTH " + (int) Math.max(0, character.getyPosInRoom() / Map.SQUARE_SIZE);
+        }
+        return "LEVEL " + canvas.myActivity.level;
+    }
+
+    private static int getPowerUpCount(int type) {
+        Integer count = character.getPowerUps().get(type);
+        return (count == null) ? 0 : count;
     }
 
     public void saveControls() {
         SharedPreferences preferences = getPreferences(MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt("Controls", controls);
-        editor.commit();
+        editor.apply();
     }
 
     public void saveHealth() {
         SharedPreferences preferences = getPreferences(MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putFloat("Health", (float) character.getHealth());
-        editor.commit();
+        editor.apply();
     }
 
     public void saveAdvices() {
@@ -1265,7 +1279,7 @@ public class MyActivity extends Activity {
         editor.putInt("CompassAdvice", compassAdvice);
         editor.putInt("BombAdvice", bombAdvice);
         editor.putInt("JumpsAdvice", jumpsAdvice);
-        editor.commit();
+        editor.apply();
     }
 
 }

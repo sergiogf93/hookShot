@@ -41,6 +41,7 @@ public class LaunchGame implements Execution {
     public double execute() {
         MyActivity.playground = false;
         MyActivity.godMode = false;
+        MyActivity.openWorld = false;
         MyActivity.canvas.gameObjects.clear();
         MyActivity.dynamicObjects.clear();
         Particles.clear();
@@ -63,13 +64,9 @@ public class LaunchGame implements Execution {
         }
         MyActivity.canvas.generateMap();
 
-        MyActivity.canvas.dx = (float) -(startPosition.x - MyActivity.screenWidth/2);
-        MyActivity.canvas.dy = (float) -(startPosition.y - MyActivity.screenHeight/2);
-        MyActivity.canvas.assertMapMargins();
-
-        startPosition = startPosition.roomToScreen();
-
         MyActivity.character = new MainCharacter(startPosition.x,startPosition.y);
+        MyActivity.cameraFollows = true;
+        MyActivity.centerCameraOnCharacter();
 
         MyActivity.hudElements.clear();
         MyActivity.addControls();

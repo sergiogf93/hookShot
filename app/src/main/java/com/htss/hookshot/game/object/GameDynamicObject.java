@@ -4,6 +4,7 @@ import android.graphics.Color;
 
 import com.htss.hookshot.constraints.Constraint;
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.game.object.shapes.RectShape;
 import com.htss.hookshot.math.MathVector;
@@ -167,17 +168,10 @@ public abstract class GameDynamicObject extends GameObject {
     public double checkUpCollision(int margin){
         for (double x = getxPosInRoom()-margin;x < getxPosInRoom() + margin;x++){
             for (double y = getyPosInRoom() - getHeight()/2 ; y > getyPosInRoom() - getHeight()/2 + p.y ; y--) {
-                if(MyActivity.isInRoom(x, y)) {
-                    if (checkCollisionWithOtherObjects(x,y)) {
-                        return y - (getyPosInRoom() - getHeight() / 2);
-                    } else if (!isIgnoringMap()) {
-                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                        if (Color.alpha(pixel) == 255) {
-                            return y - (getyPosInRoom() - getHeight() / 2);
-                        }
-                    }
-                } else {
-                    return 0f;
+                if (checkCollisionWithOtherObjects(x,y)) {
+                    return y - (getyPosInRoom() - getHeight() / 2);
+                } else if (!isIgnoringMap() && World.isSolid((int) x, (int) y)) {
+                    return y - (getyPosInRoom() - getHeight() / 2);
                 }
             }
         }
@@ -187,16 +181,11 @@ public abstract class GameDynamicObject extends GameObject {
     private double checkDownCollision(int margin){
         for (double x = getxPosInRoom()-margin;x < getxPosInRoom() + margin;x++){
             for (double y = getyPosInRoom() + getHeight()/2 ; y < getyPosInRoom() + getHeight()/2 + p.y ; y++) {
-                if(MyActivity.isInRoom(x, y)) {
-                    if (checkCollisionWithOtherObjects(x,y)){
-                        setOnFloor(true);
-                        return y - getyPosInRoom() - getHeight() / 2;
-                    } else if (!isIgnoringMap()) {
-                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                        if (Color.alpha(pixel) == 255) {
-                            return y - getyPosInRoom() - getHeight() / 2;
-                        }
-                    }
+                if (checkCollisionWithOtherObjects(x,y)){
+                    setOnFloor(true);
+                    return y - getyPosInRoom() - getHeight() / 2;
+                } else if (!isIgnoringMap() && World.isSolid((int) x, (int) y)) {
+                    return y - getyPosInRoom() - getHeight() / 2;
                 }
             }
         }
@@ -206,19 +195,10 @@ public abstract class GameDynamicObject extends GameObject {
     private double checkRightCollision(int margin){
         for (double y = getyPosInRoom()-margin;y < getyPosInRoom() + margin;y++){
             for (double x = getxPosInRoom()+getWidth()/2 ; x < getxPosInRoom() + getWidth()/2 + p.x ; x++) {
-                if(MyActivity.isInRoom(x, y)) {
-                    if (checkCollisionWithOtherObjects(x,y)){
-                        return x - getxPosInRoom() - getWidth() / 2;
-                    } else if (!isIgnoringMap()) {
-                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                        if (Color.alpha(pixel) == 255) {
-                            return x - getxPosInRoom() - getWidth() / 2;
-                        }
-                    }
-                } else {
-                    if (MyActivity.currentMap.getEntrance().tileX == MyActivity.mapXTiles - 1) {
-                        return 0f;
-                    }
+                if (checkCollisionWithOtherObjects(x,y)){
+                    return x - getxPosInRoom() - getWidth() / 2;
+                } else if (!isIgnoringMap() && World.isSolid((int) x, (int) y)) {
+                    return x - getxPosInRoom() - getWidth() / 2;
                 }
             }
         }
@@ -228,19 +208,10 @@ public abstract class GameDynamicObject extends GameObject {
     private double checkLeftCollision(int margin){
         for (double y = getyPosInRoom()-margin;y < getyPosInRoom() + margin;y++){
             for (double x = getxPosInRoom()-getWidth()/2 ; x > getxPosInRoom() - getWidth()/2 + p.x ; x--) {
-                if(MyActivity.isInRoom(x, y)) {
-                    if (checkCollisionWithOtherObjects(x,y)){
-                        return x - getxPosInRoom() + getWidth() / 2;
-                    } else if (!isIgnoringMap()) {
-                        int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                        if (Color.alpha(pixel) == 255) {
-                            return x - getxPosInRoom() + getWidth() / 2;
-                        }
-                    }
-                } else {
-                    if (MyActivity.currentMap.getEntrance().tileX == 0) {
-                        return 0f;
-                    }
+                if (checkCollisionWithOtherObjects(x,y)){
+                    return x - getxPosInRoom() + getWidth() / 2;
+                } else if (!isIgnoringMap() && World.isSolid((int) x, (int) y)) {
+                    return x - getxPosInRoom() + getWidth() / 2;
                 }
             }
         }
@@ -307,12 +278,10 @@ public abstract class GameDynamicObject extends GameObject {
     public boolean onFloor(int margin){
         for (double x = getxPosInRoom()-margin;x < getxPosInRoom() + margin;x++){
             double y = getyPosInRoom() + getHeight()/2 + 3;
-            if(MyActivity.isInRoom(x, y)) {
-                int pixel = MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y);
-                if (Color.alpha(pixel) == 255) {
-                    onFloor = true;
-                    return true;
-                }
+            // Beyond the world too, where an exit waits for the cave it leads into
+            if (World.isSolid((int) x, (int) y)) {
+                onFloor = true;
+                return true;
             }
         }
         onFloor = false;
@@ -326,8 +295,8 @@ public abstract class GameDynamicObject extends GameObject {
             y--;
             for (int x = (int) getxPosInRoom() - margin; x < (int)getxPosInRoom() + margin; x++) {
                 if (MyActivity.isInRoom(x,y)) {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel(x, y);
-                    if (Color.alpha(pixel) == 255) {
+                    boolean pixel = World.isSolid(x, y);
+                    if (pixel) {
                         break;
                     }
                     if (x == (int) getxPosInRoom() + margin - 1) {
@@ -348,8 +317,8 @@ public abstract class GameDynamicObject extends GameObject {
             y++;
             for (int x = (int) getxPosInRoom() - margin; x < (int)getxPosInRoom() + margin; x++) {
                 if (MyActivity.isInRoom(x,y)) {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel(x, y);
-                    if (Color.alpha(pixel) == 255) {
+                    boolean pixel = World.isSolid(x, y);
+                    if (pixel) {
                         break;
                     }
                     if (x == (int) getxPosInRoom() + margin - 1) {
@@ -370,8 +339,8 @@ public abstract class GameDynamicObject extends GameObject {
             x--;
             for (int y = (int) getyPosInRoom() - margin; y < (int)getyPosInRoom() - margin/5; y++) {
                 if (MyActivity.isInRoom(x,y)) {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel(x, y);
-                    if (Color.alpha(pixel) == 255) {
+                    boolean pixel = World.isSolid(x, y);
+                    if (pixel) {
                         break;
                     }
                     if (y == (int) getyPosInRoom() + margin - 1) {
@@ -392,8 +361,8 @@ public abstract class GameDynamicObject extends GameObject {
             x++;
             for (int y = (int) getyPosInRoom() - margin; y < (int)getyPosInRoom() - margin/5; y++) {
                 if (MyActivity.isInRoom(x, y)) {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel(x, y);
-                    if (Color.alpha(pixel) == 255) {
+                    boolean pixel = World.isSolid(x, y);
+                    if (pixel) {
                         break;
                     }
                     if (y == (int) getyPosInRoom() + margin - 1) {
@@ -413,15 +382,15 @@ public abstract class GameDynamicObject extends GameObject {
         while (x < getWidth()){
             x++;
             if (MyActivity.isInRoom(getxPosInRoom()+x,y)){
-                int pixelRight = MyActivity.canvas.mapBitmap.getPixel((int) (getxPosInRoom()+x), y);
-                if (Color.alpha(pixelRight) != 255) {
+                boolean pixelRight = World.isSolid((int) (getxPosInRoom()+x), y);
+                if (!pixelRight) {
                     p.x = x + getWidth()/2 - getxPosInRoom();
                     break;
                 }
             }
             if (MyActivity.isInRoom(getxPosInRoom()-x,y)){
-                int pixelLeft = MyActivity.canvas.mapBitmap.getPixel((int) (getxPosInRoom()-x), y);
-                if (Color.alpha(pixelLeft) != 255) {
+                boolean pixelLeft = World.isSolid((int) (getxPosInRoom()-x), y);
+                if (!pixelLeft) {
                     p.x = x - getWidth()/2 - getxPosInRoom();
                     break;
                 }
@@ -435,15 +404,15 @@ public abstract class GameDynamicObject extends GameObject {
         while (y < getHeight()){
             y++;
             if (MyActivity.isInRoom(x,getyPosInRoom() + y)){
-                int pixelDown = MyActivity.canvas.mapBitmap.getPixel(x, (int) (getyPosInRoom() + y));
-                if (Color.alpha(pixelDown) != 255) {
+                boolean pixelDown = World.isSolid(x, (int) (getyPosInRoom() + y));
+                if (!pixelDown) {
                     p.y = y + getHeight()/2 - getyPosInRoom();
                     break;
                 }
             }
             if (MyActivity.isInRoom(x,getyPosInRoom() - y)){
-                int pixelUp = MyActivity.canvas.mapBitmap.getPixel(x, (int) (getyPosInRoom() - y));
-                if (Color.alpha(pixelUp) != 255) {
+                boolean pixelUp = World.isSolid(x, (int) (getyPosInRoom() - y));
+                if (!pixelUp) {
                     p.y = y - getHeight()/2 - getyPosInRoom();
                     break;
                 }
@@ -476,14 +445,14 @@ public abstract class GameDynamicObject extends GameObject {
         }
         for (int x = (int) getxPosInRoom() - margin; x < getxPosInRoom() + margin; x++) {
             if (MyActivity.isInRoom(x, getyPosInRoom() - getHeight() / 2)) {
-                int pixel = MyActivity.canvas.mapBitmap.getPixel(x, (int) (getyPosInRoom() - getHeight() / 2));
-                if (Color.alpha(pixel) == 255) {
+                boolean pixel = World.isSolid(x, (int) (getyPosInRoom() - getHeight() / 2));
+                if (pixel) {
                     return true;
                 }
             }
             if (MyActivity.isInRoom(x, getyPosInRoom() + getHeight() / 2)) {
-                int pixel = MyActivity.canvas.mapBitmap.getPixel(x, (int) (getyPosInRoom() + getHeight() / 2));
-                if (Color.alpha(pixel) == 255) {
+                boolean pixel = World.isSolid(x, (int) (getyPosInRoom() + getHeight() / 2));
+                if (pixel) {
                     return true;
                 }
             }
@@ -491,15 +460,15 @@ public abstract class GameDynamicObject extends GameObject {
         for (int y = (int) getyPosInRoom() - margin; y < getyPosInRoom() + margin; y++) {
             if (MyActivity.isInRoom(getxPosInRoom() - getWidth() / 2, y)) {
                 {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel((int) (getxPosInRoom() - getWidth() / 2), y);
-                    if (Color.alpha(pixel) == 255) {
+                    boolean pixel = World.isSolid((int) (getxPosInRoom() - getWidth() / 2), y);
+                    if (pixel) {
                         return true;
                     }
                 }
             }
             if (MyActivity.isInRoom(getxPosInRoom() + getWidth() / 2, y)) {
-                int pixel = MyActivity.canvas.mapBitmap.getPixel((int) (getxPosInRoom() + getWidth() / 2), y);
-                if (Color.alpha(pixel) == 255) {
+                boolean pixel = World.isSolid((int) (getxPosInRoom() + getWidth() / 2), y);
+                if (pixel) {
                     return true;
                 }
             }
@@ -510,14 +479,14 @@ public abstract class GameDynamicObject extends GameObject {
     public boolean inFutureContactWithMap(int margin){
         for (int x = (int)getFuturePositionInRoom().x - margin ; x < getFuturePositionInRoom().x + margin ; x++){
             if (MyActivity.isInRoom(x, getFuturePositionInRoom().y - getHeight()/2)) {
-                int pixel = MyActivity.canvas.mapBitmap.getPixel(x, (int) (getFuturePositionInRoom().y - getHeight() / 2));
-                if (Color.alpha(pixel) == 255) {
+                boolean pixel = World.isSolid(x, (int) (getFuturePositionInRoom().y - getHeight() / 2));
+                if (pixel) {
                     return true;
                 }
             }
             if (MyActivity.isInRoom(x, getFuturePositionInRoom().y + getHeight()/2)) {
-                int pixel = MyActivity.canvas.mapBitmap.getPixel(x, (int) (getFuturePositionInRoom().y + getHeight() / 2));
-                if (Color.alpha(pixel) == 255) {
+                boolean pixel = World.isSolid(x, (int) (getFuturePositionInRoom().y + getHeight() / 2));
+                if (pixel) {
                     return true;
                 }
             }
@@ -525,15 +494,15 @@ public abstract class GameDynamicObject extends GameObject {
         for (int y = (int)getFuturePositionInRoom().y - margin ; y < getFuturePositionInRoom().y + margin ; y++){
             if (MyActivity.isInRoom(getFuturePositionInRoom().x - getWidth() / 2, y)) {
                 {
-                    int pixel = MyActivity.canvas.mapBitmap.getPixel((int) (getFuturePositionInRoom().x - getWidth() / 2), y);
-                    if (Color.alpha(pixel) == 255) {
+                    boolean pixel = World.isSolid((int) (getFuturePositionInRoom().x - getWidth() / 2), y);
+                    if (pixel) {
                         return true;
                     }
                 }
             }
             if (MyActivity.isInRoom(getFuturePositionInRoom().x + getWidth() / 2, y)) {
-                int pixel = MyActivity.canvas.mapBitmap.getPixel((int) (getFuturePositionInRoom().x + getWidth() / 2), y);
-                if (Color.alpha(pixel) == 255) {
+                boolean pixel = World.isSolid((int) (getFuturePositionInRoom().x + getWidth() / 2), y);
+                if (pixel) {
                     return true;
                 }
             }

@@ -22,8 +22,10 @@ import com.htss.hookshot.game.hud.advices.HUDAdvice;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.interfaces.Interactable;
+import com.htss.hookshot.map.Cave;
 import com.htss.hookshot.map.CavePalette;
 import com.htss.hookshot.map.Map;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.StringUtil;
 
@@ -46,8 +48,6 @@ public class GameBoard extends View{
 
     public static Paint paint = new Paint();
 
-    public static Bitmap mapBitmap;
-
     public static Vector<GameObject> gameObjects = new Vector<GameObject>();
     public static Vector<GameObject> debugObjects = new Vector<GameObject>();
     private final ArrayList<GameObject> objectsThisFrame = new ArrayList<GameObject>();
@@ -56,15 +56,14 @@ public class GameBoard extends View{
 
     public static String debugText = "";
 
-    private final MapTiles mapTiles = new MapTiles();
     private final Atmosphere atmosphere = new Atmosphere();
-    private final Paint digEdgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    // Where the character last was, to tell how far it moved, and how much further than that the camera moves in an
+    // update when it has catching up to do, in tiles
+    private double lastCharacterX = Double.NaN, lastCharacterY;
+    private static final double CAMERA_CATCH_UP = 0.12;
 
     public GameBoard(Context context, AttributeSet attrs) {
         super(context, attrs);
-        // Only drawn over rock, keeping it opaque. No sizes here, as the tile size isn't known yet
-        digEdgePaint.setStyle(Paint.Style.STROKE);
-        digEdgePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
     }
 
     @Override
@@ -99,34 +98,28 @@ public class GameBoard extends View{
 
         atmosphere.drawBehind(canvas, myActivity.level);
 
-        if (MyActivity.roomSwitchEffect == null) {
+        runUpdates(updates);
+        canvas.save();
+        canvas.translate(ScreenShake.getOffsetX(), ScreenShake.getOffsetY());
 
-            runUpdates(updates);
-            canvas.save();
-            canvas.translate(ScreenShake.getOffsetX(), ScreenShake.getOffsetY());
-
-            if (MyActivity.currentMap != null) {
-                drawGame(canvas);
-            }
-
-            drawObjects(canvas);
-
-            Particles.draw(canvas);
-            canvas.restore();
-
-            if (MyActivity.currentMap != null && MyActivity.character != null) {
-                atmosphere.drawLight(canvas, (float) MyActivity.character.getxPosInScreen(), (float) MyActivity.character.getyPosInScreen());
-            }
-
-            drawHudElements(canvas);
-
-            drawNotifications(canvas);
-
-            manageGameEffects(canvas);
-
-        } else {
-            manageRoomSwitchEffect(canvas);
+        if (MyActivity.currentMap != null) {
+            drawGame(canvas);
         }
+
+        drawObjects(canvas);
+
+        Particles.draw(canvas);
+        canvas.restore();
+
+        if (MyActivity.currentMap != null && MyActivity.character != null) {
+            atmosphere.drawLight(canvas, (float) MyActivity.character.getxPosInScreen(), (float) MyActivity.character.getyPosInScreen());
+        }
+
+        drawHudElements(canvas);
+
+        drawNotifications(canvas);
+
+        manageGameEffects(canvas);
 
         manageAdvices();
 
@@ -145,27 +138,6 @@ public class GameBoard extends View{
     private void manageAdvices() {
         for (int i = 0; i < MyActivity.advices.size(); i++) {
             MyActivity.advices.get(i).check();
-        }
-    }
-
-    private void manageRoomSwitchEffect(Canvas canvas) {
-        MyActivity.roomSwitchEffect.drawEffectAndUpdate(canvas);
-        if (MyActivity.roomSwitchEffect.isFinished()){
-            myActivity.save();
-            MyActivity.roomSwitchEffect.recycle();
-            MyActivity.roomSwitchEffect = null;
-            MyActivity.setHUDClickable();
-            if (MyActivity.character.getCompass() != null) {
-                gameObjects.add(MyActivity.character.getCompass());
-                MyActivity.dynamicObjects.add(MyActivity.character.getCompass());
-                gameObjects.add(MyActivity.character.getCompass().getTimer());
-                MyActivity.dynamicObjects.add(MyActivity.character.getCompass().getTimer());
-                MyActivity.character.getCompass().findInterests();
-            }
-            if (MyActivity.character.getInfiniteJumpsTimer() != null) {
-                gameObjects.add(MyActivity.character.getInfiniteJumpsTimer());
-                MyActivity.dynamicObjects.add(MyActivity.character.getInfiniteJumpsTimer());
-            }
         }
     }
 
@@ -188,8 +160,7 @@ public class GameBoard extends View{
 
     private void drawGame(Canvas canvas) {
         assertMapMargins();
-        // The whole map is too big to draw on the screen canvas, so it's drawn from tiles
-        mapTiles.draw(canvas, (int) -dx, (int) -dy, MyActivity.screenWidth, MyActivity.screenHeight);
+        World.draw(canvas, (int) -dx, (int) -dy, MyActivity.screenWidth, MyActivity.screenHeight);
     }
 
     public void queueUpdates(int updates) {
@@ -197,11 +168,11 @@ public class GameBoard extends View{
     }
 
     // Runs the given updates, several when frames were dropped so the game keeps its speed, and stops early if one
-    // pauses the game or leaves the level. The game is drawn once they're all done, so everything is drawn where it
+    // pauses the game. The game is drawn once they're all done, so everything is drawn where it
     // ended up, with the camera where the character left it
     private void runUpdates(int updates) {
         boolean updated = false;
-        for (int i = 0; i < updates && !MyActivity.paused && MyActivity.roomSwitchEffect == null; i++) {
+        for (int i = 0; i < updates && !MyActivity.paused; i++) {
             updateGame();
             updated = true;
         }
@@ -233,6 +204,11 @@ public class GameBoard extends View{
                 ((Interactable) gameObject).detect();
             }
         }
+        // Once everything has moved: the camera goes after the character, and the world keeps up with where it is
+        followCharacter();
+        if (MyActivity.character != null && MyActivity.currentMap != null) {
+            World.update(MyActivity.character.getxPosInRoom(), MyActivity.character.getyPosInRoom(), (int) -dx, (int) -dy, MyActivity.screenWidth, MyActivity.screenHeight);
+        }
     }
 
     // The objects the last update went over that are still there, so objects that joined during it are drawn once
@@ -249,20 +225,52 @@ public class GameBoard extends View{
         debugObjects.clear();
     }
 
+    // A picture of the caves as they show on the screen
     public Bitmap getMapInScreen(){
         assertMapMargins();
-        return Bitmap.createBitmap(mapBitmap,(int)-dx,(int)-dy,MyActivity.screenWidth,MyActivity.screenHeight);
+        Bitmap picture = Bitmap.createBitmap(MyActivity.screenWidth, MyActivity.screenHeight, Bitmap.Config.ARGB_8888);
+        World.draw(new Canvas(picture), (int) -dx, (int) -dy, MyActivity.screenWidth, MyActivity.screenHeight);
+        return picture;
     }
 
+    // The world starts over with the current map's cave. In a game, more caves follow it
     public void generateMap(){
-        if (mapBitmap != null) {
-            mapBitmap.recycle();
-        }
-        mapBitmap = Bitmap.createBitmap(MyActivity.currentMap.getWidth(), MyActivity.currentMap.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas mapCanvas = new Canvas(mapBitmap);
+        World.start(MyActivity.currentMap, myActivity.level, !MyActivity.playground);
+        lastCharacterX = Double.NaN;
+    }
 
-        MyActivity.currentMap.draw(mapCanvas, CavePalette.forLevel(myActivity.level));
-        mapTiles.setMap(mapBitmap);
+    // Keeps the character within the margins round the middle of the screen, inside the box round the caves. It moves
+    // as far as the character did, so it follows it exactly, and a little more when it has catching up to do, like
+    // when a cave joins the world past an edge it was held at, so that it pans there rather than jumping
+    private void followCharacter() {
+        if (!MyActivity.cameraFollows || MyActivity.character == null || MyActivity.currentMap == null) {
+            return;
+        }
+        double x = MyActivity.character.getxPosInRoom(), y = MyActivity.character.getyPosInRoom();
+        double moved = Double.isNaN(lastCharacterX) ? Double.MAX_VALUE : Math.hypot(x - lastCharacterX, y - lastCharacterY);
+        lastCharacterX = x;
+        lastCharacterY = y;
+        double screenX = x + dx, screenY = y + dy;
+        float targetDx = dx, targetDy = dy;
+        if (screenX > MyActivity.screenWidth - MyActivity.HORIZONTAL_MARGIN) {
+            targetDx -= screenX - (MyActivity.screenWidth - MyActivity.HORIZONTAL_MARGIN);
+        } else if (screenX < MyActivity.HORIZONTAL_MARGIN) {
+            targetDx += MyActivity.HORIZONTAL_MARGIN - screenX;
+        }
+        if (screenY > MyActivity.screenHeight - MyActivity.VERTICAL_MARGIN) {
+            targetDy -= screenY - (MyActivity.screenHeight - MyActivity.VERTICAL_MARGIN);
+        } else if (screenY < MyActivity.VERTICAL_MARGIN) {
+            targetDy += MyActivity.VERTICAL_MARGIN - screenY;
+        }
+        targetDx = clampDx(targetDx);
+        targetDy = clampDy(targetDy);
+        double away = Math.hypot(targetDx - dx, targetDy - dy), most = moved + MyActivity.TILE_WIDTH * CAMERA_CATCH_UP;
+        if (away > most) {
+            targetDx = (float) (dx + (targetDx - dx) * most / away);
+            targetDy = (float) (dy + (targetDy - dy) * most / away);
+        }
+        dx = targetDx;
+        dy = targetDy;
     }
 
     private void drawInfo(Canvas canvas) {
@@ -293,27 +301,13 @@ public class GameBoard extends View{
         dy = clampDy(dy);
     }
 
+    // Inside the box round the caves
     public static float clampDx(float dx) {
-        return Math.min(0, Math.max(dx, -(MyActivity.currentMap.getWidth() - MyActivity.screenWidth)));
+        return Math.min(-World.getLeft(), Math.max(dx, -(World.getRight() - MyActivity.screenWidth)));
     }
 
     public static float clampDy(float dy) {
-        return Math.min(0, Math.max(dy, -(MyActivity.currentMap.getHeight() - MyActivity.screenHeight)));
-    }
-
-    public void clearCircle(Bitmap bitmap, float cx, float cy, float radius) {
-        Paint p = new Paint();
-        p.setColor(getResources().getColor(android.R.color.transparent));
-        p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-        Canvas cnv = new Canvas(bitmap);
-        cnv.drawCircle(cx, cy, radius, p);
-        // Dug tunnels get the same dark edge as the rest of the cave
-        digEdgePaint.setColor(CavePalette.forLevel(myActivity.level).outline);
-        digEdgePaint.setStrokeWidth((float) (Map.SQUARE_SIZE / 4));
-        cnv.drawCircle(cx, cy, radius, digEdgePaint);
-        if (bitmap == mapBitmap) {
-            mapTiles.changed(cx, cy, radius + digEdgePaint.getStrokeWidth());
-        }
+        return Math.min(-World.getTop(), Math.max(dy, -(World.getBottom() - MyActivity.screenHeight)));
     }
 
 }

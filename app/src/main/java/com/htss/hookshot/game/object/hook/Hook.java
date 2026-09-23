@@ -13,6 +13,7 @@ import com.htss.hookshot.game.object.debug.Circle;
 import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.game.object.shapes.GameShape;
 import com.htss.hookshot.interfaces.Execution;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.interfaces.Hookable;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.TimeUtil;
@@ -325,7 +326,7 @@ public class Hook extends Chain {
         if (MyActivity.currentMap == null || !MyActivity.isInRoom(x, y)) {
             return false;
         }
-        if (Color.alpha(MyActivity.canvas.mapBitmap.getPixel((int) x, (int) y)) == 255) {
+        if (World.isSolid((int) x, (int) y)) {
             return true;
         }
         if (!doors.isEmpty()) {

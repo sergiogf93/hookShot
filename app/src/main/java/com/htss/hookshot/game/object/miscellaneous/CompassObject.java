@@ -6,6 +6,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.map.Cave;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
@@ -107,7 +109,12 @@ public class CompassObject extends GameDynamicObject {
 
     public void findInterests() {
         clearInterests();
+        Cave cave = World.getCurrent();
         for (GameObject object : MyActivity.canvas.gameObjects) {
+            // Only what's in the cave being played, as the one after it is there already
+            if (cave != null && !cave.contains(object.getxPosInRoom(), object.getyPosInRoom())) {
+                continue;
+            }
             if (object instanceof WallButton) {
                 if (!((WallButton)object).isOn()) {
                     interests.add(object);

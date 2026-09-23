@@ -5,7 +5,9 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.RectF;
 
+import com.htss.hookshot.effect.FadeEffect;
 import com.htss.hookshot.executions.LaunchGame;
+import com.htss.hookshot.executions.LaunchOpenWorld;
 import com.htss.hookshot.executions.MainMenu;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.interactables.Coin;
@@ -46,7 +48,7 @@ public class HUDMenu extends HUDElement {
 
     // The level, then a coin and how many there are, together in the middle
     private void drawLevel(Canvas canvas) {
-        String level = "LEVEL " + MyActivity.canvas.myActivity.level, coins = String.valueOf(MyActivity.character.getCoins());
+        String level = MyActivity.getPlaceName(), coins = String.valueOf(MyActivity.character.getCoins());
         float size = getPaint().getTextSize(), radius = size * 0.4f, levelWidth = getPaint().measureText(level);
         float width = levelWidth + size * 0.75f + radius * 2 + size / 4 + getPaint().measureText(coins);
         float left = getxCenter() - width / 2, baseline = getyCenter() - getHeight() / 2f - size;
@@ -86,10 +88,15 @@ public class HUDMenu extends HUDElement {
                 return 0;
             }
         }));
-        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 3 * buttonSeparation + 5 * buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, "EXIT GAME", new Execution() {
+        // In the open world, a new one can be started from here. The way out of the app is in the main menu
+        buttons.add(new HUDButton(getxCenter(), getyCenter() - getHeight() / 2 + 3 * buttonSeparation + 5 * buttonHeight / 2, (int) (getWidth() * 0.9), buttonHeight, MyActivity.openWorld ? "NEW WORLD" : "EXIT GAME", new Execution() {
             @Override
             public double execute() {
-                MyActivity.canvas.myActivity.finish();
+                if (MyActivity.openWorld) {
+                    MyActivity.gameEffects.add(new FadeEffect(Color.BLACK, new LaunchOpenWorld(true)));
+                } else {
+                    MyActivity.canvas.myActivity.finish();
+                }
                 return 0;
             }
         }));

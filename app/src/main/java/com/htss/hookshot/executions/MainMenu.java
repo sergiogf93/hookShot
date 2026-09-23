@@ -14,6 +14,7 @@ import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.map.Coord;
+import com.htss.hookshot.map.World;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.persistence.GameStrings;
 
@@ -23,8 +24,14 @@ import com.htss.hookshot.persistence.GameStrings;
 public class MainMenu implements Execution {
     @Override
     public double execute() {
+        // What the character has and changed in the pieces still around, which go now, and where it is. Unless it died,
+        // which takes it back to where it was last saved
+        if (MyActivity.openWorld && MyActivity.character != null) {
+            MyActivity.canvas.myActivity.saveOpenWorld(MyActivity.isCharacterAlive());
+        }
         MyActivity.character = null;
         MyActivity.currentMap = null;
+        World.clear();
         MyActivity.canvas.dx = 0;
         MyActivity.canvas.dy = 0;
         MyActivity.hudElements.clear();
@@ -36,10 +43,13 @@ public class MainMenu implements Execution {
         MyActivity.advices.clear();
         MyActivity.playground = false;
         MyActivity.godMode = false;
+        MyActivity.openWorld = false;
         MyActivity.canvas.myActivity.load();
         // The items sit a bit below the middle, leaving room for the title
         MyActivity.hudElements.add(new HUDTitle(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 5, MyActivity.canvas.fontSize * 26 / 10));
-        HUDText newGame = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 2, true, "NEW GAME", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
+        // One under the other, from a bit above the middle, leaving room for the title
+        int step = MyActivity.canvas.fontSize * 7 / 4, y = MyActivity.screenHeight / 2 - MyActivity.canvas.fontSize * 5 / 2;
+        HUDText newGame = new HUDText(MyActivity.screenWidth / 2, y, true, "NEW GAME", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
             @Override
             public double execute() {
                 MyActivity.gameEffects.add( new FadeEffect(Color.BLACK, new LaunchGame(), new Execution() {
@@ -53,10 +63,9 @@ public class MainMenu implements Execution {
             }
         });
         MyActivity.hudElements.add(newGame);
-        int yExitButton = 0;
         if (MyActivity.canvas.myActivity.seed != -1) {
-            yExitButton = 2;
-            HUDText continueButton = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2, true, "CONTINUE", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
+            y += step;
+            HUDText continueButton = new HUDText(MyActivity.screenWidth / 2, y, true, "CONTINUE", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
                 @Override
                 public double execute() {
                     Coord entrance = new Coord(Integer.parseInt(MyActivity.canvas.myActivity.entranceString.split(" ")[0]), Integer.parseInt(MyActivity.canvas.myActivity.entranceString.split(" ")[1]));
@@ -66,8 +75,19 @@ public class MainMenu implements Execution {
             });
             MyActivity.hudElements.add(continueButton);
         }
+        // One endless cave to roam, which carries on from where it was left
+        y += step;
+        HUDText openWorldButton = new HUDText(MyActivity.screenWidth / 2, y, true, "OPEN WORLD", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
+            @Override
+            public double execute() {
+                MyActivity.gameEffects.add(new FadeEffect(Color.BLACK, new LaunchOpenWorld(false)));
+                return 0;
+            }
+        });
+        MyActivity.hudElements.add(openWorldButton);
+        y += step;
         // A cave to try the controls in, which never touches the saved game
-        HUDText playgroundButton = new HUDText(MyActivity.screenWidth / 2, MyActivity.screenHeight / 2 + yExitButton * MyActivity.canvas.fontSize, true, "PLAYGROUND", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
+        HUDText playgroundButton = new HUDText(MyActivity.screenWidth / 2, y, true, "PLAYGROUND", MyActivity.TILE_WIDTH * 8 / 10, new Execution() {
             @Override
             public double execute() {
                 MyActivity.gameEffects.add(new FadeEffect(Color.BLACK, new LaunchPlayground()));
@@ -75,8 +95,8 @@ public class MainMenu implements Execution {
             }
         });
         MyActivity.hudElements.add(playgroundButton);
-        yExitButton += 2;
-        HUDText exitGame = new HUDText(MyActivity.screenWidth/2, MyActivity.screenHeight / 2 + yExitButton * MyActivity.canvas.fontSize, true, "EXIT GAME", MyActivity.TILE_WIDTH * 8 /10, new Execution() {
+        y += step;
+        HUDText exitGame = new HUDText(MyActivity.screenWidth/2, y, true, "EXIT GAME", MyActivity.TILE_WIDTH * 8 /10, new Execution() {
             @Override
             public double execute() {
                 MyActivity.canvas.myActivity.finish();
