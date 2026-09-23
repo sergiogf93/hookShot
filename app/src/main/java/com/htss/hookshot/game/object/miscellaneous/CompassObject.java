@@ -11,6 +11,7 @@ import com.htss.hookshot.map.World;
 import com.htss.hookshot.game.object.GameDynamicObject;
 import com.htss.hookshot.game.object.GameObject;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
+import com.htss.hookshot.game.object.interactables.CoinBag;
 import com.htss.hookshot.game.object.interactables.HealthDrop;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.obstacles.WallButton;
@@ -121,7 +122,7 @@ public class CompassObject extends GameDynamicObject {
                 }
             } else if (object instanceof GamePowerUp) {
                 interests.add(object);
-            } else if (object instanceof HealthDrop) {
+            } else if (object instanceof HealthDrop || object instanceof CoinBag) {
                 interests.add(object);
             } else if (object instanceof GameEnemy) {
                 interests.add(object);

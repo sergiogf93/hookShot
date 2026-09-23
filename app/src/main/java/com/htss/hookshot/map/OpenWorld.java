@@ -2,6 +2,7 @@ package com.htss.hookshot.map;
 
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.enemies.GameEnemy;
+import com.htss.hookshot.game.object.interactables.CoinBag;
 import com.htss.hookshot.game.object.interactables.HealthDrop;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.game.object.obstacles.Door;
@@ -354,11 +355,17 @@ public class OpenWorld {
         return BitSet.valueOf(words);
     }
 
-    // The powers and health that came with a piece, in the order they were made, which is the same every time
+    // The powers and health that came with a piece, in the order they were made, which is the same every time, and then
+    // its big coins. Those came after, so the ones remembered from before keep their place
     private static ArrayList<Object> getPickups(Cave cave) {
         ArrayList<Object> pickups = new ArrayList<Object>();
         for (Object object : cave.objects) {
             if (object instanceof GamePowerUp || object instanceof HealthDrop) {
+                pickups.add(object);
+            }
+        }
+        for (Object object : cave.objects) {
+            if (object instanceof CoinBag) {
                 pickups.add(object);
             }
         }

@@ -31,6 +31,7 @@ import com.htss.hookshot.game.object.enemies.EnemyStalker;
 import com.htss.hookshot.game.object.enemies.EnemyTerraWorm;
 import com.htss.hookshot.game.object.interactables.CoinBag;
 import com.htss.hookshot.game.object.interactables.HealthDrop;
+import com.htss.hookshot.game.object.interactables.Shop;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
@@ -98,6 +99,10 @@ public class Map {
     // The size of the open world's pieces in tiles, and how much of them starts out as rock
     public static final int CHUNK_X = 48, CHUNK_Y = 32;
     private static final int CHUNK_FILL = 50;
+    // How often a piece has a stall, and every how many caves one comes in a game of caves one after another, and how
+    // many open tiles it needs over the floor it stands on
+    private static final double CHUNK_SHOPS = 0.2;
+    private static final int SHOP_EVERY = 3, SHOP_HEADROOM = 3;
     // How many of the worms that would come with the pieces are left out
     private static final double CHUNK_WORMS_DROPPED = 0.6;
     // Vaults: how often a piece has one, how big the chamber and its corridor are in tiles, how far out that corridor
@@ -539,6 +544,11 @@ public class Map {
             MathVector position = getRandomPointInRooms(roomRegions, 0, random);
             new HealthDrop(position.x, position.y, true, false);
         }
+        // With a random of its own, so the rest of what's in the piece stays as it was before there were stalls
+        Random shopRandom = new Random(seed * 13 + 101);
+        if (!start && shopRandom.nextDouble() < CHUNK_SHOPS) {
+            addShop(shopRandom);
+        }
     }
 
     // What the vault holds, and the door and buttons that keep it: powers, coins and health, worth the trouble of
@@ -629,6 +639,47 @@ public class Map {
             }
         }
         addPowerUps(addingRandom);
+        // With a random of its own, so the rest of what's in the cave stays as it was before there were stalls
+        if (level % SHOP_EVERY == SHOP_EVERY - 1 && !isBossLevel(level)) {
+            addShop(new Random(seed * 53 + level * LEVEL_SEED_SPREAD + 11));
+        }
+    }
+
+    // A stall on a stretch of floor in one of the rooms, flat and wide enough for it, with room above it, and inside the
+    // cave's borders. None if there's nowhere like that
+    private void addShop(Random random) {
+        Vector<Coord> spots = new Vector<Coord>();
+        for (Room room : roomRegions) {
+            for (Coord tile : room.tiles) {
+                if (isShopSpot(tile.tileX, tile.tileY)) {
+                    spots.add(tile);
+                }
+            }
+        }
+        if (spots.isEmpty()) {
+            return;
+        }
+        Coord spot = spots.get(random.nextInt(spots.size()));
+        MathVector at = at(spot.tileX, spot.tileY);
+        // The floor is half a tile under the last open tile
+        new Shop(at.x, at.y + SQUARE_SIZE / 2);
+    }
+
+    private boolean isShopSpot(int x, int y) {
+        if (!isWellInside(x, y, BORDER_SIZE + 1) || isBehindVaultDoor(x, y)) {
+            return false;
+        }
+        for (int dx = -1; dx <= 1; dx++) {
+            if (map[x + dx][y + 1] != 1) {
+                return false;
+            }
+            for (int dy = 0; dy <= SHOP_HEADROOM; dy++) {
+                if (map[x + dx][y - dy] != 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private void createMap() {

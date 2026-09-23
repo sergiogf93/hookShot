@@ -34,6 +34,7 @@ import com.htss.hookshot.game.hud.HUDElement;
 import com.htss.hookshot.game.hud.HUDHookStick;
 import com.htss.hookshot.game.hud.HUDMenu;
 import com.htss.hookshot.game.hud.HUDPauseButton;
+import com.htss.hookshot.game.hud.HUDShopMenu;
 import com.htss.hookshot.game.hud.HUDPlaygroundMenu;
 import com.htss.hookshot.game.hud.HUDPowerUpButton;
 import com.htss.hookshot.game.hud.HUDPowerUpStrip;
@@ -50,6 +51,7 @@ import com.htss.hookshot.game.object.enemies.GameEnemy;
 import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.game.object.hook.Hook;
 import com.htss.hookshot.game.object.hook.HookStrike;
+import com.htss.hookshot.game.object.interactables.Shop;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
@@ -138,6 +140,7 @@ public class MyActivity extends Activity {
     // Whether the camera goes after the character. Not while a portal carries it, which moves the camera itself
     public static boolean cameraFollows = true;
     public static HUDPlaygroundMenu playgroundMenu;
+    public static HUDShopMenu shopMenu;
     public static long lastTap = 0;
     // Where a shot found nothing to grip, and the character's frame then
     private static MathVector missedShot = null;
@@ -313,6 +316,7 @@ public class MyActivity extends Activity {
         int menuHeight = menuButtonHeight*nMenuButton + (nMenuButton+1)*menuButtonSeparation;
         menu = new HUDMenu(0, 0, menuWidth, menuHeight, menuButtonHeight, menuButtonSeparation);
         playgroundMenu = new HUDPlaygroundMenu();
+        shopMenu = new HUDShopMenu();
         status = new HUDStatus();
         layoutForScreen();
 
@@ -991,7 +995,8 @@ public class MyActivity extends Activity {
     }
 
     // Also lets go of the held finger, as its lifting may never be handled
-    // Steps through a portal the character is standing in, or else uses the power it's carrying
+    // Steps through a portal the character is standing in, or opens the stall it's standing at, or else uses the power
+    // it's carrying
     private static void usePowerOrPortal() {
         for (PortalObject portal : character.getPortals()) {
             // A portal without its twin leads nowhere, so standing in one still places the next
@@ -999,6 +1004,10 @@ public class MyActivity extends Activity {
                 portal.use();
                 return;
             }
+        }
+        if (Shop.getNearby() != null) {
+            openShop();
+            return;
         }
         if (character.getCurrentPowerUp() >= 0) {
             character.usePowerUp();
@@ -1164,11 +1173,22 @@ public class MyActivity extends Activity {
         hudElements.remove(menu);
         hudElements.removeAll(powerUpButtons);
         playgroundMenu.close();
+        shopMenu.close();
     }
 
-    // Whether the pause menu, or the playground's, is showing
+    // Pauses the game with the stall's wares on show, rather than the pause menu. Leaving them carries on
+    private static void openShop() {
+        if (!canPause()) {
+            return;
+        }
+        MyActivity.paused = true;
+        hideControls();
+        shopMenu.open();
+    }
+
+    // Whether the pause menu, the playground's or a stall's is showing
     private static boolean isMenuOpen() {
-        return hudElements.contains(menu) || hudElements.contains(playgroundMenu);
+        return hudElements.contains(menu) || hudElements.contains(playgroundMenu) || hudElements.contains(shopMenu);
     }
 
     // Back at the start of the playground, healed. It has no ending: dying there brings the character back, and so

@@ -3,6 +3,8 @@ package com.htss.hookshot.game.hud;
 import android.graphics.Canvas;
 
 import com.htss.hookshot.game.MyActivity;
+import com.htss.hookshot.game.object.interactables.Coin;
+import com.htss.hookshot.game.object.interactables.Shop;
 import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
@@ -16,8 +18,8 @@ import java.util.HashMap;
 
 /**
  * The button that uses the power that's picked, which it shows, with how many are left, so it says what pressing it
- * will do. Standing in a portal that leads somewhere, it shows the portal it steps through. With nothing to use it's
- * drawn faint with a dashed edge.
+ * will do. Standing in a portal that leads somewhere, it shows the portal it steps through, and standing at a stall, a
+ * coin for the shop it opens. With nothing to use it's drawn faint with a dashed edge.
  */
 public class HUDUseButton extends HUDCircleButton {
 
@@ -46,9 +48,17 @@ public class HUDUseButton extends HUDCircleButton {
         if (iconsRadius != getRadius()) {
             makeIcons();
         }
+        float x = getxCenter(), y = getyCenter(), r = getRadius();
+        if (!isInPortal() && Shop.getNearby() != null) {
+            UiStyle.drawControl(canvas, getPaint(), x, y, r, isOn(), UiStyle.GOLD);
+            Coin.drawCoin(canvas, x, y - r * 0.15f, r * 0.42f, 1);
+            getPaint().setTypeface(MyActivity.canvas.arcadeClassicFont);
+            getPaint().setTextSize(r * 0.36f);
+            UiStyle.drawText(canvas, getPaint(), "SHOP", x - getPaint().measureText("SHOP") / 2, y + r * 0.65f, UiStyle.TEXT);
+            return;
+        }
         int type = isInPortal() ? GamePowerUp.PORTAL : MyActivity.character.getCurrentPowerUp();
         GamePowerUp icon = icons.get(type);
-        float x = getxCenter(), y = getyCenter(), r = getRadius();
         if (icon == null) {
             UiStyle.drawIdleControl(canvas, getPaint(), x, y, r);
             getPaint().setTypeface(MyActivity.canvas.arcadeClassicFont);
