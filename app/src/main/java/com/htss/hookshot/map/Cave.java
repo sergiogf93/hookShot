@@ -92,7 +92,7 @@ public class Cave {
         rockPaint.setShader(texture);
         // Only on the rock already drawn, and keeping it opaque, as what's solid is what's opaque
         shadingPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
-        shading = map.createShading(palette);
+        shading = CaveShading.create(map.getMap(), palette);
         float half = (float) Map.SQUARE_SIZE / 2;
         shadingArea = new RectF(-half, -half, shading.getWidth() * (float) Map.SQUARE_SIZE - half, shading.getHeight() * (float) Map.SQUARE_SIZE - half);
         edgePaint.setStyle(Paint.Style.STROKE);
