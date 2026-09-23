@@ -133,7 +133,8 @@ public class Cave {
     }
 
     // The dark line along the rock's edges, a stretch at a time, to the tiles each stretch touches. Not along the
-    // cave's own borders, which are where the next cave carries on
+    // cave's own borders, which are where the next cave carries on. It does go right up to them, where the cave's walls
+    // cross them, so it meets the line the next cave draws on its side
     private void sortEdges(Vector<Point> vertices, Vector<Vector<Integer>> outlines, float edgeWidth) {
         int margin = (int) Math.ceil(edgeWidth / 2) + 1;
         // The last stretch each tile got, so one that follows it carries the line on, with a proper joint, rather than
@@ -144,12 +145,9 @@ public class Cave {
             Point previous = null;
             for (Integer index : outline) {
                 Point point = vertices.get(index);
-                if (point.y == 0 || point.y == height || point.x == 0 || point.x == width) {
-                    continue;
-                }
                 stretch++;
-                // A jump is where a border was skipped, so the line carries on from the new point
-                if (previous != null && Math.hypot(point.x - previous.x, point.y - previous.y) <= Map.OUTLINE_JUMP) {
+                // A jump is where the outline doesn't carry on, so the line starts again from the new point
+                if (previous != null && !isAlongBorder(previous, point) && Math.hypot(point.x - previous.x, point.y - previous.y) <= Map.OUTLINE_JUMP) {
                     int fromColumn = clampColumn(Math.min(previous.x, point.x) - margin), toColumn = clampColumn(Math.max(previous.x, point.x) + margin);
                     int fromRow = clampRow(Math.min(previous.y, point.y) - margin), toRow = clampRow(Math.max(previous.y, point.y) + margin);
                     for (int column = fromColumn; column <= toColumn; column++) {
@@ -169,6 +167,11 @@ public class Cave {
                 previous = point;
             }
         }
+    }
+
+    // Whether a stretch runs along one of the cave's borders, rather than across or away from it
+    private boolean isAlongBorder(Point a, Point b) {
+        return (a.x == 0 && b.x == 0) || (a.x == width && b.x == width) || (a.y == 0 && b.y == 0) || (a.y == height && b.y == height);
     }
 
     private int clampColumn(int pixel) {

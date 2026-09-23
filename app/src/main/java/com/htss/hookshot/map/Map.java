@@ -41,6 +41,7 @@ import com.htss.hookshot.game.object.obstacles.WallButton;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.math.MathVector;
 import com.htss.hookshot.util.DrawUtil;
+import com.htss.hookshot.util.NoiseUtil;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,6 +74,8 @@ public class Map {
     // How the rock texture is drawn: its pixels per cave square, and how strong its lit edges and deep shadows are
     public static final int ROCK_TEXELS_PER_SQUARE = 24;
     private static final int RIM_ALPHA = 80, SHADOW_ALPHA = 170;
+    // How many tiles from its borders a cave's shading fades into the shading the border alone gives
+    private static final float BORDER_FADE = 5;
     // Two points of an outline further apart than this aren't joined: a border was skipped between them
     public static final double OUTLINE_JUMP = MyActivity.TILE_WIDTH;
     // Large odd number (the golden ratio in 64 bits), so consecutive levels get very different seeds
@@ -2053,6 +2056,7 @@ public class Map {
         }
         light = blur(light);
         shadow = blur(shadow);
+        blendIntoBorders(light, shadow);
         int[] pixels = new int[xTiles * yTiles];
         for (int i = 0; i < pixels.length; i++) {
             int lightAlpha = (int) (RIM_ALPHA * light[i]);
@@ -2071,6 +2075,70 @@ public class Map {
         float half = (float) SQUARE_SIZE / 2;
         canvas.drawBitmap(shading, null, new RectF(-half, -half, xTiles * (float) SQUARE_SIZE - half, yTiles * (float) SQUARE_SIZE - half), paint);
         shading.recycle();
+    }
+
+    // The cave only knows its own rock, so on its own the shading would change sharply where it meets the next one,
+    // which sees other caves close to the border. So towards each border it fades into shading made from nothing but
+    // the border itself, how far along it the nearest cave is, which the cave on the other side makes the same way from
+    // the same border. The rock beyond all caves is dark like the deepest rock, and so is a border with no cave near it
+    private void blendIntoBorders(float[] light, float[] shadow) {
+        // Top, bottom, left and right
+        float[][][] borders = {getBorderShading(0, 0, 1, 0, xTiles), getBorderShading(0, yTiles - 1, 1, 0, xTiles),
+                getBorderShading(0, 0, 0, 1, yTiles), getBorderShading(xTiles - 1, 0, 0, 1, yTiles)};
+        for (int x = 0; x < xTiles; x++) {
+            for (int y = 0; y < yTiles; y++) {
+                int i = y * xTiles + x;
+                int[] along = {x, x, y, y}, distance = {y, yTiles - 1 - y, x, xTiles - 1 - x};
+                // The furthest border first and the nearest last, so right on a border it's all there is
+                boolean[] done = new boolean[4];
+                for (int n = 0; n < 4; n++) {
+                    int border = -1;
+                    for (int b = 0; b < 4; b++) {
+                        if (!done[b] && (border < 0 || distance[b] > distance[border])) {
+                            border = b;
+                        }
+                    }
+                    done[border] = true;
+                    float keep = NoiseUtil.smoothstep(0, BORDER_FADE, distance[border]);
+                    float borderLight = borders[border][0][along[border]], borderShadow = borders[border][1][along[border]];
+                    light[i] = borderLight + (light[i] - borderLight) * keep;
+                    shadow[i] = borderShadow + (shadow[i] - borderShadow) * keep;
+                }
+            }
+        }
+    }
+
+    // The light and shadow along a border, from how far along it each of its tiles is from the nearest cave on it
+    private float[][] getBorderShading(int startX, int startY, int stepX, int stepY, int length) {
+        int[] along = new int[length];
+        int last = -length;
+        for (int i = 0; i < length; i++) {
+            if (map[startX + i * stepX][startY + i * stepY] == 0) {
+                last = i;
+            }
+            along[i] = i - last;
+        }
+        last = 2 * length;
+        for (int i = length - 1; i >= 0; i--) {
+            if (map[startX + i * stepX][startY + i * stepY] == 0) {
+                last = i;
+            }
+            along[i] = Math.min(along[i], last - i);
+        }
+        float[] light = new float[length], shadow = new float[length];
+        for (int i = 0; i < length; i++) {
+            light[i] = (along[i] == 1) ? 1 : 0;
+            shadow[i] = Math.min(1, Math.max(0, (along[i] - 2) / 4f));
+        }
+        return new float[][]{blurAlong(light), blurAlong(shadow)};
+    }
+
+    private static float[] blurAlong(float[] values) {
+        float[] blurred = new float[values.length];
+        for (int i = 0; i < values.length; i++) {
+            blurred[i] = (values[Math.max(0, i - 1)] + values[i] + values[Math.min(values.length - 1, i + 1)]) / 3;
+        }
+        return blurred;
     }
 
     // How many tiles each tile is from the nearest cave, 0 for the caves themselves
