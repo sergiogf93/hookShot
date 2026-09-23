@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.RadialGradient;
 import android.graphics.Shader;
 
@@ -91,7 +92,8 @@ public class MainCharacter extends GameCharacter {
     // How much faster than a jump lava throws it up
     private static final double LAVA_THROW = 2;
     private static final int WATER_SPLASH = Color.rgb(170, 215, 245), EMBERS = Color.rgb(255, 150, 40),
-            BUBBLE = Color.argb(220, 200, 235, 255), BUBBLE_EDGE = Color.argb(230, 40, 90, 140);
+            BUBBLE = Color.argb(220, 200, 235, 255), BUBBLE_EDGE = Color.argb(230, 40, 90, 140),
+            SUBMERGED_WATER = Color.argb(120, 40, 110, 190), SUBMERGED_LAVA = Color.argb(200, 238, 92, 24);
     // Falling faster than this kicks up dust on landing
     private static final double LANDING_DUST_SPEED = MyActivity.TILE_WIDTH * 0.08;
     // Landing this fast squashes the most, and every update undoes part of the squash or stretch
@@ -470,8 +472,26 @@ public class MainCharacter extends GameCharacter {
         return toPivot.rescaled(Math.min(GRIP, toPivot.magnitude())).applyTo(getPositionInRoom());
     }
 
+    // Under water or lava it's seen through it: it's drawn on its own, and the part of it below the surface is washed
+    // with the fluid's colour, which only touches what was drawn
     @Override
     public void draw(Canvas canvas) {
+        float surface = (MyActivity.currentMap == null) ? Float.NaN : World.getFluidSurfaceAt(getxPosInRoom(), getyPosInRoom() + BODY_RADIUS);
+        if (Float.isNaN(surface)) {
+            drawWhole(canvas);
+            return;
+        }
+        float x = (float) getxPosInScreen(), y = (float) getyPosInScreen(), reach = BODY_RADIUS * 3;
+        float top = (float) (surface + MyActivity.canvas.dy);
+        int layer = canvas.saveLayer(x - reach, y - reach, x + reach, y + reach, null);
+        drawWhole(canvas);
+        canvas.clipRect(x - reach, top, x + reach, y + reach);
+        boolean lava = World.getFluidAt(getxPosInRoom(), getyPosInRoom() + BODY_RADIUS) == FluidPool.LAVA;
+        canvas.drawColor(lava ? SUBMERGED_LAVA : SUBMERGED_WATER, PorterDuff.Mode.SRC_ATOP);
+        canvas.restoreToCount(layer);
+    }
+
+    private void drawWhole(Canvas canvas) {
         // Squashed on landing and stretched on takeoff, around the feet
         canvas.save();
         float pivotY = (float) getyPosInScreen() + BODY_RADIUS + FOOT_RADIUS;

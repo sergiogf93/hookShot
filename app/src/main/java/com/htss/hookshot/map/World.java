@@ -100,6 +100,9 @@ public class World {
         if (current == null) {
             return;
         }
+        for (int i = 0; i < caves.size(); i++) {
+            caves.get(i).updateFluid();
+        }
         if (open) {
             current = OpenWorld.update(characterX, characterY, current);
             return;
@@ -196,6 +199,7 @@ public class World {
         }
         caves.add(index, cave);
         findBounds();
+        cave.joinFluid();
     }
 
     // The cave goes, with what it came with and what was left in it, like loot. Portals only work in pairs, so if one
@@ -293,12 +297,23 @@ public class World {
         return (cave == null) ? FluidPool.NONE : cave.getFluid(x - cave.x, y - cave.y);
     }
 
-    // Draws the pools in the part of the world that starts at a point and fills the given size, over everything in them
-    public static void drawFluids(Canvas canvas, int viewLeft, int viewTop, int width, int height) {
-        fluidFrame++;
-        for (int i = 0; i < caves.size(); i++) {
-            caves.get(i).drawFluids(canvas, viewLeft, viewTop, width, height, fluidFrame);
+    // Where the fluid at a point comes up to, or not a number if there's none there. A column of it can carry on up
+    // into the cave above
+    public static float getFluidSurfaceAt(double x, double y) {
+        Cave cave = getCaveAt(x, y);
+        if (cave == null) {
+            return Float.NaN;
         }
+        float surface = cave.getFluidSurface(x - cave.x, y - cave.y) + cave.y;
+        while (!Float.isNaN(surface) && surface <= cave.y) {
+            Cave above = getCaveAt(x, cave.y - 1);
+            if (above == null || getFluidAt(x, cave.y - 1) == FluidPool.NONE) {
+                break;
+            }
+            cave = above;
+            surface = cave.getFluidSurface(x - cave.x, cave.y + cave.height - 1 - cave.y) + cave.y;
+        }
+        return surface;
     }
 
     // Digs a round hole in whichever caves it reaches
@@ -312,6 +327,11 @@ public class World {
     // Draws the part of the world that starts at a point and fills the given size, at the canvas' top left corner
     public static void draw(Canvas canvas, int viewLeft, int viewTop, int width, int height) {
         drawBeyond(canvas, viewLeft, viewTop, width, height);
+        // The water and lava go behind the rock, which covers their edges
+        fluidFrame++;
+        for (int i = 0; i < caves.size(); i++) {
+            caves.get(i).drawFluid(canvas, viewLeft, viewTop, width, height, fluidFrame);
+        }
         for (int i = 0; i < caves.size(); i++) {
             caves.get(i).draw(canvas, viewLeft, viewTop, width, height);
         }

@@ -108,11 +108,8 @@ public class GameBoard extends View{
 
         drawObjects(canvas);
 
-        if (MyActivity.currentMap != null) {
-            World.drawFluids(canvas, (int) -dx, (int) -dy, MyActivity.screenWidth, MyActivity.screenHeight);
-            if (MyActivity.character != null) {
-                MyActivity.character.drawBreath(canvas);
-            }
+        if (MyActivity.currentMap != null && MyActivity.character != null) {
+            MyActivity.character.drawBreath(canvas);
         }
 
         Particles.draw(canvas);
