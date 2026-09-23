@@ -6,20 +6,9 @@ package com.htss.hookshot.map;
  */
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapShader;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Point;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.graphics.Shader;
 
-import com.htss.hookshot.game.GameBoard;
 import com.htss.hookshot.game.MyActivity;
 import com.htss.hookshot.game.object.enemies.EnemyBat;
 import com.htss.hookshot.game.object.enemies.EnemyBeetle;
@@ -36,17 +25,13 @@ import com.htss.hookshot.game.object.interactables.powerups.BombPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.CompassPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.InfiniteJumpsPowerUp;
 import com.htss.hookshot.game.object.interactables.powerups.PortalPowerUp;
-import com.htss.hookshot.game.object.obstacles.Ball;
 import com.htss.hookshot.game.object.obstacles.Door;
 import com.htss.hookshot.game.object.obstacles.WallButton;
 import com.htss.hookshot.game.object.shapes.CircleShape;
 import com.htss.hookshot.math.MathVector;
-import com.htss.hookshot.util.DrawUtil;
 import com.htss.hookshot.util.NoiseUtil;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.Vector;
@@ -116,14 +101,8 @@ public class Map {
     // Where the cave's corner is in the world, which everything placed in it is placed from
     private double originX = 0, originY = 0;
     private Coord entrance, exit;
-    private SquareGrid squareGrid;
-    private Vector<Point> vertices;
-    private Vector<Integer> triangles;
-    private HashMap<Integer,Vector<Triangle>> triangleDictionary = new HashMap<Integer, Vector<Triangle>>();
-    private Vector<Vector<Integer>> outlines = new Vector<Vector<Integer>>();
-    private HashSet<Integer> checkedVertices = new HashSet<Integer>();
+    private CaveMesh mesh;
     private Room entranceRoom, exitRoom;
-    private Vector<Point[]> cracks = new Vector<Point[]>();
     private Vector<Room> roomRegions = new Vector<Room>();
     private Vector<Room> susceptibleRooms = new Vector<Room>();
     private Vector<Room> roomsWithInterest = new Vector<Room>();
@@ -322,15 +301,6 @@ public class Map {
         h = (h ^ (h >>> 30)) * 0xBF58476D1CE4E5B9L;
         h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
         return h ^ (h >>> 31);
-    }
-
-    public boolean isChunk() {
-        return chunk;
-    }
-
-    // Where the way through the bottom (0) or the right side (1) of a piece of the open world is, in tiles along it
-    public int getWayThrough(int side) {
-        return along(worldSeed, chunkX, chunkY, side, (side == 0) ? xTiles : yTiles);
     }
 
     // The size of a piece of the open world, in pixels
@@ -847,209 +817,9 @@ public class Map {
         return wallCount;
     }
 
-    public void generateMesh() {
-        outlines.clear();
-        checkedVertices.clear();
-        triangleDictionary.clear();
-
-        this.squareGrid = new SquareGrid();
-        this.cracks.clear();
-
-        this.vertices = new Vector<Point>();
-        this.triangles = new Vector<Integer>();
-
-        for (int x = 0; x < squareGrid.squares.length; x++) {
-            for (int y = 0; y < squareGrid.squares[0].length; y++) {
-                triangulateSquare(squareGrid.squares[x][y]);
-            }
-        }
-
-        calculateMeshOutlines();
-    }
-
-    private void triangulateSquare (Square square){
-        switch (square.configuration) {
-            case 0: {
-                break;
-            }
-            // 1 points:
-            case 1: {
-                meshFromPoints(square.centreLeft, square.centreBottom, square.bottomLeft);
-                break;
-            }
-            case 2: {
-                meshFromPoints(square.bottomRight, square.centreBottom, square.centreRight);
-                break;
-            }
-            case 4: {
-                meshFromPoints(square.topRight, square.centreRight, square.centreTop);
-                break;
-            }
-            case 8: {
-                meshFromPoints(square.topLeft, square.centreTop, square.centreLeft);
-                break;
-            }
-            // 2 points:
-            case 3: {
-                meshFromPoints(square.centreRight, square.bottomRight, square.bottomLeft, square.centreLeft);
-                break;
-            }
-            case 6: {
-                meshFromPoints(square.centreTop, square.topRight, square.bottomRight, square.centreBottom);
-                break;
-            }
-            case 9: {
-                meshFromPoints(square.topLeft, square.centreTop, square.centreBottom, square.bottomLeft);
-                break;
-            }
-            case 12: {
-                meshFromPoints(square.topLeft, square.topRight, square.centreRight, square.centreLeft);
-                break;
-            }
-            case 5: {
-                meshFromPoints(square.centreTop, square.topRight, square.centreRight, square.centreBottom, square.bottomLeft, square.centreLeft);
-                break;
-            }
-            case 10: {
-                meshFromPoints(square.topLeft, square.centreTop, square.centreRight, square.bottomRight, square.centreBottom, square.centreLeft);
-                break;
-            }
-            // 3 point:
-            case 7: {
-                meshFromPoints(square.centreTop, square.topRight, square.bottomRight, square.bottomLeft, square.centreLeft);
-                break;
-            }
-            case 11: {
-                meshFromPoints(square.topLeft, square.centreTop, square.centreRight, square.bottomRight, square.bottomLeft);
-                break;
-            }
-            case 13: {
-                meshFromPoints(square.topLeft, square.topRight, square.centreRight, square.centreBottom, square.bottomLeft);
-                break;
-            }
-            case 14: {
-                meshFromPoints(square.topLeft, square.topRight, square.bottomRight, square.centreBottom, square.centreLeft);
-                break;
-            }
-            // 4 point:
-            case 15: {
-                meshFromPoints(square.topLeft, square.topRight, square.bottomRight, square.bottomLeft);
-//                createCrack(square.topLeft.getMovedNode(SQUARE_SIZE/2,-SQUARE_SIZE/2),square.configuration);
-                checkedVertices.add(square.topLeft.vertexIndex);
-                checkedVertices.add(square.bottomRight.vertexIndex);
-                checkedVertices.add(square.topRight.vertexIndex);
-                checkedVertices.add(square.bottomLeft.vertexIndex);
-                break;
-            }
-        }
-    }
-
-    private void meshFromPoints(Node... points){
-        assignVertices(points);
-
-        if (points.length >= 3) {
-            createTriangle(points[0], points[1], points[2]);
-        }
-        if (points.length >= 4){
-            createTriangle(points[0],points[2],points[3]);
-        }
-        if (points.length >= 5){
-            createTriangle(points[0],points[3],points[4]);
-        }
-        if (points.length >= 6){
-            createTriangle(points[0],points[4],points[5]);
-        }
-    }
-
-    private void assignVertices(Node[] points) {
-        for (int i = 0 ; i < points.length ; i++){
-            if (points[i].vertexIndex == -1){
-                points[i].vertexIndex = vertices.size();
-                vertices.add(points[i].position.toPoint());
-//                if (vertices.get(points[i].vertexIndex).y == 0 || vertices.get(points[i].vertexIndex).y == getHeight()){
-//                    checkedVertices.add(points[i].vertexIndex);
-//                }
-            }
-        }
-    }
-
-    private void createTriangle(Node a, Node b, Node c){
-        triangles.add(a.vertexIndex);
-        triangles.add(b.vertexIndex);
-        triangles.add(c.vertexIndex);
-
-        Triangle triangle = new Triangle(a.vertexIndex,b.vertexIndex,c.vertexIndex);
-        addTriangleToDictionary(a.vertexIndex,triangle);
-        addTriangleToDictionary(b.vertexIndex,triangle);
-        addTriangleToDictionary(c.vertexIndex,triangle);
-    }
-
-    private void addTriangleToDictionary(int vertexIndexKey, Triangle triangle){
-        if (triangleDictionary.containsKey(vertexIndexKey)){
-            triangleDictionary.get(vertexIndexKey).add(triangle);
-        } else {
-            Vector<Triangle> triangleList = new Vector<Triangle>();
-            triangleList.add(triangle);
-            triangleDictionary.put(vertexIndexKey,triangleList);
-        }
-    }
-
-    private boolean isOutlineEdge(int vertexA, int vertexB){
-        Vector<Triangle> trianglesContainingA = triangleDictionary.get(vertexA);
-        int sharedTriangleCount = 0;
-
-        for (int i = 0; i < trianglesContainingA.size(); i++){
-            if (trianglesContainingA.get(i).contains(vertexB)){
-                sharedTriangleCount++;
-                if (sharedTriangleCount > 1){
-                    break;
-                }
-            }
-        }
-
-        return sharedTriangleCount == 1;
-    }
-
-    private int getConnectedOutlineVertex (int vertexIndex){
-        Vector<Triangle> trianglesContainingVertex = triangleDictionary.get(vertexIndex);
-        for (int i = 0; i < trianglesContainingVertex.size(); i++){
-            Triangle triangle = trianglesContainingVertex.get(i);
-            for (int j = 0 ; j < 3 ; j++){
-                int vertexB = triangle.get(j);
-                if (vertexB != vertexIndex  && !checkedVertices.contains(vertexB)) {
-                    if (isOutlineEdge(vertexIndex, vertexB)) {
-                        return vertexB;
-                    }
-                }
-            }
-        }
-        return -1;
-    }
-
-    public void calculateMeshOutlines() {
-        for (int vertexIndex = 0 ; vertexIndex < vertices.size() ; vertexIndex++){
-            if (!checkedVertices.contains(vertexIndex)){
-                int newOutlineVertex = getConnectedOutlineVertex(vertexIndex);
-                if (newOutlineVertex != -1){
-                    checkedVertices.add(vertexIndex);
-                    Vector<Integer> newOutline = new Vector<Integer>();
-                    newOutline.add(vertexIndex);
-                    outlines.add(newOutline);
-                    followOutline(newOutlineVertex,outlines.size()-1);
-                    outlines.lastElement().add(vertexIndex);
-                }
-            }
-        }
-    }
-
-    // Along the outline a vertex at a time, in a loop: calling itself for every vertex ran out of stack on the thread
-    // that makes caves in the background, which has less of it than the main one
-    private void followOutline(int vertexIndex, int outlineIndex) {
-        while (vertexIndex != -1) {
-            outlines.get(outlineIndex).add(vertexIndex);
-            checkedVertices.add(vertexIndex);
-            vertexIndex = getConnectedOutlineVertex(vertexIndex);
-        }
+    // Once the tiles are done
+    private void generateMesh() {
+        mesh = new CaveMesh(map);
     }
 
     private Vector<Coord> getRegionTiles (int startX, int startY){
@@ -1413,80 +1183,6 @@ public class Map {
         return at(x, y);
     }
 
-    public void addBallObstacles(int maxObstacles){
-        int[][] structure = {{-1,0,0,0,0,0,0,0,-1},
-                {-1,0,0,0,0,0,0,0,-1},
-                {-1,-1,0,0,0,0,0,-1,-1},
-                {-1,-1,0,0,0,0,0,-1,-1},
-                {-1,-1,0,0,0,0,0,-1,-1},
-                {-1,-1,1,0,0,0,1,-1,-1},
-                {1,1,1,1,1,1,1,1,1},
-                {1,1,1,1,1,1,1,1,1},
-                {1,1,1,1,1,1,1,1,1},
-                {1,1,1,1,1,1,1,1,1},
-                {1,1,1,1,1,1,1,1,1},
-                {1,1,1,1,1,1,1,1,1}};
-        int[][] subsStructure = {{1,1,1,1,0,1,1,1,1},
-                {1,1,1,0,0,0,1,1,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,0,0,0,0,0,0,0,1},
-                {1,1,1,0,0,0,1,1,1}};
-        int xStart = 0;
-        int yStart = 0;
-        int added = 0;
-        while (added < maxObstacles) {
-            Coord startStructure = findStructureInMap(structure,xStart,yStart);
-            if (startStructure.tileX >= 0) {
-                substituteStructure(startStructure.tileX,startStructure.tileY+6,subsStructure);
-                int xBall = startStructure.tileX + 4;
-                int yBall = startStructure.tileY + 2;
-                Ball ball = new Ball(at(xBall, yBall).x, at(xBall, yBall).y, 100, 6, (float) (2*SQUARE_SIZE), true);
-                added++;
-                xStart = startStructure.tileX;
-                yStart = startStructure.tileY;
-//                Vector<Coord> coordsForRoom = new Vector<Coord>();
-//                coordsForRoom.add(new Coord(xBall,yBall+7));
-//                Room susceptibleRoom = new Room(coordsForRoom);
-//                susceptibleRooms.add(susceptibleRoom);
-            } else {
-                added = maxObstacles;
-            }
-        }
-    }
-
-    private Coord findStructureInMap (int[][] structure, int xStart, int yStart){
-        for (int x = xStart; x < xTiles - structure[0].length; x++) {
-            for (int y = yStart; y < yTiles - structure.length; y++) {
-                if (hasSameStructure(x,y,structure)){
-                    return new Coord(x,y);
-                }
-            }
-        }
-        return new Coord(-1,-1);
-    }
-
-    private boolean hasSameStructure (int xStart, int yStart, int[][] structure){
-        for (int x = 0 ; x < structure[0].length ; x++){
-            for (int y = 0 ; y < structure.length ; y++){
-                if (structure[y][x] >= 0) {
-                    if (map[xStart + x][yStart + y] != structure[y][x]) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    private void substituteStructure (int xStart, int yStart, int[][] structure){
-        for (int x = 0 ; x < structure[0].length ; x++){
-            for (int y = 0 ; y < structure.length ; y++){
-                map[xStart + x][yStart + y] = structure[y][x];
-            }
-        }
-    }
-
     private void addSusceptibleRoom(Room room) {
         if (!susceptibleRooms.contains(room)) {
             susceptibleRooms.add(room);
@@ -1836,10 +1532,6 @@ public class Map {
         return map[x][y];
     }
 
-    public void setMap(int[][] map) {
-        this.map = map;
-    }
-
     public Coord getExit() {
         return exit;
     }
@@ -1870,104 +1562,6 @@ public class Map {
 
         public MathVector getCenterInRoom (){
             return at(line.get(line.size()/2));
-        }
-    }
-
-    public class SquareGrid {
-        public Square[][] squares;
-
-        public SquareGrid (){
-            int nodeCountX = map.length;
-            int nodeCountY = map[0].length;
-
-            ControlNode[][] controlNodes = new ControlNode[nodeCountX][nodeCountY];
-
-            for (int x=0 ; x < nodeCountX ; x++){
-                for (int y=0 ; y < nodeCountY ; y++){
-                    MathVector position = new MathVector(x*SQUARE_SIZE,y*SQUARE_SIZE);
-                    controlNodes[x][y] = new ControlNode(position,getMapValue(x,y)==1);
-                }
-            }
-
-            squares = new Square[nodeCountX-1][nodeCountY-1];
-
-            for (int x=0 ; x < nodeCountX - 1 ; x++){
-                for (int y=0 ; y < nodeCountY - 1 ; y++){
-                    squares[x][y] = new Square(controlNodes[x][y+1],controlNodes[x+1][y+1],controlNodes[x+1][y],controlNodes[x][y]);
-                }
-            }
-        }
-    }
-
-    public class Square {
-        public ControlNode topLeft, topRight, bottomRight, bottomLeft;
-        public Node centreTop, centreRight, centreBottom, centreLeft;
-        public int configuration = 0;
-
-        public Square (ControlNode topLeft,ControlNode topRight,ControlNode bottomRight,ControlNode bottomLeft){
-            this.topLeft = topLeft;
-            this.topRight = topRight;
-            this.bottomRight = bottomRight;
-            this.bottomLeft = bottomLeft;
-
-            this.centreTop = topLeft.right;
-            this.centreRight = bottomRight.above;
-            this.centreBottom = bottomLeft.right;
-            this.centreLeft = bottomLeft.above;
-
-            if (topLeft.active)
-                configuration += 8;
-            if (topRight.active)
-                configuration += 4;
-            if (bottomRight.active)
-                configuration += 2;
-            if (bottomLeft.active)
-                configuration += 1;
-        }
-    }
-
-    public class Triangle {
-        int[] vertices;
-
-        public Triangle(int vertexIndexA, int vertexIndexB, int vertexIndexC) {
-            vertices = new int[3];
-            vertices[0] = vertexIndexA;
-            vertices[1] = vertexIndexB;
-            vertices[2] = vertexIndexC;
-        }
-
-        public boolean contains (int vertexIndex){
-            return vertexIndex == vertices[0] || vertexIndex == vertices[1] || vertexIndex == vertices[2];
-        }
-
-        public int get(int i){
-            return vertices[i];
-        }
-    }
-
-    public class Node {
-        public MathVector position;
-        public int vertexIndex = -1;
-
-        public Node (MathVector position){
-            this.position = position;
-        }
-
-        public Node getMovedNode (double dx, double dy){
-            return new Node(new MathVector(position.x + dx, position.y + dy));
-        }
-    }
-
-    public class ControlNode extends Node {
-
-        public boolean active;
-        public Node above, right;
-
-        public ControlNode(MathVector position, boolean active) {
-            super(position);
-            this.active = active;
-            this.above = new Node(new MathVector(position.x,position.y + SQUARE_SIZE/2));
-            this.right = new Node(new MathVector(position.x + SQUARE_SIZE/2,position.y));
         }
     }
 
@@ -2052,46 +1646,16 @@ public class Map {
     }
 
 
-    public void draw(Canvas canvas, CavePalette palette){
-        drawRock(canvas, palette);
-        drawDepth(canvas, palette);
-        drawOutlines(canvas, palette.outline);
-        for (Point[] crack : cracks) {
-            DrawUtil.drawVoidPolygon(crack, canvas, Color.BLACK, MyActivity.TILE_WIDTH / 50, false);
-        }
-    }
-
-    private void drawRock(Canvas canvas, CavePalette palette) {
-        // One path for all the rock, as filling each triangle apart left thin seams between them
-        Path rock = new Path();
-        for (int i = 0; i < triangles.size(); i += 3) {
-            Point a = vertices.get(triangles.get(i));
-            Point b = vertices.get(triangles.get(i + 1));
-            Point c = vertices.get(triangles.get(i + 2));
-            rock.moveTo(a.x, a.y);
-            rock.lineTo(b.x, b.y);
-            rock.lineTo(c.x, c.y);
-            rock.close();
-        }
-        BitmapShader texture = new BitmapShader(CaveTextures.getRock(palette), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-        Matrix scale = new Matrix();
-        scale.setScale((float) SQUARE_SIZE / ROCK_TEXELS_PER_SQUARE, (float) SQUARE_SIZE / ROCK_TEXELS_PER_SQUARE);
-        texture.setLocalMatrix(scale);
-        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        paint.setShader(texture);
-        canvas.drawPath(rock, paint);
-    }
-
     public Vector<Point> getVertices() {
-        return vertices;
+        return mesh.getVertices();
     }
 
     public Vector<Integer> getTriangles() {
-        return triangles;
+        return mesh.getTriangles();
     }
 
     public Vector<Vector<Integer>> getOutlines() {
-        return outlines;
+        return mesh.getOutlines();
     }
 
     // Rock is lit next to the caves and darker deeper in. Worked out per tile and blurred, a pixel for every tile, to
@@ -2116,16 +1680,6 @@ public class Map {
             pixels[i] = Color.argb(alpha, (int) (Color.red(palette.rim) * rimShare), (int) (Color.green(palette.rim) * rimShare), (int) (Color.blue(palette.rim) * rimShare));
         }
         return Bitmap.createBitmap(pixels, xTiles, yTiles, Bitmap.Config.ARGB_8888);
-    }
-
-    private void drawDepth(Canvas canvas, CavePalette palette) {
-        Bitmap shading = createShading(palette);
-        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        // Only on the rock already drawn, and keeping it opaque, as collisions look for opaque pixels
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
-        float half = (float) SQUARE_SIZE / 2;
-        canvas.drawBitmap(shading, null, new RectF(-half, -half, xTiles * (float) SQUARE_SIZE - half, yTiles * (float) SQUARE_SIZE - half), paint);
-        shading.recycle();
     }
 
     // The cave only knows its own rock, so on its own the shading would change sharply where it meets the next one,
@@ -2237,110 +1791,5 @@ public class Map {
             }
         }
         return blurred;
-    }
-
-    public void drawMap (Canvas canvas){
-        int tileWidth = 12;
-        int tileHeight = 8;
-        Paint black = new Paint();
-        Paint white = new Paint();
-        black.setColor(Color.BLACK);
-        white.setColor(Color.WHITE);
-        for (int x = 0; x < xTiles; x++){
-            for (int y = 0; y < xTiles; y++){
-                int xPos = x * tileWidth;
-                int yPos = y * tileHeight;
-                Rect rect = new Rect(xPos,yPos,xPos+tileWidth,yPos+tileHeight);
-                if (getMapValue(x,y) == 1) {
-                    canvas.drawRect(rect, black);
-                } else {
-                    canvas.drawRect(rect, white);
-                }
-            }
-        }
-    }
-
-    public void drawMesh (Canvas canvas){
-        for (int i=0 ; i < triangles.size() ; i+=3){
-            Point[] points = new Point[3];
-            points[0] = vertices.get(triangles.get(i));
-            points[1] = vertices.get(triangles.get(i+1));
-            points[2] = vertices.get(triangles.get(i+2));
-            DrawUtil.drawPolygon(points, canvas, Color.argb(255, 60, 0, 0), Paint.Style.FILL, true, GameBoard.paint);
-            DrawUtil.drawVoidPolygon(points, canvas, Color.BLACK, (float) (SQUARE_SIZE / 3), false);
-        }
-        drawOutlines(canvas, Color.argb(255, 45, 0, 0));
-
-//        for (Vector<Point> passage : passages){
-//            Point[] points = new Point[2];
-//            points[0] = passage.get(0);
-//            points[1] = passage.get(1);
-//            DrawUtil.drawVoidPolygon(points,canvas,Color.GREEN);
-//        }
-    }
-
-    private void drawOutlines(Canvas canvas, int color) {
-        Path path = new Path();
-        for (Vector<Integer> outlineIndexes : outlines){
-            Point previous = null;
-            for (Integer index : outlineIndexes){
-                Point point = vertices.get(index);
-                // Not along the map's top and bottom borders
-                if (point.y == 0 || point.y == getHeight()) {
-                    continue;
-                }
-                // A jump is where a border was skipped, so the outline continues from the new point
-                if (previous == null || Math.hypot(point.x - previous.x, point.y - previous.y) > MyActivity.TILE_WIDTH) {
-                    path.moveTo(point.x, point.y);
-                } else {
-                    path.lineTo(point.x, point.y);
-                }
-                previous = point;
-            }
-        }
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth((float) (SQUARE_SIZE / 4));
-        paint.setStrokeJoin(Paint.Join.ROUND);
-        paint.setStrokeCap(Paint.Cap.ROUND);
-        paint.setColor(color);
-        canvas.drawPath(path, paint);
-    }
-
-    public void drawNodes (Canvas canvas){
-        Paint paint = new Paint();
-        int sqWidth = 6;
-        int sqWidth2 = 3;
-        for (int x = 0 ; x < squareGrid.squares.length ; x++){
-            for (int y = 0 ; y < squareGrid.squares[0].length ; y++) {
-                drawNode(canvas, squareGrid.squares[x][y].topLeft, sqWidth, paint);
-                drawNode(canvas, squareGrid.squares[x][y].topRight, sqWidth, paint);
-                drawNode(canvas, squareGrid.squares[x][y].bottomRight, sqWidth, paint);
-                drawNode(canvas, squareGrid.squares[x][y].bottomLeft, sqWidth, paint);
-
-                drawNode(canvas, squareGrid.squares[x][y].centreTop, sqWidth2, paint);
-                drawNode(canvas, squareGrid.squares[x][y].centreBottom, sqWidth2, paint);
-                drawNode(canvas, squareGrid.squares[x][y].centreLeft, sqWidth2, paint);
-                drawNode(canvas, squareGrid.squares[x][y].centreRight, sqWidth2, paint);
-            }
-        }
-    }
-
-    private void drawNode(Canvas canvas, ControlNode controlNode, int sqWidth, Paint paint){
-        int color = (controlNode.active) ? Color.BLACK : Color.WHITE;
-        paint.setColor(color);
-        MathVector position = controlNode.position;
-        Rect rect = new Rect((int)position.x-sqWidth,(int)position.y-sqWidth,(int)position.x+sqWidth,(int)position.y+sqWidth);
-        paint.setAlpha(50);
-        canvas.drawRect(rect,paint);
-    }
-
-    private void drawNode(Canvas canvas, Node controlNode, int sqWidth, Paint paint){
-        int color = Color.GRAY;
-        paint.setColor(color);
-        MathVector position = controlNode.position;
-        Rect rect = new Rect((int)position.x-sqWidth,(int)position.y-sqWidth,(int)position.x+sqWidth,(int)position.y+sqWidth);
-        paint.setAlpha(50);
-        canvas.drawRect(rect,paint);
     }
 }
