@@ -9,6 +9,7 @@ import com.htss.hookshot.game.object.MainCharacter;
 import com.htss.hookshot.game.object.interactables.powerups.GamePowerUp;
 import com.htss.hookshot.interfaces.Execution;
 import com.htss.hookshot.map.Cave;
+import com.htss.hookshot.map.Map;
 import com.htss.hookshot.map.World;
 import com.htss.hookshot.math.MathVector;
 
@@ -42,7 +43,15 @@ public class LaunchOpenWorld implements Execution {
         boolean carryOn = !anew && preferences.contains("OpenSeed");
         long seed = carryOn ? preferences.getLong("OpenSeed", 0) : System.currentTimeMillis();
         MyActivity.canvas.myActivity.openSeed = seed;
-        double x = carryOn ? preferences.getFloat("OpenX", 0) : 0, y = carryOn ? preferences.getFloat("OpenY", 0) : 0;
+        // Where it was, kept in squares. Saves from before that are in pixels, taken as of a screen like this one
+        double x = 0, y = 0;
+        if (carryOn && preferences.contains("OpenSquareX")) {
+            x = preferences.getFloat("OpenSquareX", 0) * Map.SQUARE_SIZE;
+            y = preferences.getFloat("OpenSquareY", 0) * Map.SQUARE_SIZE;
+        } else if (carryOn) {
+            x = preferences.getFloat("OpenX", 0);
+            y = preferences.getFloat("OpenY", 0);
+        }
         Cave cave = World.startOpen(seed, anew, x, y);
         // Where it was, as long as that's still open cave it wouldn't be shut inside. It might not be if the holes it dug
         // there were made after the world was last saved

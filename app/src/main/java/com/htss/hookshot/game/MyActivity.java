@@ -1251,9 +1251,13 @@ public class MyActivity extends Activity {
         OpenWorld.save();
         SharedPreferences.Editor editor = getPreferences(MODE_PRIVATE).edit();
         editor.putLong("OpenSeed", openSeed);
+        // In squares, as how many pixels a square is comes from the screen the game was opened on, which on a phone that
+        // folds can be another the next time. The pixels it was once kept in go
         if (place) {
-            editor.putFloat("OpenX", (float) character.getxPosInRoom());
-            editor.putFloat("OpenY", (float) character.getyPosInRoom());
+            editor.putFloat("OpenSquareX", (float) (character.getxPosInRoom() / Map.SQUARE_SIZE));
+            editor.putFloat("OpenSquareY", (float) (character.getyPosInRoom() / Map.SQUARE_SIZE));
+            editor.remove("OpenX");
+            editor.remove("OpenY");
         }
         editor.putInt("OpenPortals", getPowerUpCount(GamePowerUp.PORTAL));
         editor.putInt("OpenCompass", getPowerUpCount(GamePowerUp.COMPASS));

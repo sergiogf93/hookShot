@@ -247,6 +247,15 @@ public class Cave {
         return fluid;
     }
 
+    // Its fluid, if it changed since the cave was made, to be remembered
+    FluidGrid.Saved saveFluid() {
+        return fluid.save();
+    }
+
+    void loadFluid(FluidGrid.Saved saved) {
+        fluid.load(saved);
+    }
+
     // It's in the world now, so its fluid and the fluid of the caves next to it can flow into each other
     void joinFluid() {
         fluid.join();

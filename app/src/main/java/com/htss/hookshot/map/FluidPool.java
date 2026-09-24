@@ -12,7 +12,7 @@ import java.util.Vector;
  */
 public class FluidPool {
 
-    public static final int NONE = 0, WATER = 1, LAVA = 2;
+    public static final int NONE = FluidGrid.NONE, WATER = FluidGrid.WATER, LAVA = FluidGrid.LAVA;
     // The most tiles a pool can have, and how deep it can be, in tiles
     private static final int MOST_TILES = 300, MOST_DEPTH = 7, LEAST_DEPTH = 2, LEAST_TILES = 5;
 

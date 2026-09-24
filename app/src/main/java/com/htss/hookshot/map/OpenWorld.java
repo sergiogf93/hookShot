@@ -29,8 +29,9 @@ import java.util.zip.GZIPOutputStream;
  * The open world: one endless cave, made of pieces that come and go around the character. The pieces next to the one
  * the character is in are made in the background, nearest first, and the ones it has left well behind are dropped.
  * A piece is the same whenever it's made, so what the character changed in it is remembered for when it comes back:
- * the holes dug, the powers and health picked up, the buttons pressed and whether its enemies were all beaten. Those
- * memories are kept in a file, so the world is still as it was left when the game is opened again.
+ * the holes dug, the powers and health picked up, the buttons pressed, whether its enemies were all beaten, and where
+ * its water and lava had flowed, if they had. Those memories are kept in a file, so the world is still as it was left
+ * when the game is opened again.
  *
  * Only the main thread touches this. The thread that makes a piece only hands it over when it's done, and the one that
  * writes the file only gets memories that no longer change.
@@ -42,7 +43,10 @@ public class OpenWorld {
     private static final int NEAR = 1, FAR = 2;
     // The file the memories are kept in, and how it's laid out, so an older one is known and left aside
     private static final String FILE = "open_world";
-    private static final int FILE_VERSION = 1;
+    // Version 2 added the water and lava that had flowed, and version 3 keeps the holes dug in squares rather than
+    // pixels, as how many pixels a square is comes from the screen the game was opened on, which on a phone that folds
+    // can be another the next time. Older files are still read, their holes taken as dug on a screen like this one
+    private static final int FILE_VERSION = 3;
 
     private static long seed;
     private static int pieceWidth, pieceHeight;
@@ -58,10 +62,13 @@ public class OpenWorld {
 
     // What's remembered of a piece that was dropped
     private static class Memory {
+        // Where each hole was and how big, in squares from the piece's corner
         ArrayList<float[]> digs = new ArrayList<float[]>();
         BitSet taken = new BitSet();
         BitSet pressed = new BitSet();
         boolean cleared = false;
+        // Where its water and lava had flowed to, if they had
+        FluidGrid.Saved fluid = null;
     }
 
     // Starts over, with the piece at the given place made right away to stand in
@@ -175,7 +182,11 @@ public class OpenWorld {
             return;
         }
         for (float[] dig : memory.digs) {
-            cave.dig(dig[0], dig[1], dig[2]);
+            cave.dig((float) (dig[0] * Map.SQUARE_SIZE), (float) (dig[1] * Map.SQUARE_SIZE), (float) (dig[2] * Map.SQUARE_SIZE));
+        }
+        // After the digs, which the water may have flowed through
+        if (memory.fluid != null) {
+            cave.loadFluid(memory.fluid);
         }
         ArrayList<Object> pickups = getPickups(cave);
         for (int i = 0; i < pickups.size(); i++) {
@@ -213,7 +224,9 @@ public class OpenWorld {
     // What there is to remember of a piece as it is now
     private static Memory remember(Cave cave) {
         Memory memory = new Memory();
-        memory.digs.addAll(cave.getDigs());
+        for (float[] dig : cave.getDigs()) {
+            memory.digs.add(inSquares(dig));
+        }
         ArrayList<Object> pickups = getPickups(cave);
         for (int i = 0; i < pickups.size(); i++) {
             memory.taken.set(i, !MyActivity.canvas.gameObjects.contains(pickups.get(i)));
@@ -228,6 +241,7 @@ public class OpenWorld {
                 memory.cleared = false;
             }
         }
+        memory.fluid = cave.saveFluid();
         return memory;
     }
 
@@ -275,6 +289,7 @@ public class OpenWorld {
                     writeBits(out, memory.taken);
                     writeBits(out, memory.pressed);
                     out.writeBoolean(memory.cleared);
+                    writeFluid(out, memory.fluid);
                 }
             } finally {
                 out.close();
@@ -302,18 +317,24 @@ public class OpenWorld {
                     }
                     DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(new FileInputStream(file))));
                     try {
-                        if (in.readInt() != FILE_VERSION || in.readLong() != worldSeed) {
+                        int version = in.readInt();
+                        if (version < 1 || version > FILE_VERSION || in.readLong() != worldSeed) {
                             return read;
                         }
                         for (int count = in.readInt(); count > 0; count--) {
                             long key = in.readLong();
                             Memory memory = new Memory();
                             for (int digs = in.readInt(); digs > 0; digs--) {
-                                memory.digs.add(new float[]{in.readFloat(), in.readFloat(), in.readFloat()});
+                                float[] dig = {in.readFloat(), in.readFloat(), in.readFloat()};
+                                // Before version 3 they were in pixels, of a screen that's taken to be like this one
+                                memory.digs.add((version < 3) ? inSquares(dig) : dig);
                             }
                             memory.taken = readBits(in);
                             memory.pressed = readBits(in);
                             memory.cleared = in.readBoolean();
+                            if (version >= 2) {
+                                memory.fluid = readFluid(in);
+                            }
                             read.put(key, memory);
                         }
                     } finally {
@@ -337,6 +358,44 @@ public class OpenWorld {
                 file.delete();
             }
         });
+    }
+
+    // A hole, from pixels to squares
+    private static float[] inSquares(float[] dig) {
+        return new float[]{(float) (dig[0] / Map.SQUARE_SIZE), (float) (dig[1] / Map.SQUARE_SIZE), (float) (dig[2] / Map.SQUARE_SIZE)};
+    }
+
+    // Whether there's any, the grid's size, and each cell with fluid in it. Cells are half a square, so a piece's grid
+    // is as many cells whatever the size of a square, and what's saved fits it on any screen
+    private static void writeFluid(DataOutputStream out, FluidGrid.Saved fluid) throws IOException {
+        out.writeBoolean(fluid != null);
+        if (fluid == null) {
+            return;
+        }
+        out.writeInt(fluid.columns);
+        out.writeInt(fluid.rows);
+        out.writeInt(fluid.cells.length);
+        for (int n = 0; n < fluid.cells.length; n++) {
+            out.writeInt(fluid.cells[n]);
+            out.writeFloat(fluid.masses[n]);
+            out.writeByte(fluid.kinds[n]);
+        }
+    }
+
+    private static FluidGrid.Saved readFluid(DataInputStream in) throws IOException {
+        if (!in.readBoolean()) {
+            return null;
+        }
+        int columns = in.readInt(), rows = in.readInt(), count = in.readInt();
+        int[] cells = new int[count];
+        float[] masses = new float[count];
+        byte[] kinds = new byte[count];
+        for (int n = 0; n < count; n++) {
+            cells[n] = in.readInt();
+            masses[n] = in.readFloat();
+            kinds[n] = in.readByte();
+        }
+        return new FluidGrid.Saved(columns, rows, cells, masses, kinds);
     }
 
     private static void writeBits(DataOutputStream out, BitSet bits) throws IOException {
